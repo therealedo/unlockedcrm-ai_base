@@ -1,21 +1,21 @@
 # Target architecture
 
-The approved target is an online-first, locally reproducible, single-workspace CRM product/data plane. It retains the Vinext/Vite React parity UI and adds a separate Fastify-based Node.js 24 LTS TypeScript modular-monolith API. This is a target, not a description of the current browser prototype.
+The approved target is an online-first, locally reproducible, single-workspace CRM product/data plane. The current synthetic browser prototype now includes a locally verified Foundation: pinned host tooling, a Fastify health shell, PostgreSQL-only Compose, and closed Windows startup. Durable CRM persistence and the broader modular-monolith product/data plane remain targets.
 
 ## Decision summary
 
 | Decision | State | Boundary |
 |---|---|---|
-| Keep Vinext/Vite React UI for Phase 1 | `SELECTED-TARGET` | No migration to official Next.js now |
-| Fastify HTTP API on Node.js 24 LTS and TypeScript | `SELECTED-TARGET` | Separate modular-monolith process/package boundary from the web UI |
-| Exact Node.js 24 LTS and npm pins | `SELECTED-TARGET` | Repository metadata limits Windows toolchain drift; exact patch/tool versions are chosen during implementation |
-| Modular monolith plus bounded async workers | `SELECTED-TARGET` | Domain modules stay explicit; only durable asynchronous work runs separately |
-| REST/JSON transport | `SELECTED-TARGET` | Browser talks to application APIs; no Phase 1 offline sync protocol |
-| PostgreSQL | `SELECTED-TARGET` | Authoritative product database locally and when hosted |
-| Docker Desktop + Docker Compose | `SELECTED-TARGET` | Reproducible Windows development infrastructure; PostgreSQL first, then only slice-required services |
-| Windows application process topology | `SELECTED-TARGET` | Run Vinext/Vite and Node.js/Fastify directly on the host; defer full app containerization until measured parity problems justify it |
-| Root startup command | `SELECTED-TARGET` | One not-yet-named command checks/starts Compose infrastructure and both host app processes; not currently implemented |
-| Prisma plus reviewed custom SQL | `SELECTED-TARGET` | Typed access/migrations; SQL escape hatches for critical constraints, indexes, and database features |
+| Keep Vinext/Vite React UI for Phase 1 | `FUNCTIONAL` | Existing parity UI retained (`LOCAL-VERIFIED`); no migration to official Next.js now |
+| Fastify HTTP API on Node.js 24 LTS and TypeScript | `PARTIAL` | Health-only package/process boundary is `LOCAL-VERIFIED`; domain modules and routes remain incomplete |
+| Exact Node.js 24 LTS and npm pins | `FUNCTIONAL` | Node 24.18.0 and npm 12.0.2 are pinned in repository metadata (`LOCAL-VERIFIED`) |
+| Modular monolith plus bounded async workers | `MISSING` | Domain modules and durable asynchronous workers remain target work |
+| REST/JSON transport | `PARTIAL` | Health endpoints are `LOCAL-VERIFIED`; browser-facing CRM APIs remain incomplete |
+| PostgreSQL | `PARTIAL` | PostgreSQL-only Compose service is `LOCAL-VERIFIED`; authoritative CRM persistence remains incomplete |
+| Docker Desktop + Docker Compose | `FUNCTIONAL` | PostgreSQL-only Foundation profile is `LOCAL-VERIFIED`; add services only when a slice requires them |
+| Windows application process topology | `FUNCTIONAL` | `dev:foundation` runs Vinext/Vite and Fastify on the host while Compose runs PostgreSQL (`LOCAL-VERIFIED`) |
+| Root startup command | `PARTIAL` | `dev:foundation` is `LOCAL-VERIFIED`; `dev:local` cannot become ready until migrations and seed land |
+| Prisma plus reviewed custom SQL | `MISSING` | Unit 2 owns generation, typed access, migrations, repositories, and critical reviewed SQL |
 | Supabase | `CANDIDATE` | Optional PostgreSQL hosting provider only; never a required application dependency |
 | Railway | `PREFERRED-PHASE-2-CANDIDATE` | Candidate host for persistent Fastify API, bounded workers, and PostgreSQL; deployment spike required |
 | Vercel | `CANDIDATE` | Optional protected frontend previews only; not the product API, worker, or database host |
@@ -23,7 +23,9 @@ The approved target is an online-first, locally reproducible, single-workspace C
 | Isolated Python worker | `RESEARCH-NEEDED` | Allowed only after a proven specialized-library need and a narrow job/port contract |
 | Network-required PWA shell | `OPTIONAL-TARGET` | May add installability; no offline CRM data or mutation support |
 
-Application frameworks, process placement, and cloud infrastructure are different choices. Vinext/Next.js organize the frontend, Fastify provides the HTTP application framework, Docker Desktop/Compose orchestrates local infrastructure, and Railway/Vercel are hosting platforms. Phase 1 runs the UI and API on the Windows host and requires neither a Next.js migration nor a cloud account. This topology, its version pins, and its startup command are targets, not current implementation evidence.
+Implementation rows use the project status vocabulary and `LOCAL-VERIFIED` evidence. Candidate, rejected, research, and optional rows remain architecture decision classifications rather than implementation claims.
+
+Application frameworks, process placement, and cloud infrastructure are different choices. Vinext/Next.js organize the frontend, Fastify provides the HTTP application framework, Docker Desktop/Compose orchestrates local infrastructure, and Railway/Vercel are hosting platforms. The `LOCAL-VERIFIED` Foundation pins Node.js/npm and uses `dev:foundation` to start PostgreSQL plus the host API/web without a cloud account. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Prisma migrations, deterministic seed, workspace-scoped persistence, and renewal behavior remain target architecture for Unit 2 and later work.
 
 ## Logical topology
 
@@ -40,7 +42,8 @@ Windows host
       |-- webhook inbox and transactional outbox
               |
 Docker Compose
-  |-- PostgreSQL + Prisma/reviewed SQL
+  |-- PostgreSQL (Foundation)
+  |       `-- Prisma/reviewed SQL access from the host API (Unit 2 target)
   `-- slice-triggered object storage, mail capture, queues, and provider simulators
               |
 bounded async workers use the selected host/infrastructure boundary for their slice
@@ -48,7 +51,7 @@ bounded async workers use the selected host/infrastructure boundary for their sl
 synthetic audit/events, logs, and health checks
 ```
 
-The Phase 1 profile runs on one Windows PC. Vinext/Vite and Node.js/Fastify run directly on the host with exact Node/npm versions pinned; Docker Desktop + Docker Compose starts PostgreSQL first and adds other services only when a functional slice exercises them. One planned root command checks/starts infrastructure and both app processes. Full application containerization is deferred unless measured environment-parity problems justify it. None of this execution topology is implemented yet.
+The `LOCAL-VERIFIED` Foundation runs on one Windows PC: Vinext/Vite and Fastify run directly on the pinned host toolchain, while `dev:foundation` starts the PostgreSQL-only Compose service and both host processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE` by design. Prisma generation, migrations, deterministic seed, repositories, domain routes, additional services, and complete Phase 1 workflows are `MISSING`. Full application containerization remains deferred unless measured environment-parity problems justify it.
 
 A hosted Phase 2 profile deploys the same product/data plane with production security and operations.
 
@@ -127,4 +130,4 @@ Installed native apps, Tauri/native adapters, device SQLite, offline mutations, 
 
 ## Next step
 
-Use the [capability matrix](../02-traceability/capability-matrix.md) to select a thin vertical slice, then apply the [SDD change intake](../05-sdd/change-intake.md) when SDD is explicitly chosen.
+For the active renewal slice, Unit 2 is the next proof: generate Prisma, migrate, replay the deterministic seed, exercise workspace-scoped repositories, and expose the renewal GET. Use the [capability matrix](../02-traceability/capability-matrix.md) and [SDD change intake](../05-sdd/change-intake.md) for later slices.

@@ -2,16 +2,36 @@
   "name": "sites-project",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "api"
+  ],
+  "packageManager": "npm@12.0.2",
   "engines": {
-    "node": ">=22.13.0"
+    "node": "24.18.0"
   },
   "scripts": {
-    "dev": "vinext dev",
+    "dev:infra": "node scripts/orchestrate.mjs --mode infra",
+    "dev:foundation": "node scripts/orchestrate.mjs --mode foundation",
+    "dev:local": "node scripts/orchestrate.mjs --mode local",
+    "dev:api": "npm run dev --workspace @unlockedcrm/api",
+    "dev:web": "vinext dev",
+    "dev": "npm run dev:local",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
-    "lint": "oxlint",
+    "lint": "oxlint .",
     "format": "oxfmt",
-    "test": "playwright test",
+    "format:check": "oxfmt --check .",
+    "test:unit": "vitest run --project unit",
+    "test:api": "node scripts/api-check.mjs test",
+    "test:e2e": "playwright test",
+    "test": "npm run test:unit && npm run test:api && npm run test:e2e",
+    "typecheck:web": "tsc -p tsconfig.json --noEmit --incremental false",
+    "typecheck:api": "node scripts/api-check.mjs typecheck",
+    "typecheck": "npm run typecheck:web && npm run typecheck:api",
+    "db:generate": "prisma generate --config prisma.config.ts",
+    "db:migrate": "prisma migrate deploy --config prisma.config.ts",
+    "db:seed": "prisma db seed --config prisma.config.ts",
+    "db:reset": "prisma migrate reset --config prisma.config.ts",
     "test:headed": "playwright test --headed"
   },
   "dependencies": {
@@ -50,8 +70,12 @@
     "oxlint": "1.76.0",
     "oxlint-tsgolint": "7.0.2001",
     "tailwindcss": "4.2.1",
+    "dotenv": "17.4.2",
+    "prisma": "7.10.0",
+    "tsx": "4.23.13",
     "typescript": "5.9.3",
     "vite": "8.0.13",
+    "vitest": "5.0.0",
     "wrangler": "4.92.0"
   },
   "type": "module"

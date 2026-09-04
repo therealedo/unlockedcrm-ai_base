@@ -12,7 +12,7 @@ export default defineConfig({
     viewport: { width: 1440, height: 900 },
   },
   webServer: {
-    command: 'npm run dev',
+    command: 'npm run dev:foundation',
     url: 'http://localhost:3000',
     reuseExistingServer: true,
     timeout: 120_000,

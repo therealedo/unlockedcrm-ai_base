@@ -16,25 +16,25 @@ Phase 1 ends when every audited owned/core CRM workflow works coherently through
 
 | Boundary | Phase 1 decision |
 |---|---|
-| UI | Retain current React Vinext/Vite parity UI; no official Next.js migration now |
-| API | Fastify on Node.js 24 LTS and TypeScript; separate modular monolith |
-| Toolchain | Pin one exact Node.js 24 LTS patch and npm version in repository metadata |
-| Transport | REST/JSON |
-| Local infrastructure | Docker Desktop + Docker Compose on Windows; PostgreSQL is the first service, with other services added only for a functional slice |
-| Database | Local PostgreSQL with migrations, constraints, seed, and transaction tests |
-| Data access | Prisma as primary client; reviewed custom SQL isolated behind repository interfaces |
-| Async | Modular monolith plus bounded TypeScript workers using durable job/outbox contracts |
-| Auxiliary Python | Deferred unless a proven specialized library requires one isolated worker; never a second API/data authority |
-| Workspace | One seeded workspace; `workspace_id` on business data, jobs, files, events, and audit |
-| Request policy | Central identity/authorization context, synthetic in Phase 1 |
-| Configuration | Externalized environment/configuration; no committed secrets |
-| External providers | Owned ports with explicit simulated or real adapter status |
-| Process placement | Run Vinext/Vite UI and Node.js/Fastify API directly on the Windows host; Compose manages infrastructure |
-| Development | One planned root command checks/starts Compose and both app processes; reproducible Windows start/test; cloud not required |
+| UI | `PARTIAL`: retain the current React Vinext/Vite parity UI; broader Phase 1 workflows remain incomplete |
+| API | `PARTIAL` (`LOCAL-VERIFIED`): Fastify health shell exists; modular-monolith domain routes remain incomplete |
+| Toolchain | `FUNCTIONAL` (`LOCAL-VERIFIED`): Node.js 24.18.0 and npm 12.0.2 are pinned |
+| Transport | `PARTIAL` (`LOCAL-VERIFIED`): REST/JSON health endpoints exist; CRM contracts remain incomplete |
+| Local infrastructure | `FUNCTIONAL` for Foundation (`LOCAL-VERIFIED`): Docker Compose runs PostgreSQL only on Windows |
+| Database | `PARTIAL` (`LOCAL-VERIFIED`): PostgreSQL service exists; migrations, constraints, deterministic seed, and transaction tests remain Unit 2 |
+| Data access | `MISSING`: Unit 2 adds Prisma and reviewed custom SQL behind repository interfaces |
+| Async | `MISSING`: modular monolith plus bounded TypeScript workers using durable job/outbox contracts remain later Phase 1 work |
+| Auxiliary Python | `MISSING` and deferred unless a proven specialized library requires one isolated worker; never a second API/data authority |
+| Workspace | `MISSING`: Unit 2 adds one deterministic seeded workspace and `workspace_id` on the renewal graph |
+| Request policy | `MISSING`: the Foundation defines a synthetic context contract; Unit 2 must derive and enforce it centrally |
+| Configuration | `PARTIAL` (`LOCAL-VERIFIED`): Foundation API/process configuration is externalized and synthetic-only; later slices add their settings |
+| External providers | `MISSING`: later slices add owned ports with explicit simulated or real adapter status |
+| Process placement | `FUNCTIONAL` for Foundation (`LOCAL-VERIFIED`): Vinext/Vite and Fastify run on the Windows host; Compose runs PostgreSQL |
+| Development | `PARTIAL` (`LOCAL-VERIFIED`): `dev:foundation` starts PostgreSQL plus host API/web; `dev:local` readiness awaits Unit 2 |
 
 Application frameworks and cloud infrastructure are separate decisions. Vinext/Next.js organize the frontend, Fastify is the selected HTTP framework for the API, and Vite builds the web client. Railway, Vercel, Sites, and Cloudflare are hosting/runtime choices. None replaces the API or PostgreSQL, and none is required for Phase 1 local development.
 
-Docker Desktop and Docker Compose are selected development dependencies, not implemented infrastructure. The first Compose profile should start PostgreSQL; object storage, mail capture, queues, and other services join only with a slice that exercises them. The default app processes run on the Windows host with pinned Node/npm versions. Full local application containerization is deferred unless measured environment-parity problems justify it; the planned root startup command is not implemented.
+The `LOCAL-VERIFIED` Foundation pins Node.js/npm and provides `dev:foundation`, which starts the PostgreSQL-only Compose service plus the host Fastify and Vinext/Vite processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Unit 2 still owns Prisma generation, migrations, deterministic seed, repositories, and renewal GET behavior. Object storage, mail capture, queues, and other services remain incomplete until a functional slice requires them. Full local application containerization remains deferred unless measured environment-parity problems justify it.
 
 ## External-provider acceptance
 
@@ -55,7 +55,7 @@ A hard-coded success card, inert form, or fake counter is not functional. A simu
 
 | Wave | Outcome | Highest-value capabilities |
 |---|---|---|
-| 1. Windows product foundation | Pinned Node/npm, host-run UI/API, Docker Compose PostgreSQL profile, root startup command, PostgreSQL/Prisma migrations/seed, REST contract, workspace/request context | `CAP-PLAT-*` |
+| 1. Windows product foundation | `PARTIAL`: pins, host-run health API/UI, PostgreSQL-only Compose, root `dev:foundation`, and health contract are `LOCAL-VERIFIED`; Prisma migrations, deterministic seed, repositories, renewal GET, and durable workspace/request behavior remain Unit 2 | `CAP-PLAT-*` |
 | 2. Shared record graph | Contacts, households, opportunities, tasks, appointments, policies, renewals, commissions, activities | `CAP-CRM-*`, `CAP-BIZ-001..003` |
 | 3. Deep core workspaces | Record detail, edit/delete, documents, forms, settings, search, analytics/audit | `CAP-CRM-*`, `CAP-BIZ-*`, `CAP-ADMIN-*` |
 | 4. Durable orchestration | Jobs/outbox, automation runs, campaigns/queues, notifications and failure/retry behavior | `CAP-AUTO-*`, `CAP-PLAT-*` |
@@ -78,7 +78,7 @@ Responsive phone/tablet/desktop web UX is required. A network-required installab
 - Provider-port contract tests and explicit simulator assertions.
 - Worker/outbox idempotency and retry tests where applicable.
 - Route/state landmarks, keyboard/focus/accessibility, and responsive checks.
-- Clean Windows setup uses pinned Node/npm for the host-run UI/API and Docker Desktop + Docker Compose for PostgreSQL and slice-required services; one root command checks/starts both layers without a cloud account.
+- Foundation Windows startup is `LOCAL-VERIFIED`: pinned Node/npm runs the host UI/API, Docker Compose runs PostgreSQL, and `dev:foundation` starts both layers without a cloud account; live returns HTTP 200 and ready returns HTTP 503 `MIGRATIONS_UNAVAILABLE`.
 - No real PII/PHI, production credentials, customer destinations, or uncontrolled side effects.
 
 ## Exit checklist
@@ -88,6 +88,7 @@ Responsive phone/tablet/desktop web UX is required. A network-required installab
 - [ ] One seeded workspace and all required SaaS seams are proven without claiming tenant isolation.
 - [ ] Every external workflow has complete simulator/adapter status and contract evidence.
 - [ ] Cross-module records, jobs, events, notifications, analytics, and audit agree.
-- [ ] Exact Node.js 24 LTS/npm versions are pinned; one root startup command checks/starts the host-run UI/API and PostgreSQL-first Compose profile; every additional service has a functional-slice justification.
+- [x] Foundation startup is `LOCAL-VERIFIED`: exact Node.js 24.18.0/npm 12.0.2 pins, host-run UI/health API, PostgreSQL-only Compose, and `dev:foundation` with live HTTP 200 and ready HTTP 503 `MIGRATIONS_UNAVAILABLE`.
+- [ ] Unit 2 makes `dev:local` ready with Prisma generation, migration, deterministic seed, workspace-scoped repositories, and renewal GET behavior.
 - [ ] Responsive Windows-local proof passes; any PWA claim is network-required only.
 - [ ] Documentation and source register are current.

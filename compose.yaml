@@ -1,0 +1,17 @@
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    ports: ['127.0.0.1:54329:5432']
+    environment:
+      POSTGRES_DB: unlockedcrm_dev
+      POSTGRES_USER: unlockedcrm
+      POSTGRES_PASSWORD: synthetic-local-only
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U unlockedcrm -d unlockedcrm_dev']
+      interval: 2s
+      timeout: 3s
+      retries: 20
+    volumes: ['renewal-postgres:/var/lib/postgresql/data']
+
+volumes:
+  renewal-postgres:
