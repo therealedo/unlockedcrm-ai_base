@@ -8,21 +8,27 @@
 | Capability IDs | |
 | Candidate/provider | |
 | Decision state | `CANDIDATE` / `RESEARCH-NEEDED` / `SELECTED` / `REJECTED` |
-| Environment | Local / sandbox / production |
+| Proof environment | Simulator / local service / authorized test / production |
 | Owner/date | |
 
-## Business and data flow
+A selected target is not current implementation evidence.
+
+## Owned workflow and data flow
 
 - User outcome:
-- Commands/results:
+- Domain commands/results:
+- Setup/disconnect/success/failure/retry/cancel/reconcile states:
 - Data fields/classification:
+- Persistent attempts/correlation/audit/events:
 - Storage/retention/deletion:
+- Workspace/actor context:
 - Regions/subprocessors:
 - Training/data use:
 
-## Contract and technical fit
+## Port and adapter fit
 
-- Owned interface:
+- Owned interface and normalized types:
+- Deterministic simulator:
 - Authentication/scopes/rotation:
 - Webhook signatures/replay or polling cursor:
 - Idempotency/correlation:
@@ -45,10 +51,13 @@
 
 ## Proof
 
-- Deterministic test-double contract tests:
-- Phase 1 end-to-end local/sandbox tests and owned destinations:
-- Vendor/activation blocker and strongest lawful substitute, if applicable:
-- Failure/retry/replay tests:
+- Shared deterministic contract tests:
+- Phase 1 complete simulator/state-machine proof:
+- Phase 1 Windows/cloud-independent proof:
+- Explicit simulated/disconnected UI status:
+- Vendor/activation blocker and lawful substitute:
+- Authorized real-adapter proof, when scheduled:
+- Failure/retry/replay/reconciliation tests:
 - Revocation/deletion/export tests:
 - Observability/runbook:
 - Secrets/log redaction:

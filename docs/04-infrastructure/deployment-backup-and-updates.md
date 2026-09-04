@@ -1,87 +1,115 @@
-# Deployment, backup, restore, and signed updates
+# Deployment, backup, restore, and updates
 
-Phase 2 must be operable by one person without making user data disposable or coupling it to an application directory.
+This document separates Phase 1 local development from Phase 2 hosted operations. The current browser prototype has neither workflow and contains no Dockerfile, Compose configuration, exact Node/npm pin, API, or combined root startup command.
 
-## Data/application separation
+## Phase 1: reproducible Windows development
+
+A clean Windows PC must be able to run and test one synthetic workspace without a cloud account. Docker Desktop + Docker Compose is the selected local-infrastructure dependency, not current implementation evidence.
+
+Required operator path:
+
+1. verify Docker Desktop/Compose prerequisites and the repository-pinned Node.js 24 LTS/npm versions;
+2. install locked application dependencies with the pinned package manager;
+3. configure checked, non-secret development values;
+4. start PostgreSQL as the first Compose service, then migrate it;
+5. add object storage, mail capture, queues, or other services only when the selected functional slice requires them;
+6. seed exactly one fictional workspace and deterministic provider scenarios;
+7. use one root command to check/start Compose infrastructure plus the host-run Vinext/Vite UI and Fastify API, including any slice-required worker;
+8. check health/readiness, run the test suite, and reset or reseed synthetic data safely.
+
+The root command's name and implementation remain future work. Full application containerization is deferred unless measured environment-parity problems justify it; Docker Compose owns infrastructure by default, not the UI or API processes.
+
+Cloud hosting, production credentials, real customer destinations, and real PII/PHI are forbidden prerequisites. An optional PWA shell remains network-required; service-worker caches must not imply offline CRM behavior.
+
+Development export/reseed supports testing but is not a production backup or disaster-recovery claim.
+
+## Phase 2: hosted single-workspace operations
+
+Railway is `PREFERRED-PHASE-2-CANDIDATE` for the persistent Fastify API, bounded workers, and PostgreSQL topology. It is not implemented or validated. Before promotion, a deployment spike must prove service builds/starts, `PORT`/health behavior, private connectivity, migrations, worker restart/retry behavior, database access, logs, costs, backup/restore, and rollback. Vercel may be evaluated only for protected frontend previews; it is not the API, worker, or database host.
+
+Railway features do not make the system production-ready. Database backup policy and restore drills, continuous monitoring, application upgrades, access control, application security, incident response, and compliance remain project responsibilities.
+
+Before limited real-data use, one operator must be able to provision, start, stop, inspect, back up, restore, upgrade, roll back, and recover the hosted product/data plane. Production identity, encryption, key/secret handling, observability, selected real-provider configuration, and capacity limits are part of this gate.
+
+### Data and application separation
 
 | Plane | Contents | Lifecycle |
 |---|---|---|
-| Application | Versioned images/binaries/static assets/config schema | Immutable and replaceable |
-| Database | User/tenant/domain/audit/job/release metadata | Migrated, backed up, retained |
-| Object store | Documents, recordings, exports and derived objects | Versioned, scoped, backed up |
-| Secrets | Encryption keys, provider credentials, signing trust roots | Vaulted, rotated, separately recovered |
-| Backups | Encrypted database/objects/config metadata | Off-site/immutable per policy |
+| Application | Versioned API/worker/web images or artifacts and config schema | Immutable and replaceable |
+| Database | Workspace-owned domain, audit, job, integration, and release metadata | Migrated, encrypted, backed up, retained |
+| Object store | Documents, recordings, exports, and derived objects | Versioned, scoped, encrypted, backed up |
+| Secrets | Keys, provider credentials, signing trust roots | Vaulted, rotated, recovered separately |
+| Backups | Encrypted database/objects/config metadata | Off-host/immutable per approved policy |
 
-Never store user data inside a release directory or container layer.
+Never place user data inside a release directory, image, static asset bundle, or repository checkout.
 
-## One-command operator experience
+### One-command operator surface
 
-The delivery should expose documented commands for:
+Expose documented commands for:
 
-- install/preflight;
-- start/stop/status;
-- health/readiness;
+- install/provision/preflight;
+- start/stop/status and health/readiness;
+- migrate/seed only where authorized;
 - backup/list/verify/restore;
-- upgrade/channel selection;
+- upgrade and release-channel selection;
 - rollback/recovery/export;
-- logs/support bundle with automatic secret/PII redaction.
+- logs and redacted support bundle.
 
-The underlying steps remain visible and journaled; “one command” must not mean opaque or irreversible.
+The command may orchestrate steps, but every action must remain visible, bounded, and journaled.
 
-## Backup and restore
+### Backup and restore gate
 
-Required policy:
+- Encrypt database and object backups with a separately tested key-recovery procedure.
+- Produce checksums, a completeness manifest, and database-to-object reconciliation.
+- Define RPO, RTO, retention, local/off-host copies, and immutability.
+- Restore indexes, job state, integration cursors, configuration metadata, and audit history.
+- Run scheduled verification and timed clean-host restore drills.
+- Provide an export usable when the application cannot start.
 
-- encrypted database and object backups;
-- separate key recovery procedure;
-- checksums and completeness manifest;
-- configurable RPO/RTO and retention;
-- local plus off-host/immutable copy;
-- scheduled verification and clean-host restore drills;
-- reconciliation of database references to object versions;
-- restoration of indexes, job state, configuration metadata and audit history;
-- export format usable without the application.
+### Signed update protocol
 
-## Signed update protocol
+1. **Discover:** fetch authenticated release-channel metadata.
+2. **Verify:** validate the signed manifest, artifact digests, semantic version, compatibility, provenance, and revocation.
+3. **Preflight:** check host version, disk, database, objects, backups, secrets, permissions, and migration prerequisites.
+4. **Protect:** create and verify an encrypted recovery point.
+5. **Journal:** persist the release/migration attempt, checksums, timestamps, and step state.
+6. **Migrate:** run resumable, idempotent, locked data-first migrations.
+7. **Stage:** place immutable application artifacts beside the active version.
+8. **Activate:** switch traffic/pointers atomically.
+9. **Check:** verify readiness, database/objects, a critical synthetic transaction, workers, and webhooks.
+10. **Rollback:** reactivate prior artifacts on failed health; use documented compatible rollback or forward repair for data.
+11. **Finalize:** persist the result and retention/recovery metadata.
 
-1. **Discover:** read release-channel metadata over authenticated transport.
-2. **Verify:** validate signed manifest, artifact digests, semantic version, compatibility, provenance and revocation state.
-3. **Preflight:** check platform/version, disk, database, object store, backups, secrets, permissions and migration prerequisites.
-4. **Protect:** create and verify an encrypted pre-upgrade backup/recovery point.
-5. **Journal:** create an immutable migration/release attempt with version, checksums, timestamps and step status.
-6. **Migrate data first:** run resumable, idempotent forward migrations under lock; never activate incompatible code first.
-7. **Stage:** load immutable application artifacts beside the active version.
-8. **Activate atomically:** switch routing/symlink/deployment pointer without partial copies.
-9. **Verify health:** readiness, database/object checks, critical synthetic transaction and worker/webhook health.
-10. **Rollback:** automatically reactivate prior application artifacts on health failure; follow documented data forward-repair or compatible rollback rules.
-11. **Finalize:** record outcome, release channel and recovery point; expire artifacts/backups only under policy.
+### Migration rules
 
-## Migration rules
+- Prefer expand/contract changes across compatible application versions.
+- Record checksum, prerequisites, locking/transaction behavior, duration estimate, and recovery path.
+- Require verified backup and delayed cleanup before destructive changes.
+- Journal failures and make retries explicit; never loop silently.
+- Do not promise database rollback after irreversible data changes; prefer forward repair.
 
-- Expand/contract schema changes across compatible versions when possible.
-- Every migration has checksum, preconditions, transaction/lock behavior, expected duration and recovery path.
-- Destructive changes require explicit backup verification and delayed cleanup.
-- Failed migrations remain journaled and resumable; never silently retry indefinitely.
-- Application rollback cannot promise database rollback when irreversible data changes occurred; prefer forward repair.
+### Release channels
 
-## Release channels
+| Channel | Use |
+|---|---|
+| `stable` | Owner-approved hosted releases with full verification |
+| `candidate` | Explicit canary use; never automatic for real-data hosts |
+| `development` | Synthetic local environments only |
 
-- `stable`: owner-approved, full verification.
-- `candidate`: limited canary testing; never automatic for real-data hosts without opt-in.
-- `development`: synthetic/local environments only.
+Signing keys, trust-root rotation, emergency revocation, and channel choice require documented custody.
 
-Channel choice is explicit and persisted. Signing keys, trust-root rotation and emergency revocation require documented custody.
+## Phase 3 fleet boundary
 
-## Observability
-
-Track release/migration/backup/restore duration and outcome, but redact secrets and sensitive payloads. Alert on failed backups, stale restore drills, migration lock/timeouts, health rollback, job backlog, object/database mismatch and signature failure.
+The future control plane may orchestrate product deployment through authenticated product/operator APIs and release events. It must not query or mutate CRM product tables. Public fleet operations and customer subscriptions remain Phase 3.
 
 ## Acceptance drills
 
-- Clean-host install and first boot.
-- Full backup followed by isolated restore and record/object reconciliation.
+- Phase 1 clean Windows setup with pinned Node.js 24 LTS/npm, host-run UI/API, Docker Desktop + Docker Compose PostgreSQL, and one root command that checks/starts both layers before migrate, seed, health, and tests without cloud.
+- Phase 2 Railway spike for Fastify API, worker, PostgreSQL, health, restart, cost, backup/restore, and rollback behavior.
+- Phase 2 clean-host provision and first boot.
+- Encrypted backup followed by isolated restore and record/object reconciliation.
 - Interrupted migration resume.
 - Invalid signature and revoked release rejection.
 - Insufficient disk/preflight rejection.
-- Health-check failure with atomic artifact rollback.
-- Operator export/recovery when the current application will not start.
+- Health failure with atomic artifact rollback.
+- Operator export/recovery while the current application is unavailable.

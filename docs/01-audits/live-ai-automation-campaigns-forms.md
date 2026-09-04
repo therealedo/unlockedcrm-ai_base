@@ -16,11 +16,11 @@
 
 The live settings grouped 53 actions into communication, records, sensitive actions, scheduling, automation, quoting/enrollment, pipeline/activity, marketing, research/analysis, and reporting/data. Two AI contexts had independent automatic, approval-required, and blocked policies.
 
-Phase ownership:
+Planning direction:
 
-- Phase 1 requires a functional provider-neutral local/sandbox AI path with synthetic data, local history, tool permissions, approvals, and immutable development audit events.
-- Deterministic model/tool test doubles cover automated tests but do not substitute for end-to-end local/sandbox inference and tool-policy proof.
-- Phase 2 hardens deny-default server policy, least-privilege scopes, redaction, retention, production credentials, BAA/data-use gates, capacity, cost, monitoring and recovery.
+- Phase 1 requires a complete provider-neutral AI workflow with synthetic history, tool permissions, approvals, usage, failures/retries, and persisted audit events.
+- A deterministic model/tool simulator drives the development workflow and shared adapter contracts; it must be visibly identified and cannot be a hard-coded success card.
+- Phase 2 adds selected real model/voice providers and production credentials after deny-default policy, redaction, retention, BAA/data-use, capacity, cost, monitoring, and recovery gates.
 
 ## Automations
 
@@ -53,7 +53,9 @@ Internal views:
 6. Reports
 7. Message Queue
 
-Observed patterns included agent/campaign/date filters, create/export actions, product folders, template counts, empty campaign/report states, queue status/error fields, and source/conversion metrics. Phase 1 must implement functional audience snapshots, durable scheduling/queueing, suppression, consent, test-destination delivery callbacks, attribution and replay-safe reporting. Phase 2 adds production credentials, security/compliance approval, capacity, cost controls, observability and recovery.
+Observed patterns included agent/campaign/date filters, create/export actions, product folders, template counts, empty campaign/report states, queue status/error fields, and source/conversion metrics.
+
+**Planning direction:** Phase 1 implements PostgreSQL-backed audience snapshots, durable scheduling/queueing, suppression, consent, deterministic simulated delivery callbacks, attribution, and replay-safe reporting. Phase 2 adds selected real delivery providers, production credentials, security/compliance approval, capacity, cost controls, observability, and recovery.
 
 Commercial email must meet applicable rules such as the [FTC CAN-SPAM compliance guide](https://www.ftc.gov/business-guidance/resources/can-spam-act-compliance-guide-business); this link is planning input, not legal certification.
 

@@ -89,4 +89,6 @@ Authentication, RBAC/ABAC, tenant isolation, server validation, encryption/key m
 
 Do not use real data until the [Phase 2 gate](../03-roadmap/phase-2-local-production-readiness.md) is independently approved.
 
-These blockers do not defer functional backing to Phase 2. Phase 1 must add a development-grade PostgreSQL/object/job/event stack and lawful local/sandbox integrations for the product workflows using synthetic data and owned test destinations. Phase 2 hardens that working stack for limited real use.
+## Planning direction after this audit
+
+The evidence above remains current-state evidence. The approved Phase 1 target keeps the Vinext/Vite UI, adds a separate Node.js 24 LTS REST API and local PostgreSQL, and makes every audited owned/core workflow functional for one synthetic workspace. External-provider edges may use explicit deterministic simulators with complete state machines, owned ports, contract tests, and persisted synthetic events. Phase 2 hosts and secures that product for limited real use and introduces selected lawful real providers.

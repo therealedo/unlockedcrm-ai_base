@@ -1,31 +1,45 @@
 # Vendor and technology decision register
 
-Allowed states: `CANDIDATE`, `RESEARCH-NEEDED`, `SELECTED`, `REJECTED`. **No item is selected today.** Candidate status does not block Phase 1 evaluation: use local services or authorized sandbox/test accounts where feasible. A gated candidate requires an owned adapter contract, documented blocker, and strongest lawful substitute; never scrape or bypass access. Production credentials and real data remain Phase 2 gates.
+Allowed states are `CANDIDATE`, `PREFERRED-PHASE-2-CANDIDATE`, `RESEARCH-NEEDED`, `SELECTED`, `SELECTED-TARGET`, and `REJECTED`. `PREFERRED-PHASE-2-CANDIDATE` ranks the next hosting spike but is neither a production selection nor implementation proof. A `SELECTED` or `SELECTED-TARGET` technology is an approved target, not proof that it exists in the current implementation. The [current infrastructure audit](current-infrastructure.md) remains authoritative for what is actually built.
 
-| Decision ID | Capability | Candidate | State | Why considered | Open gates / rejection criteria |
+Phase 1 must run on Windows without a cloud account. The selected target runs pinned Node.js 24 LTS/npm Vinext/Vite and Fastify processes on the host while Docker Desktop + Docker Compose manages PostgreSQL and later slice-required infrastructure. The topology and root startup command are not implemented; full app containerization requires measured parity evidence. Railway is the unvalidated preferred Phase 2 hosting candidate; Vercel is optional for frontend previews only. External providers remain replaceable and may be represented by deterministic provider-neutral simulators. Production credentials and sensitive data remain Phase 2 gates.
+
+| Decision ID | Capability | Candidate | State | Decision or reason considered | Open gates / revisit trigger |
 |---|---|---|---|---|---|
-| `VDR-001` | Transactional database | PostgreSQL | `CANDIDATE` | Mature relational constraints, transactions, migrations, ecosystem | Hosting/backup/HA/operations, encryption, tenancy policy, migration tooling |
-| `VDR-002` | Local object storage | MinIO | `CANDIDATE` | S3-compatible local development and self-hosting | Upgrade/backup/erasure/ops burden, license and production fit |
-| `VDR-003` | Production object storage | S3-compatible managed providers | `RESEARCH-NEEDED` | Replaceable interface and broad ecosystem | BAA/service eligibility, regions, retention, versioning, egress, exit |
-| `VDR-004` | Development email capture | Mailpit | `CANDIDATE` | Local-only deterministic mailbox; prevents accidental delivery | Keep development-only, access controls in shared environments |
-| `VDR-005` | Production email | Amazon SES | `CANDIDATE` | Delivery APIs and ecosystem | Region/service eligibility, BAA scope, domain/reputation, suppression, costs, exit |
-| `VDR-006` | Calendar | Google Calendar adapter | `CANDIDATE` | Live product exposes Google workflows | OAuth scopes, review, sync limits, data use/retention, revocation |
-| `VDR-007` | Calendar | Microsoft Graph adapter | `CANDIDATE` | Live product exposes Microsoft calendar workflows | OAuth scopes, tenant consent, throttling, data use/retention, revocation |
-| `VDR-008` | Scheduling | Self-hosted Cal.com | `CANDIDATE` | Self-hosted scheduling and availability concepts | License, tenancy, upgrade burden, webhook/data boundary, UX independence |
-| `VDR-009` | Phone/SMS | Telnyx | `CANDIDATE` | Replaceable voice/messaging/A2P capabilities | Product-specific BAA/conduit, recording/transcription, AI, consent, 10DLC, retention, data use, pricing, portability |
-| `VDR-010` | Life quoting | Compulife | `CANDIDATE` | Commercial life quote API candidate | License, permitted storage/display, carrier/field coverage, security, pricing, versioning, exit |
-| `VDR-011` | Provider directory | CMS NPPES files | `CANDIDATE` | Official public downloadable source used by observed live search | Import cadence, normalization, data quality, attribution, update/recovery |
-| `VDR-012` | Medicare rules/data | CMS public sources | `CANDIDATE` | Authoritative planning input | Exact dataset/API, update cadence, legal use, rule versioning and provenance |
-| `VDR-013` | ACA/enrollment | HealthSherpa | `RESEARCH-NEEDED` | Visible live connection/workflows | Authorized access, partner terms, signatures, identity, data use, BAA, reconciliation, exit |
-| `VDR-014` | Carrier/e-app | Direct and aggregator adapters | `RESEARCH-NEEDED` | Enrollment/application needs | Appointments/licensing, signatures, product coverage, data contracts, error/reconciliation |
-| `VDR-015` | AI gateway | Provider-neutral owned gateway | `RESEARCH-NEEDED` | Avoid provider lock-in; support local and production policies | Local runtime, BAA-capable providers, data use/training, retention, region, reliability, cost |
-| `VDR-016` | Voice AI | Provider-neutral voice adapters | `RESEARCH-NEEDED` | Agent/receptionist capabilities | Consent/cloning rights, disclosure, abuse, retention, BAA, fallback, cost |
-| `VDR-017` | Durable jobs/workflows | Self-hosted/managed engines | `RESEARCH-NEEDED` | Timers, retries, long-running workflows | Portability, operations, determinism/versioning, multi-tenancy, pricing |
-| `VDR-018` | OCR/extraction | Local and managed engines | `RESEARCH-NEEDED` | Documents/E&O extraction | Accuracy, PHI/data use, training, retention, human review, provenance, cost |
-| `VDR-019` | Auth/identity | Self-hosted or managed OIDC | `RESEARCH-NEEDED` | Secure identity, MFA, SSO path | BAA, recovery, tenant claims, admin/support, export/exit, operational burden |
-| `VDR-020` | Billing | Subscription/payment providers | `RESEARCH-NEEDED` | Phase 3 subscription/seats/metering | Taxes, disputes, ledger, webhooks, country scope, privacy, portability |
-| `VDR-021` | Observability | OpenTelemetry-compatible stack | `CANDIDATE` | Vendor-neutral instrumentation | Redaction, PHI/PII handling, retention, access, on-call, managed-vs-local cost |
-| `VDR-022` | Update signing | TUF/Sigstore-style approaches | `RESEARCH-NEEDED` | Signed manifests, provenance, revocation | Key custody, offline root, channels, Windows/Linux support, operator recovery |
+| `VDR-001` | Transactional database | PostgreSQL | `SELECTED` | Authoritative Phase 1/2 product database; relational integrity and portable local/hosted operation | Implement migrations, workspace constraints, backup and hosted operations |
+| `VDR-002` | Development object storage | MinIO | `CANDIDATE` | S3-compatible local development and self-hosting | License, upgrade/backup burden, production fit |
+| `VDR-003` | Production object storage | Managed S3-compatible provider | `RESEARCH-NEEDED` | Replaceable interface and broad ecosystem | BAA/service scope, region, retention, versions, egress, exit |
+| `VDR-004` | Development email capture | Mailpit | `CANDIDATE` | Prevents accidental delivery and supports deterministic inspection | Shared-environment access controls; development-only boundary |
+| `VDR-005` | Production email | Amazon SES | `CANDIDATE` | Delivery APIs and ecosystem | Region/service eligibility, BAA scope, domain reputation, suppression, exit |
+| `VDR-006` | Calendar | Google Calendar adapter | `CANDIDATE` | Observed workflow and broad user availability | OAuth scopes/review, sync limits, retention, revocation |
+| `VDR-007` | Calendar | Microsoft Graph adapter | `CANDIDATE` | Observed workflow and enterprise availability | OAuth/tenant consent, throttling, retention, revocation |
+| `VDR-008` | Scheduling | Self-hosted Cal.com | `CANDIDATE` | Possible replaceable scheduling implementation | License, upgrade burden, webhook/data boundary, independent UX |
+| `VDR-009` | Phone/SMS | Telnyx | `CANDIDATE` | Replaceable voice/messaging/A2P capabilities | Product-specific BAA/conduit, recording, AI, consent, 10DLC, retention, data use, price, exit |
+| `VDR-010` | Life quoting | Compulife | `CANDIDATE` | Commercial rating API candidate | License, permitted storage/display, coverage, security, price, versioning, exit |
+| `VDR-011` | Provider directory | CMS NPPES files | `CANDIDATE` | Official public downloadable source | Cadence, normalization, quality, attribution, recovery |
+| `VDR-012` | Medicare rules/data | CMS public sources | `CANDIDATE` | Potential authoritative inputs | Exact dataset/API, use terms, cadence, provenance |
+| `VDR-013` | ACA/enrollment | HealthSherpa | `RESEARCH-NEEDED` | Observed connection/workflows | Authorized access, partner terms, signatures, data use, BAA, reconciliation, exit |
+| `VDR-014` | Carrier/e-app | Direct and aggregator adapters | `RESEARCH-NEEDED` | Enrollment/application needs | Appointment/licensing, signatures, product coverage, reconciliation |
+| `VDR-015` | AI gateway | Provider-neutral owned gateway | `SELECTED` | Core logic must not depend on one model vendor; simulator works in Phase 1 | Select real Phase 2 local/BAA-capable providers and policies |
+| `VDR-016` | Voice AI | Provider-neutral voice adapters | `RESEARCH-NEEDED` | Agent/receptionist workflow | Consent/cloning rights, disclosure, abuse, retention, BAA, fallback, cost |
+| `VDR-017` | Durable jobs/workflows | Transactional outbox plus bounded workers | `SELECTED` | Sufficient, inspectable modular-monolith starting point | Choose a specialized engine only if measured needs justify it |
+| `VDR-018` | OCR/extraction | Local and managed engines | `RESEARCH-NEEDED` | Document extraction workflow | Accuracy, PHI/data use, training, retention, human review, provenance |
+| `VDR-019` | Authentication | Self-hosted or managed OIDC | `RESEARCH-NEEDED` | Phase 2 production identity/MFA | Recovery, fixed-role claims, BAA, support access, export, burden |
+| `VDR-020` | Billing | Subscription/payment providers | `RESEARCH-NEEDED` | Phase 3 control plane | Taxes, disputes, metering, privacy, portability |
+| `VDR-021` | Observability | OpenTelemetry-compatible stack | `CANDIDATE` | Vendor-neutral instrumentation | Redaction, retention, access, on-call, local-vs-managed cost |
+| `VDR-022` | Update signing | TUF/Sigstore-style approaches | `RESEARCH-NEEDED` | Signed manifests, provenance, revocation | Key custody, trust root, channels, host support, recovery |
+| `VDR-023` | Web UI framework/build | Current Vinext/Vite React stack | `SELECTED` | Preserve parity work and avoid a no-value framework migration in Phase 1 | Revisit only for a concrete incompatibility, security, maintenance, or hosting blocker |
+| `VDR-024` | Backend runtime | Node.js 24 LTS with TypeScript | `SELECTED` | One maintainable language and portable long-term runtime | Implement separate API process/package; pin an exact Node.js 24 LTS patch and npm version in repository metadata |
+| `VDR-025` | Server architecture | Modular monolith | `SELECTED` | Clear module boundaries without premature distributed operations | Preserve APIs/events; extract only after measured pressure |
+| `VDR-026` | Database access/migrations | Prisma plus reviewed custom SQL | `SELECTED` | Typed application access with explicit PostgreSQL escape hatches | Review constraints/indexes/locking/search SQL and migration safety |
+| `VDR-027` | API transport | HTTPS REST/JSON | `SELECTED` | Simple online client boundary; no Phase 1 offline sync requirement | Versioning, idempotency, validation, error and concurrency contracts |
+| `VDR-028` | PostgreSQL hosting | Supabase | `CANDIDATE` | Optional managed PostgreSQL host after local development | Must remain PostgreSQL-only optionality; no required proprietary auth/domain dependency |
+| `VDR-029` | Core HTTP framework | Fastify | `SELECTED-TARGET` | Node.js 24 LTS TypeScript framework for the one modular-monolith REST API | Implement and verify plugins, schemas, error handling, lifecycle, tests, security defaults, and operations |
+| `VDR-030` | Phase 2 application/database hosting | Railway | `PREFERRED-PHASE-2-CANDIDATE` | Candidate topology for persistent Fastify API, bounded workers, and PostgreSQL with low operator burden | Deployment spike; backup/restore, continuous monitoring, upgrades, access control, application security, compliance, cost, portability, and exit remain project gates |
+| `VDR-031` | Frontend previews | Vercel | `CANDIDATE` | Optional protected preview URLs for UI review | Preview-only; no product API, worker, PostgreSQL, production-data, or Phase 1 dependency |
+| `VDR-032` | Core API | Python/FastAPI | `REJECTED` | A second language/API authority would increase operational and data-boundary complexity | Do not revisit for core API; a specialized worker does not reopen this decision |
+| `VDR-033` | Specialized worker runtime | Isolated Python process | `RESEARCH-NEEDED` | A future library may justify a narrowly scoped worker | Require proven library need, owned job/port contract, normalized result, least privilege, no public product API, and no independent data authority |
+| `VDR-034` | Windows development topology | Host-run Vinext/Vite and Fastify + Docker Desktop/Compose infrastructure | `SELECTED-TARGET` | Fast app feedback and debugging with reproducible PostgreSQL-first services and no cloud account | Not implemented; pin Node.js 24 LTS/npm, verify Windows/WSL/license prerequisites, build one root startup command, add services only with slice need, and containerize apps only after measured parity problems |
 
 ## Telnyx review bundle
 
@@ -41,11 +55,13 @@ Do not infer that one contract or BAA covers every Telnyx product or data flow.
 - [Cal.com availability documentation](https://cal.com/docs/availability)
 - [Compulife API](https://compulife.com/api/)
 - [CMS NPPES files](https://download.cms.gov/nppes/NPI_Files.html)
+- [Docker Desktop installation on Windows](https://docs.docker.com/desktop/setup/install/windows-install/)
+- [Docker Compose](https://docs.docker.com/compose/)
 
-## How to change a state
+## State-change rule
 
 1. Complete an [integration evaluation](../07-templates/integration-evaluation-template.md).
-2. Attach current official evidence, deterministic test-double contract results, and Phase 1 end-to-end local/sandbox proof (or the documented blocker and lawful substitute).
+2. Attach current official evidence plus deterministic contract results; keep simulator proof separate from real-provider proof.
 3. Record security, legal, privacy/BAA, license, pricing, operations, reliability, and exit decisions.
-4. Update this table and the integration catalog in the same change.
-5. `SELECTED` requires an explicit project decision; a working demo is not enough.
+4. Update this table and the [integration catalog](integration-catalog.md) together.
+5. `SELECTED` and `SELECTED-TARGET` require an explicit decision; implementation still requires `LOCAL-VERIFIED` evidence in the capability matrix. `PREFERRED-PHASE-2-CANDIDATE` requires a bounded spike before it can be promoted.

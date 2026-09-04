@@ -76,8 +76,8 @@ The fictional overview derived lead, task, opportunity, commission, and activity
 - E&O drop zone named PDF/image/text and promised extraction; no upload occurred.
 - New-folder dialog remained disabled until named.
 
-**Phase ownership (`CAP-BIZ-005`):** Phase 1 requires functional S3-compatible local object storage, local scanning/OCR, metadata, versions, relationships and provenance over synthetic documents. Phase 2 hardens tenant authorization, encryption, retention, backup/recovery and download auditing.
+**Planning direction (`CAP-BIZ-005`):** Phase 1 requires functional S3-compatible local object storage, scan/quarantine, metadata, versions, relationships, access events, and reviewable synthetic extraction through a deterministic OCR adapter. Phase 2 adds production-grade authorization, encryption, retention, backup/recovery, download auditing, and an approved real OCR provider if selected.
 
 ## Shared record graph
 
-Live evidence implies relationships among contacts, policies, opportunities, tasks, appointments, messages, documents, commissions, renewals, analytics, and audit events. Phase 1 should prove this with synthetic records; Phase 2 must enforce ownership and tenant scope server-side.
+Live evidence implies relationships among contacts, policies, opportunities, tasks, appointments, messages, documents, commissions, renewals, analytics, and audit events. Phase 1 must persist and prove this graph for one synthetic workspace through workspace-scoped repositories and constraints. Phase 2 adds secure production identity, fixed-role enforcement, encryption, and operational controls; Phase 3 adds true tenant isolation.

@@ -83,7 +83,9 @@ This is strong evidence for hierarchical scope semantics, not proof of tenant is
 - Support exposed knowledge base, videos, topics, tickets, BAA request, status, events, updates, community links, and A2P/BAA actions.
 - User menu exposed plan/status/profile/wallet/feedback/referral/language/help/settings/sign-out/product-update actions; identity and balances were omitted.
 
-## Public-readiness implications (`INFERRED`)
+## Planning direction after this audit
 
-- Enforce tenant and hierarchy scope on every query, job, object, webhook, index, AI tool, and export.
-- Implement server-side RBAC/ABAC, seat lifecycle, billing ledger, domains, certificates, reputation, secret rotation, OAuth/API keys, signed webhooks, rate limits, audit retention, MFA/recovery, recording/consent policy, incident/support/abuse operations, and privacy/legal programs.
+- Phase 1 makes audited single-workspace settings, hierarchy, agency/IMO operations, support, developer/API/webhook surfaces, and customization functional with synthetic records and workspace ownership seams.
+- Phase 2 adds production auth/MFA, fixed-role enforcement, secrets, signed webhooks, domains/certificates, retention, incident/support operations, and selected real integrations for one hosted workspace.
+- Phase 3 adds the clean-room public product and a separate control plane for provisioning, subscriptions/billing, plan enforcement, and fleet operations. The control plane must use product APIs/events and never access CRM product tables directly.
+- True tenant isolation across queries, jobs, objects, webhooks, indexes, AI tools, and exports remains a Phase 3 public/SaaS gate.

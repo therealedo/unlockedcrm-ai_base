@@ -2,39 +2,46 @@
 
 Use this gate before creating an SDD proposal or starting implementation.
 
-## Intake checklist
+## Outcome and scope
 
-### Outcome and scope
-
-- [ ] The problem and user outcome are stated without prescribing copied expression.
-- [ ] Stable capability IDs and gap IDs are listed.
-- [ ] Target phase and entry prerequisites are met.
+- [ ] The user outcome is stated without prescribing copied expression.
+- [ ] Stable capability and gap IDs are listed.
+- [ ] Target phase and prerequisites are met.
 - [ ] In-scope and out-of-scope behavior are explicit.
-- [ ] The change is small enough to review or has clear work-unit boundaries.
+- [ ] The work unit is small enough to review.
 
-### Evidence
+## Evidence
 
-- [ ] Live, local, prior, gated, and inferred evidence are separately labeled.
+- [ ] Live, local, prior, gated, inferred, current, planned, and deferred claims are separated.
 - [ ] Every live claim links to an audit/source.
-- [ ] Gated behavior remains gated or is replaced by an explicit original product decision.
+- [ ] Gated behavior stays gated or is replaced by an explicit original product decision.
 - [ ] No tenant-specific value or marketing claim is treated as a stable requirement.
 
-### Safety and dependencies
+## Phase 1 architecture
 
-- [ ] Data classes are identified; Phase 1 remains synthetic-only.
-- [ ] Phase 1 side effects are limited to explicitly owned test numbers, inboxes, calendars, sandboxes, and local services using synthetic data; customer and production destinations remain prohibited.
-- [ ] The acceptance plan includes both deterministic test-double coverage and end-to-end local/sandbox proof where feasible.
-- [ ] Vendor/activation gates name the adapter contract, blocker, and strongest lawful substitute; no scraping or bypass is proposed.
-- [ ] Vendor state is recorded in the decision register.
-- [ ] Consent, DNC, recording, legal, licensing, and BAA/data-use gates are identified.
-- [ ] Failure, retry, idempotency, reconciliation, exit, and kill-switch behavior are defined where applicable.
+- [ ] The workflow is classified as owned core behavior, external-provider behavior, or both.
+- [ ] Core records and transitions use REST/JSON and PostgreSQL; `workspace_id` and centralized actor/workspace context are carried end to end.
+- [ ] Repositories, constraints, jobs, files, events, search, exports, and audit are workspace-scoped where applicable.
+- [ ] Stable domain/application APIs and provider ports are named.
+- [ ] The clean Windows setup/start/migrate/seed/test path remains cloud-independent.
+- [ ] The change uses fictional data only and cannot contact real customer destinations.
+- [ ] A PWA change remains network-required and does not add or imply offline CRM data, mutations, synchronization, leases, or conflicts.
 
-### Acceptance and proof
+## Provider boundary
 
-- [ ] User-visible scenarios include loading, empty, populated, validation, error, permission, setup/gated, and responsive states as applicable.
-- [ ] Exact RED test command and first failing expectation are known.
-- [ ] Cross-record and cross-module projections are identified.
-- [ ] Documentation updates are included in tasks.
+- [ ] Setup, connected/disconnected, success, unavailable, failure, retry, cancellation, and reconciliation states are specified as applicable.
+- [ ] Simulator and future real adapter share an owned port and deterministic contract suite.
+- [ ] Provider attempts, correlation, outcomes, retries, and synthetic audit/events persist.
+- [ ] The UI and traceability status cannot disguise simulation as real delivery.
+- [ ] Vendor/activation blockers and the strongest lawful substitute are documented; no scraping or bypass is proposed.
+- [ ] Production credentials, legal/licensing, BAA/data-use, consent, DNC, recording, and A2P gates are assigned to Phase 2 where relevant.
+
+## Acceptance proof
+
+- [ ] Loading, empty, populated, validation, error, permission, setup/gated, and responsive states are covered as applicable.
+- [ ] Exact RED command and first failing expectation are known.
+- [ ] Cross-record/module projections and reload behavior are identified.
+- [ ] Documentation updates are included.
 
 ## Intake result
 
@@ -44,9 +51,11 @@ Use this gate before creating an SDD proposal or starting implementation.
 | Capability IDs | |
 | Gap IDs | |
 | Phase | |
+| Workflow status target | |
+| Provider-boundary status target | |
 | Evidence sources | |
 | Blocking decision | |
 | Test command | |
 | Authorized edit scope | |
 
-Stop when the result is `NEEDS-DECISION` or `BLOCKED`; do not invent a decision in the proposal.
+Stop on `NEEDS-DECISION` or `BLOCKED`; do not invent a decision.

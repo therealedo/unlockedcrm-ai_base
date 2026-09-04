@@ -4,41 +4,48 @@ A change is complete only when behavior, evidence, safety, operations, and docum
 
 ## Universal checks
 
-- [ ] Capability/gap IDs and target phase match the approved scope.
+- [ ] Capability/gap IDs and phase match the approved scope.
 - [ ] Changed files stay inside authorized roots.
 - [ ] Strict RED → GREEN → REFACTOR evidence exists for behavior changes.
-- [ ] Tests, type checks, lint/format checks, and targeted runtime proof pass.
+- [ ] Tests, type checks, format/lint checks, and targeted runtime proof pass.
 - [ ] Loading, empty, populated, validation, error, permission, setup/gated, and responsive states are covered as applicable.
-- [ ] Accessibility names, focus, keyboard operation, contrast and reduced-motion behavior are checked.
-- [ ] No real PII/PHI, credential, live screenshot, account identity, or unsafe side effect was introduced.
-- [ ] Capability matrix, gap register, relevant audit/architecture docs, and source register are updated.
-- [ ] Internal documentation links resolve.
+- [ ] Accessibility names, focus, keyboard operation, contrast, and reduced-motion behavior are checked.
+- [ ] No real PII/PHI, credentials, live screenshot, account identity, or unsafe side effect was introduced.
+- [ ] Capability matrix, gap register, architecture/audit docs, and source register are updated.
+- [ ] Internal Markdown links resolve.
 
 ## Phase 1 checks
 
-- [ ] Deterministic test doubles cannot escape automated tests, and every feasible dependency also passes end-to-end through an approved local service or sandbox/test adapter.
-- [ ] Test side effects use synthetic data and explicit allowlists for owned numbers, inboxes, calendars, accounts, buckets, and endpoints.
-- [ ] Vendor-gated capabilities include an owned adapter contract, documented blocker, and strongest lawful substitute; no scraping or bypass occurred.
-- [ ] Development-grade PostgreSQL/object storage/jobs/events are used where required by the completed workflow.
-- [ ] Synthetic records remain consistent across related modules.
-- [ ] Gated live behavior is not invented.
-- [ ] Responsive proof includes small mobile below 768 px when relevant.
+- [ ] The feature runs through the REST/JSON application boundary and persists owned records/transitions in PostgreSQL.
+- [ ] Business data, jobs, files, events, search, exports, and audit carry `workspace_id` where applicable.
+- [ ] Centralized synthetic actor/workspace context reaches commands, queries, repositories, workers, and audit.
+- [ ] Cross-module synthetic records remain consistent after reload and concurrent/error scenarios.
+- [ ] Provider-dependent workflows expose a complete setup/disconnect/success/failure/retry/reconcile state machine.
+- [ ] Simulator and future real adapter share the owned port and deterministic contract tests; provider attempts/outcomes/audit persist.
+- [ ] The product visibly distinguishes simulated, disconnected, unavailable, and real-provider status.
+- [ ] No hard-coded card or optimistic state is counted as functional behavior.
+- [ ] The clean Windows path pins exact Node.js 24 LTS/npm versions, runs UI/API on the host, uses Docker Desktop + Docker Compose for a PostgreSQL-first infrastructure profile, and exposes one root install/migrate/seed/start/health/test command surface without a cloud account; every additional service is justified by the slice.
+- [ ] All data is fictional and provider simulators cannot reach real customer destinations.
+- [ ] Responsive phone/tablet/desktop proof exists; any PWA remains network-required and does not cache sensitive CRM data for offline use.
+- [ ] Gated live behavior is not invented, scraped, or bypassed.
+- [ ] Every omitted audited capability remains in the gap register.
 
 ## Phase 2 checks
 
-- [ ] Server authorization and negative scope tests pass.
-- [ ] Migration, backup, restore, health, rollback and recovery evidence exists.
-- [ ] Secrets, logs, metrics and support bundles are redacted.
-- [ ] Webhooks/jobs are signed or authenticated, idempotent, retryable, reconcilable and observable.
+- [ ] Secure production auth/MFA, recovery, session controls, fixed roles, and negative scope tests pass.
+- [ ] Encryption/keys/secrets, backup/restore, observability, capacity, migration, health, signed update, and rollback evidence exists.
+- [ ] Selected real adapters pass the shared contract and authorized end-to-end tests.
+- [ ] Webhooks/jobs are authenticated, idempotent, retryable, reconcilable, and observable.
 - [ ] Vendor security/legal/license/BAA/data-use/retention/exit gates are approved.
-- [ ] Runbook and kill switch are exercised.
+- [ ] Limited-real-use scope, runbooks, incident handling, and kill switches are approved and exercised.
 
 ## Phase 3 checks
 
 - [ ] Work occurs in the new clean-room repository.
-- [ ] Original branding/UX/copy/assets and provenance are verified.
-- [ ] License/SBOM, tenancy, billing, privacy/legal and qualified-counsel gates pass.
+- [ ] Original branding, UX composition, copy, assets, and provenance are verified.
+- [ ] The SaaS control plane uses versioned product APIs/events and has no direct CRM-table access.
+- [ ] Tenant isolation, subscriptions/billing, plan enforcement, fleet operations, license/SBOM, privacy/legal, and qualified-counsel gates pass.
 
 ## Closure evidence
 
-Record exact commands, results, screenshots only if synthetic and authorized, migration/release IDs, remaining warnings, and follow-up gap IDs. “Looks right” is not proof.
+Record exact commands/results, synthetic screenshots only when authorized, database migrations, provider-boundary status, remaining warnings, and follow-up gap IDs. “Looks right” is not proof.

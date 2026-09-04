@@ -1,103 +1,130 @@
-# Adapter-first target architecture
+# Target architecture
 
-The target keeps owned insurance/CRM behavior independent from replaceable vendors. Components listed here are candidates until the [vendor decision register](vendor-decision-register.md) records a selection.
+The approved target is an online-first, locally reproducible, single-workspace CRM product/data plane. It retains the Vinext/Vite React parity UI and adds a separate Fastify-based Node.js 24 LTS TypeScript modular-monolith API. This is a target, not a description of the current browser prototype.
 
-## Architecture principles
+## Decision summary
 
-1. **Owned domain first:** contacts, policies, consent, workflows, commissions, tasks, eligibility, audit, and permissions are not vendor data models.
-2. **Ports and adapters:** every external service implements a narrow owned interface.
-3. **Functional synthetic development:** Phase 1 runs real local services and lawful sandbox/test adapters with synthetic data and owned destinations; deterministic test doubles are for automated isolation, not the exit substitute.
-4. **Data-first operations:** user data and migrations are separate from replaceable application artifacts.
-5. **Deny by default:** authorization and AI/tool permissions are enforced server-side.
-6. **Events with provenance:** external callbacks and derived analytics retain source, version, time, actor, and correlation.
-7. **Replaceability:** export, reconciliation, and provider exit are design requirements.
+| Decision | State | Boundary |
+|---|---|---|
+| Keep Vinext/Vite React UI for Phase 1 | `SELECTED-TARGET` | No migration to official Next.js now |
+| Fastify HTTP API on Node.js 24 LTS and TypeScript | `SELECTED-TARGET` | Separate modular-monolith process/package boundary from the web UI |
+| Exact Node.js 24 LTS and npm pins | `SELECTED-TARGET` | Repository metadata limits Windows toolchain drift; exact patch/tool versions are chosen during implementation |
+| Modular monolith plus bounded async workers | `SELECTED-TARGET` | Domain modules stay explicit; only durable asynchronous work runs separately |
+| REST/JSON transport | `SELECTED-TARGET` | Browser talks to application APIs; no Phase 1 offline sync protocol |
+| PostgreSQL | `SELECTED-TARGET` | Authoritative product database locally and when hosted |
+| Docker Desktop + Docker Compose | `SELECTED-TARGET` | Reproducible Windows development infrastructure; PostgreSQL first, then only slice-required services |
+| Windows application process topology | `SELECTED-TARGET` | Run Vinext/Vite and Node.js/Fastify directly on the host; defer full app containerization until measured parity problems justify it |
+| Root startup command | `SELECTED-TARGET` | One not-yet-named command checks/starts Compose infrastructure and both host app processes; not currently implemented |
+| Prisma plus reviewed custom SQL | `SELECTED-TARGET` | Typed access/migrations; SQL escape hatches for critical constraints, indexes, and database features |
+| Supabase | `CANDIDATE` | Optional PostgreSQL hosting provider only; never a required application dependency |
+| Railway | `PREFERRED-PHASE-2-CANDIDATE` | Candidate host for persistent Fastify API, bounded workers, and PostgreSQL; deployment spike required |
+| Vercel | `CANDIDATE` | Optional protected frontend previews only; not the product API, worker, or database host |
+| Python/FastAPI core API | `REJECTED` | TypeScript/Fastify remains the only product API/data authority |
+| Isolated Python worker | `RESEARCH-NEEDED` | Allowed only after a proven specialized-library need and a narrow job/port contract |
+| Network-required PWA shell | `OPTIONAL-TARGET` | May add installability; no offline CRM data or mutation support |
+
+Application frameworks, process placement, and cloud infrastructure are different choices. Vinext/Next.js organize the frontend, Fastify provides the HTTP application framework, Docker Desktop/Compose orchestrates local infrastructure, and Railway/Vercel are hosting platforms. Phase 1 runs the UI and API on the Windows host and requires neither a Next.js migration nor a cloud account. This topology, its version pins, and its startup command are targets, not current implementation evidence.
 
 ## Logical topology
 
 ```text
-Browser/PWA
-   |
-Application API / session boundary
-   |-- CRM and insurance domain services
-   |-- Authorization and tenant/ownership policy
-   |-- Provider ports (phone, email, calendar, quote, AI, files)
-   |-- Command/outbox and webhook inbox
-   |
-PostgreSQL ---- durable job/workflow workers ---- audit/analytics projections
-   |
-S3-compatible object storage (MinIO local; production provider selected later)
-   |
-Observability, encrypted backups, signed update controller
+Windows host
+  |-- Vinext/Vite browser UI / optional network-required PWA
+  |          |
+  |     HTTPS REST/JSON
+  |          |
+  |-- Fastify on pinned Node.js 24 LTS and npm
+      |-- centralized request identity and authorization context
+      |-- CRM, sales, insurance, communications, business, AI modules
+      |-- application commands, queries, policies, and stable provider ports
+      |-- webhook inbox and transactional outbox
+              |
+Docker Compose
+  |-- PostgreSQL + Prisma/reviewed SQL
+  `-- slice-triggered object storage, mail capture, queues, and provider simulators
+              |
+bounded async workers use the selected host/infrastructure boundary for their slice
+              |
+synthetic audit/events, logs, and health checks
 ```
 
-## Core data plane
+The Phase 1 profile runs on one Windows PC. Vinext/Vite and Node.js/Fastify run directly on the host with exact Node/npm versions pinned; Docker Desktop + Docker Compose starts PostgreSQL first and adds other services only when a functional slice exercises them. One planned root command checks/starts infrastructure and both app processes. Full application containerization is deferred unless measured environment-parity problems justify it. None of this execution topology is implemented yet.
 
-| Capability | Candidate direction | Decision state |
-|---|---|---|
-| Transactional records | PostgreSQL with migrations and row/policy enforcement | `CANDIDATE` |
-| Local object storage | MinIO using an S3-compatible interface | `CANDIDATE` |
-| Production object storage | S3-compatible managed service selected by security/legal/operations gates | `RESEARCH-NEEDED` |
-| Durable jobs/workflows | Transactional outbox plus replaceable durable worker/workflow engine | `RESEARCH-NEEDED` |
-| Audit/analytics | Append-oriented events plus PostgreSQL projections initially | `CANDIDATE` |
-| Local email capture | Mailpit plus owned test inbox adapters | `CANDIDATE` |
+A hosted Phase 2 profile deploys the same product/data plane with production security and operations.
 
-These data-plane services have a development-grade Phase 1 slice. Phase 2 hardens encryption, authentication/authorization, secrets, capacity, backup/recovery, observability, migration safety, and operations.
+## Phase 1 product/data plane
 
-## Domain boundaries
+### Owned modules
 
-- **Identity/organization:** user, role, membership, agency, organization, hierarchy, seat, scope policy.
-- **CRM:** contact, household, tag, custom field/value, DND/consent, activity, relationship.
-- **Sales:** pipeline, stage, opportunity, task, appointment, booking link.
-- **Insurance:** carrier, product, coverage type, quote request/result, eligibility, application/enrollment, policy, renewal.
-- **Communications:** channel identity, conversation, message, call, recording, voicemail, suppression, A2P state.
-- **Business:** commission statement/entry/split/payment/reconciliation, document/folder/version/extraction.
-- **Orchestration:** workflow definition/version, enrollment, run, action, retry/dead letter, campaign, audience snapshot, form/response.
-- **AI:** conversation, profile, tool policy, approval, tool execution, provider usage/provenance.
-- **Platform:** audit event, notification, credential reference, webhook receipt, outbox, export job, backup, release/migration journal.
+- **Identity context:** one seeded user/workspace context for deterministic development; production authentication is Phase 2.
+- **CRM:** contacts, households, relationships, tags, custom fields, consent, activities, search, and notifications.
+- **Sales:** pipelines, stages, opportunities, tasks, appointments, booking links, dashboards, and analytics.
+- **Insurance:** quote requests/results, eligibility, applications/enrollments, policies, renewals, carriers/products, providers, and medications.
+- **Communications:** conversations, messages, calls, voicemail, recordings, sender/mailbox/number setup, suppression, and provider correlation.
+- **Business:** internal commission ledger/import/reconciliation, documents, folders, versions, forms, responses, and extraction review.
+- **Orchestration:** versioned automations, enrollments, runs, retries, campaigns, audience snapshots, schedules, queues, and callbacks.
+- **AI:** conversations, prompt/result provenance, tool policies, approvals, usage, and provider state.
+- **Administration:** single-workspace settings, teams, hierarchy, agency/IMO operations, support/developer surfaces, and customization.
 
-See [Domain model](../06-reference/domain-model.md).
+Core modules and bounded workers remain TypeScript. Python/FastAPI cannot become a parallel API or data authority. If a specialized library later proves a Python worker necessary, it receives bounded jobs through an owned port, returns normalized results, and never accesses product tables outside its explicit repository/service contract.
 
-## Adapter contracts
+Every audited owned/core workflow must be functional and PostgreSQL-backed. Omissions remain explicit capability/gap records; “almost all” is not an exit criterion.
 
-Every adapter must define:
+### Workspace seams
 
-- supported commands and normalized results;
-- configuration/connection lifecycle;
-- credential scopes and rotation;
-- idempotency and correlation keys;
-- webhook signature/replay handling or polling cursor semantics;
-- rate/cost limits, retries, dead letters, reconciliation;
-- data classification, retention, deletion, residency and vendor-use rules;
-- health and kill switch;
-- deterministic test-double contract suite plus end-to-end local/sandbox integration suite;
-- Phase 1 owned test destinations, data seeding/cleanup, and explicit allowlists;
-- documented blocker and strongest lawful substitute when vendor sandbox/activation access is unavailable;
-- export/exit path.
+Operate exactly one seeded workspace in Phase 1 while preserving inexpensive SaaS seams:
 
-## Local and production profiles
+- put `workspace_id` on business records, jobs, files, events, search rows, exports, and audit records;
+- derive workspace and actor once in a centralized request identity/authorization context;
+- require workspace scope in repositories, unique constraints, foreign keys, object keys, job payloads, caches, and idempotency keys;
+- expose stable domain/application APIs rather than database tables;
+- externalize environment configuration and secret references;
+- keep all provider integrations behind owned ports.
 
-| Boundary | Phase 1 functional development path | Phase 2 hardening/production candidate |
-|---|---|---|
-| Email delivery | Mailpit and owned test inbox/domain sandboxes | SES is one candidate; others remain open |
-| Phone/SMS | Authorized provider sandbox/test account to owned numbers; local event simulator only when access is blocked | Telnyx is one replaceable candidate subject to product-specific gates |
-| Calendar | Owned Google/Microsoft test calendars and/or self-hosted scheduling | Google and Microsoft adapters; self-hosted scheduling candidate |
-| Quoting | Authorized commercial sandbox where available; versioned public/local lawful substitute when blocked | Compulife and approved carrier/public-data adapters |
-| Provider search | Versioned local CMS/NPPES import | Hardened CMS/NPPES import/update operations |
-| AI | Local model or vendor sandbox behind the provider-neutral gateway | Approved BAA-capable production option as required |
-| Files/OCR | MinIO/S3-compatible local objects, local scanning and OCR | Hardened S3-compatible storage plus selected scanning/OCR adapters |
-| Jobs/events/forms | Durable local workers/events and locally hosted forms | Capacity, retention, recovery, observability and secure public endpoints |
+These seams reduce later migration cost; they are not proof of tenant isolation or production security.
 
-For every row, deterministic test doubles remain part of automated testing but cannot replace the Phase 1 functional path.
+## Provider-boundary contract
 
-## Security boundaries
+Phase 1 may simulate external services—phone/SMS, delivered email, third-party calendars, quote/enrollment vendors, Commission+ sync, AI/voice, managed OCR—while the owned workflow remains complete.
 
-- Browser is untrusted; all policy is enforced server-side.
-- Provider webhooks enter through a verification, deduplication, validation, and quarantine boundary.
-- Workers use least-privilege credentials and re-check authorization/tenant context.
-- Object access uses short-lived scoped URLs and immutable audit.
-- AI tools receive minimum data and require policy/approval before side effects.
-- Support/admin access is explicit, time-bound, reviewed, and audited.
+Every simulated boundary must include:
 
-## Decision rule
+1. a provider-neutral port and normalized command/result types;
+2. setup, connected, disconnected, unavailable, failure, retry, cancellation, and reconciliation states where applicable;
+3. deterministic contract tests shared by simulator and future real adapters;
+4. persisted provider correlation, idempotency, attempts, outcomes, and synthetic audit/events;
+5. clear UI and traceability labels that the provider is simulated;
+6. a documented activation/licensing blocker and lawful test substitute when relevant;
+7. no scraping, bypass, real customer outreach, or real sensitive data.
 
-Do not put a vendor SDK directly inside core domain logic. Record every selection/rejection in the [vendor decision register](vendor-decision-register.md) before production use.
+A hard-coded success card or button that changes no persisted workflow state remains `MOCK`.
+
+## Data and worker rules
+
+- PostgreSQL is authoritative; browser storage may hold ephemeral UI preferences only.
+- Prisma owns ordinary typed access and migrations; reviewed SQL is allowed for constraints, partial indexes, locking, search, and other PostgreSQL-specific needs.
+- Commands that produce external or asynchronous work commit domain state and an outbox item atomically.
+- Workers are bounded by explicit queues, concurrency, idempotency, retry policy, dead-letter/reconciliation, and workspace context.
+- External callbacks enter through verification, deduplication, validation, quarantine, and inbox persistence.
+- Objects use workspace-scoped keys and database metadata; the object provider remains replaceable.
+- Events store source, schema/version, actor, workspace, time, correlation, and provenance.
+
+## Phase 2 hosted product
+
+Railway is the preferred candidate for hosting the persistent Fastify API, bounded workers, and PostgreSQL topology, but it is not implemented, validated, or selected production infrastructure. A deployment spike must prove builds, start commands, private connectivity, migrations, health/readiness, restarts, logs, cost limits, backup/restore, and rollback before promotion. Vercel may host protected frontend previews only.
+
+Platform capabilities do not transfer responsibility: database backup, continuous monitoring, application upgrades, access control, application security, incident response, and compliance remain owned by this project.
+
+Before limited real-data use, Phase 2 also adds production authentication/MFA, fixed-role enforcement, encryption/key management, secret rotation, backups/restore, observability, capacity, migration safety, signed updates, rollback, and selected lawful real integrations.
+
+## Phase 3 control plane
+
+The clean-room public/SaaS repository adds a separate control plane for customer/workspace provisioning, subscriptions/billing, plan enforcement, fleet/deployment management, and public operations. It may use versioned product APIs, commands, and events. It must never query or mutate CRM product tables directly.
+
+## Explicitly deferred
+
+Installed native apps, Tauri/native adapters, device SQLite, offline mutations, durable cursor synchronization, conflict UX, offline leases, and app-store distribution are not in the current roadmap. A network-required PWA does not change that boundary.
+
+## Next step
+
+Use the [capability matrix](../02-traceability/capability-matrix.md) to select a thin vertical slice, then apply the [SDD change intake](../05-sdd/change-intake.md) when SDD is explicitly chosen.

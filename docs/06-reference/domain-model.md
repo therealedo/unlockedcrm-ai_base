@@ -1,75 +1,94 @@
 # Neutral domain model
 
-This model describes owned concepts inferred from local and live evidence. It is not a copy of a vendor schema.
+This model describes owned concepts inferred from repository/live evidence and approved planning. It is not a copy of a vendor schema.
 
-## Identity and organization
+## Phase 1 workspace root
 
-| Entity | Core relationships/purpose |
+| Entity | Purpose |
 |---|---|
-| Tenant/Workspace | Isolation root for Phase 3; configuration, branding, policies |
-| User | Authenticated identity and preferences |
-| Membership/Role | User scope in tenant/agency/organization |
-| Agency/Organization | Hierarchical business nodes such as IMO/FMO, BGA/MGA, agency, sub-agency |
-| Agent Profile | Insurance/work assignment identity linked to a user when applicable |
-| Seat/Subscription | Phase 3 entitlement and billing lifecycle |
+| Workspace | Ownership root for product data and configuration; exactly one fictional workspace is seeded in Phase 1 |
+| Development Identity | Seeded actor used by centralized request/policy context; not production authentication |
+| User | Product identity and preferences; production session/MFA behavior arrives in Phase 2 |
+| Membership/Role | Fixed-profile assignment and policy input within the workspace |
+| Agency/Organization | Hierarchical business nodes such as IMO/FMO, BGA/MGA, agency, and sub-agency |
+| Agent Profile | Insurance/work assignment identity linked to a user where applicable |
+
+Every Phase 1 business record, job, file, event, search row, export, and audit record carries `workspace_id` where applicable. This is a forward-compatible ownership seam, not proof of multi-tenant security.
 
 ## CRM and sales
 
 | Entity | Core relationships/purpose |
 |---|---|
-| Contact/Household | Person, relationships, channels, demographics, ownership |
-| Tag/Custom Field Definition/Value | Tenant-configured classification and product-specific data |
-| Consent/Suppression | Channel, purpose, source, legal version, time, revocation/DNC |
-| Activity | Normalized timeline event linked to records and actor |
+| Contact/Household | Person, relationships, channels, demographics, assignment, ownership |
+| Tag/Custom Field Definition/Value | Workspace-configured classification and product-specific data |
+| Consent/Suppression | Channel, purpose, source, legal version, time, revocation, DNC |
+| Activity | Normalized timeline event linked to records, actor, and workspace |
 | Pipeline/Stage/Opportunity | Sales process, probability, value, product, assignment, history |
-| Task/Comment/Attachment | Work item, status, priority, assignment and collaboration |
-| Calendar Connection/Availability/Appointment | Scheduling identity, rules and booked event |
-| Booking Link/Submission | Personal or round-robin public scheduling boundary |
+| Task/Comment/Attachment | Work item, status, priority, assignment, collaboration |
+| Calendar Connection/Availability/Appointment | Owned scheduling rules/events plus provider-boundary state |
+| Booking Link/Submission | Personal/round-robin scheduling boundary and persisted booking lifecycle |
+| Notification Preference/Event | Event taxonomy, recipient, read state, and optional delivery state |
+| Search Document | Workspace-scoped normalized index projection and source reference |
 
 ## Insurance
 
 | Entity | Core relationships/purpose |
 |---|---|
 | Carrier/Product/Coverage Type | Versioned reference and availability |
-| Quote Request/Result | Product-specific inputs, normalized carrier results and provenance |
-| Eligibility Assessment | Rule/data version, inputs, result, explanation and history |
-| Provider/Medication | Search/reference data used by Medicare/health workflows |
-| Application/Enrollment | Submission lifecycle, consent, external identity/status |
-| Policy/Renewal | Coverage, dates, ownership, premium, product metadata and renewal lifecycle |
-| Commission Statement/Entry/Split/Payment | Immutable source, matching, reconciliation and correction |
+| Quote Request/Result | Product-specific inputs, normalized synthetic/provider results, status, and provenance |
+| Eligibility Assessment | Rule/data version, inputs, result, explanation, and history |
+| Provider/Medication | Versioned search/reference data for Medicare/health workflows |
+| Application/Enrollment | Owned lifecycle, consent, submission attempts, external identity/status, reconciliation |
+| Policy/Renewal | Coverage, dates, owner, premium, metadata, and renewal lifecycle |
+| Commission Statement/Entry/Split/Payment | Immutable source, matching, reconciliation, correction, and provider-boundary state |
 
 ## Communications and orchestration
 
 | Entity | Core relationships/purpose |
 |---|---|
-| Channel Identity | Phone number, email sender/domain, mailbox connection |
-| Conversation/Message/Call | Unified communication projection and provider correlation |
-| Recording/Voicemail/Transcript | Sensitive object, consent, retention and access |
-| A2P Registration | Brand, campaign/use case, numbers and status history |
-| Template/Script | Versioned email/SMS/call/form content with folder/product scope |
+| Provider Connection | Provider-neutral setup, connected/disconnected/health state, credential reference |
+| Channel Identity | Phone number, sender/domain, mailbox, or simulated endpoint |
+| Conversation/Message/Call | Unified product projection, delivery/call state, attempts, and provider correlation |
+| Recording/Voicemail/Transcript | Sensitive-shaped object, synthetic consent, retention, and access state in Phase 1 |
+| A2P Registration | Brand/campaign/use case/numbers and status history; simulated until approved |
+| Template/Script | Versioned email/SMS/call/form content |
 | Workflow Definition/Version | Trigger and ordered action/delay/end graph |
-| Workflow Enrollment/Run/Action | Durable execution, status, retry, error and attribution |
-| Campaign/Audience Snapshot/Queue Item | Versioned audience, schedule, delivery and result |
-| Form/Version/Response | Hosted schema, mapping, consent/legal version and submission |
+| Workflow Enrollment/Run/Action | Durable execution, status, attempt, retry, error, and attribution |
+| Campaign/Audience Snapshot/Queue Item | Versioned audience, suppression, schedule, delivery, and result |
+| Form/Version/Response | Hosted schema, mapping, consent/legal version, upload, and submission |
 
 ## Files, AI, and platform
 
 | Entity | Core relationships/purpose |
 |---|---|
-| Document/Folder/Object Version | Scoped metadata and immutable object reference |
-| Extraction | OCR/model/version/input/output/confidence/human review provenance |
-| AI Conversation/Profile/Insight | User context, history and derived preferences |
-| AI Tool Policy/Approval/Execution | Action, mode, request, decision, result and audit |
-| Notification Preference/Event | Event taxonomy and channel delivery state |
-| Audit Event | Actor, tenant, action, target, time, correlation and integrity metadata |
-| Webhook Receipt/Outbox Command | Verified inbound and reliable outbound integration events |
-| Export Job | Authorized query snapshot, object, expiry and audit |
-| Backup/Release/Migration Journal | Operational provenance and recovery state |
+| Document/Folder/Object Version | Workspace-scoped metadata and immutable object reference |
+| Extraction | OCR/model/version/input/output/confidence/human-review provenance |
+| AI Conversation/Profile/Insight | User context, history, outputs, usage, and provider status |
+| AI Tool Policy/Approval/Execution | Action, mode, request, decision, result, and audit |
+| Provider Attempt | Port, command, normalized request/result, simulator/real status, correlation, retry, outcome |
+| Audit Event | Actor, workspace, action, target, time, correlation, provenance, integrity metadata |
+| Webhook Receipt/Outbox Command | Verified/deduplicated inbound and reliable outbound integration events |
+| Export Job | Authorized query snapshot, object, expiry, status, and audit |
+| Release/Migration/Backup Journal | Phase 2 operational provenance and recovery state |
+
+## Future Phase 3 control plane
+
+| Entity | Purpose |
+|---|---|
+| Customer Account | Public commercial relationship, separate from CRM contacts |
+| Workspace Provisioning Record | Requested product deployment/workspace lifecycle |
+| Subscription/Plan/Entitlement | Billing, limits, and plan enforcement |
+| Deployment/Fleet Record | Version, health, release channel, and operator action metadata |
+| Public Support/Operations Record | Audited SaaS service operation outside product tables |
+
+The control plane exchanges versioned commands/events with the product/data plane. It must not own, query, or mutate contacts, policies, communications, documents, commissions, or other CRM product tables directly.
 
 ## Modeling rules
 
-- Every tenant-scoped record carries enforceable scope; workers and exports do not bypass it.
+- Owned domain/application APIs are stable; external provider schemas stop at adapters.
 - External IDs are namespaced by provider and never replace owned primary IDs.
-- Time-sensitive rules/data/results store version and provenance.
-- Corrections append history; financial/audit records are not silently overwritten.
-- Sensitive objects have explicit purpose, retention, access and deletion state.
+- Workspace context is mandatory in repositories, constraints, object keys, jobs, caches, idempotency keys, search, exports, and audit.
+- Time-sensitive rules/results keep version and provenance.
+- Corrections append history; financial and audit records are not silently overwritten.
+- Provider workflows persist setup, attempt, correlation, success/failure/retry/reconcile, and explicit simulator/real status.
+- Browser storage may hold ephemeral preferences only; PostgreSQL is authoritative for product state.

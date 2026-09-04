@@ -1,77 +1,84 @@
 # Mission and gated delivery phases
 
-> **The current local build is a fictional-data browser prototype, not safe for real PII/PHI or SaaS.**
+> **The current local build is a fictional-data browser prototype, not safe for real PII/PHI, hosted production use, or SaaS.**
 
-The mission is to build a useful private insurance CRM without confusing visual parity with a secure product. Each phase has a different purpose, data boundary, and exit gate.
+Build an online-first insurance CRM without confusing local reproducibility, application framework choice, hosting, or SaaS operations.
 
 ## Phase summary
 
-| Phase | Outcome | Data boundary | Exit gate |
+| Phase | Product outcome | Data/deployment boundary | Exit gate |
 |---|---|---|---|
-| 1 — Functional development replica | Every safely accessible layout, module, nested subview, workflow, setting, and replaceable dependency works end to end against synthetic data through local services or lawful sandbox/test integrations | Fictional data; owned test destinations only | Traceable parity, functional development stack, adapter contracts, integration and behavior tests |
-| 2 — Local production readiness | Plug-and-play personal/small-circle deployment that hardens the Phase 1 stack for approved limited real use | Limited real data only after explicit owner approval and independent review | Auth/RBAC, encryption, production vendor gates, backup/restore, observability, migration safety, signed upgrades, health/rollback |
-| 3 — Public/SaaS readiness | Independently designed, multi-tenant public product in a new clean-room repository | Production data under approved governance | Legal, security, privacy, tenancy, billing, operations, licenses/SBOM, original product design |
+| 1 — Online-first single-workspace product/data plane | Every audited owned/core CRM workflow works coherently through a local Node API and PostgreSQL while external-provider workflows use honest provider-neutral simulators where needed | Synthetic data; one seeded workspace; Windows-local start/test; no cloud required | Functional core, parity/state coverage, workspace seams, REST/API/database proof, explicit provider-boundary status |
+| 2 — Secure hosted single-workspace readiness | One securely hosted workspace with production identity, operations, selected real integrations, and approved limited use | Limited real data only after explicit owner and independent-review approval | Auth/MFA/fixed roles, encryption, vendor gates, backup/restore, observability, deployment, migration, signed upgrades/rollback |
+| 3 — Clean-room public/SaaS readiness | New original public product plus separate SaaS control plane | Multi-workspace production under approved governance | Tenant isolation, provisioning, billing/plans, fleet operations, support/abuse, legal, security, licenses/SBOM, original design |
 
-## Phase 1 — synthetic functional parity
+## Phase 1 — online-first single-workspace functional CRM
 
-Phase 1 is an implementation laboratory. It may reproduce observable behavior and short functional labels, but not proprietary source, long copy, screenshots, branding assets, or hidden behavior.
+Phase 1 is locally reproducible, not local-first or offline-first. The browser, API, and PostgreSQL may all run on one Windows PC, but CRM behavior still uses a networked REST/JSON application boundary.
+
+Docker Desktop and Docker Compose are selected for Phase 1 Windows infrastructure, starting with PostgreSQL. Add object storage, mail capture, queues, or other services only when a functional slice requires them. By default, Vinext/Vite and Node.js/Fastify run directly on the Windows host with pinned Node/npm versions; one planned root command checks/starts infrastructure and both app processes. Full application containerization is deferred unless measured environment-parity problems justify it. None of this topology is implemented yet.
+
+Required owned/core outcomes:
+
+- all 32 registered paths, 30 effective screens, audited nested views, responsive layouts, dialogs, validation, and state families remain traceable;
+- contacts/households, pipeline/opportunities, tasks/appointments, policies/renewals, internal commission records, documents/forms, automations, search/notifications, dashboards/analytics, and single-workspace settings work end to end;
+- browser `localStorage` is no longer the business-record authority; PostgreSQL persistence, migrations, constraints, API validation, and cross-module projections are proven;
+- the retained Vinext/Vite React UI talks to a separate Fastify-based Node.js 24 LTS TypeScript modular-monolith API;
+- Prisma is the planned primary data-access layer, with reviewed custom SQL isolated behind repository interfaces;
+- Python/FastAPI is not part of the core stack; a future Python worker requires a proven specialized library and cannot become a second API or data authority;
+- bounded async workers use durable job/outbox contracts where completed workflows require them;
+- one workspace is seeded and operated, while `workspace_id`, centralized request identity/authorization context, workspace-scoped repositories/constraints, stable APIs, external configuration, and provider ports preserve inexpensive future seams.
+
+External-provider workflows may use deterministic simulators in Phase 1. Phone/SMS, delivered email, external calendar sync, quoting/enrollment, Commission+ sync, AI/voice, managed OCR, and similar boundaries are not required to contact a real vendor for the Phase 1 gate. They must still provide:
+
+- the complete user workflow and observable state machine;
+- setup, disconnected, validation, failure, retry, and recovery states;
+- an owned provider-neutral port and deterministic contract tests;
+- synthetic events/audit and coherent cross-module effects;
+- explicit workflow status and provider-boundary status;
+- an identified integration gap and safe next proof.
+
+Hard-coded cards without domain behavior do not satisfy Phase 1. “Almost all” is not an acceptance rule: every omitted audited core capability must be explicitly tracked and approved.
+
+Phase 1 uses synthetic data only. It does not authorize real sensitive insurance data, production credentials, customer outreach, real enrollment, scraping, gate bypass, hosted production, or public offering.
+
+## Phase 2 — secure hosted single-workspace operation
+
+Phase 2 turns the proven one-workspace product/data plane into a securely hosted service for explicitly approved limited use.
 
 Required outcomes:
 
-- All 32 local paths and 30 effective screens remain mapped.
-- Major live nested views and settings have capability IDs.
-- Forms, dialogs, filters, empty/loading/error/setup/soon/disabled states, and responsive behavior work with fictional fixtures.
-- Replaceable external services have owned adapter contracts and work through self-hosted development services or lawful vendor sandbox/test accounts where feasible.
-- Phase 1 includes development-grade PostgreSQL, S3-compatible object storage, durable jobs/workflows, and event projections when the capability depends on them.
-- Communications and calendar flows may target only explicitly owned test numbers, inboxes, and calendars; quote, enrollment, carrier, and AI flows use sandbox/test accounts or lawful public/local substitutes.
-- Deterministic test doubles remain required for automated tests but are not a Phase 1 exit substitute.
-- If a vendor or activation gate prevents a sandbox path, record the blocker, implement the provider-neutral adapter contract, and exercise the strongest lawful substitute without scraping or bypassing access controls.
-- Cross-module synthetic records produce coherent dashboard, contact, policy, renewal, commission, analytics, and audit views.
-- Automated tests plus end-to-end development integration tests prove workflows, persistence, jobs/events, and safe test-destination side effects.
+- production authentication, secure sessions, MFA/recovery, fixed roles, record ownership, and server-side enforcement;
+- encryption/key management, secret rotation, hardened PostgreSQL and object storage, migration safety, retention/deletion/export, backup and recovery;
+- selected real provider adapters after product-specific legal, licensing, security, consent, BAA/conduit, data-use, and operational gates;
+- a Railway deployment spike for the persistent Fastify API, bounded workers, and PostgreSQL topology; Railway remains a preferred candidate rather than implemented infrastructure;
+- hosted deployment, environment validation, health/readiness, observability, alerts, incident procedures, capacity/cost controls, and kill switches;
+- signed data-first upgrades with preflight, backup, migration journal, atomic activation, health check, rollback, channels, and recovery;
+- explicit owner approval after independent security/privacy/compliance review.
 
-Phase 1 does **not** authorize customer data, PHI, customer outreach, production destinations, production credentials, scraping, gate bypass, or a public offering.
+Phase 2 remains one workspace. It does not add public self-service provisioning, subscription billing, plan enforcement, or fleet management.
 
-## Phase 2 — safe local operation
+## Phase 3 — clean-room public product and SaaS control plane
 
-Phase 2 does not introduce the product's first working integrations. It hardens the functional Phase 1 development stack for limited real use while retaining adapter replaceability.
+Phase 3 begins in a **new repository**, not a fork. Its input is a counsel-approved neutral capability specification, not Phase 1 source, screenshots, assets, branding, long copy, exact composition, or tenant fixtures.
 
-Required outcomes:
+The public product requires original branding, information architecture, UX, code, schemas, tests, documentation, and operations. A separate control plane owns customer/workspace provisioning, subscriptions/billing, plan enforcement, fleet/deployment lifecycle, and public operations. It may call stable administrative product APIs or consume events; it must not directly manipulate CRM product tables.
 
-- Authentication, secure sessions, MFA option, server authorization, role and ownership enforcement.
-- Production-grade PostgreSQL records and S3-compatible object storage with encryption, capacity, recovery, and lifecycle controls.
-- Encrypted secrets, rotation, least-privilege production adapters, webhook verification, idempotency, hardened durable jobs, and retained audit events.
-- One-command documented hosting, health checks, monitoring, alerts, and incident procedures.
-- Encrypted backups, tested restore, export/recovery, retention/deletion, and disaster-recovery objectives.
-- Versioned migrations and signed data-first automatic upgrades with preflight, journal, atomic activation, health check, rollback, release channels, and recovery/export.
-- Compliance controls for consent, DNC/opt-out, recording, CMS marketing, email delivery, and protected data.
-- Independent security/privacy/compliance review before the owner enables real data.
+“IP-proof” cannot be guaranteed. Qualified counsel must review the intended public product, provenance, contracts, trademarks, copyright, privacy, regulated-industry requirements, and launch.
 
-Phase 2 is optimized for personal use and a small, explicitly invited circle. It is not automatically SaaS-ready.
+## Deferred product modes
 
-## Phase 3 — clean-room public product
-
-Phase 3 should begin in a **new repository**, not as a fork. A fork carries Phase 1 expression and history, making clean separation and later proof harder.
-
-The new repository must be derived from neutral functional specifications and independently created:
-
-- product name, trademarks, domains, copy, information architecture, visual system, layouts, icons, illustrations, and assets;
-- source code, schemas, APIs, workflows, tests, fixtures, documentation, and onboarding;
-- tenant isolation, subscriptions/billing, support, abuse, incident, privacy, retention, and deletion operations;
-- license inventory, SBOM, dependency policy, terms, privacy notice, DPA/BAA/subprocessor program, and legal approvals.
-
-Do not carry forward unLocked CRM branding, screenshots, copied copy/assets, proprietary source, exact visual composition, or tenant fixtures.
-
-“IP-proof” cannot be guaranteed. Copyright, trademark, contract, trade-secret, patent, privacy, and regulated-industry risk require qualified counsel. See [Legal and IP boundaries](legal-and-ip-boundaries.md).
+The current roadmap does not include installed native apps, Tauri/native adapters, device SQLite, offline mutations, durable cursor synchronization, conflict UX, offline leases, or app-store distribution. A Phase 1 PWA shell may be installable but remains network-required and must not claim offline CRM support.
 
 ## Gate ownership
 
-| Gate | Required approvers |
+| Gate | Required approval |
 |---|---|
-| Phase 1 complete | Product owner plus test evidence |
-| Real data enabled in Phase 2 | Product owner, independent security review, privacy/compliance review |
-| External vendor enabled | Product owner and documented vendor gate review |
+| Phase 1 complete | Product owner plus functional/test evidence |
+| Limited real data in Phase 2 | Product owner plus independent security and privacy/compliance review |
+| Real provider enabled | Product owner plus provider-specific legal/security/operational evidence |
 | Phase 3 public launch | Product, security, operations, privacy/compliance, and qualified legal counsel |
 
 ## Next step
 
-Use the [roadmap overview](../03-roadmap/overview.md) and [capability matrix](../02-traceability/capability-matrix.md) to select the next bounded slice.
+Use the [roadmap](../03-roadmap/overview.md), [capability matrix](../02-traceability/capability-matrix.md), and [gap register](../02-traceability/gap-register.md) to select the next bounded core slice.

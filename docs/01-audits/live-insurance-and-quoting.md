@@ -69,7 +69,9 @@ Use official CMS/NPPES data rather than scraping: [NPPES downloadable files](htt
 - Marketing link/branding, email/SMS templates, and source-attributed campaign links.
 - ACA AI conversational quote assistance.
 
-Marketplace calculations, subsidy/QLE rules, HealthSherpa/carrier/e-app enrollment, source attribution, and export jobs are not implied by the local UI. Phase 1 still owns functional local/public-data or authorized sandbox/test paths where feasible. Vendor-gated paths require an adapter contract, documented blocker, and strongest lawful substitute; Phase 2 hardens approved production integrations.
+Marketplace calculations, subsidy/QLE rules, HealthSherpa/carrier/e-app enrollment, source attribution, and export jobs are not implied by the local UI.
+
+**Planning direction:** Phase 1 owns complete persisted quote, eligibility, application/enrollment, policy, renewal, provider-search, commission-sync, and export workflows using versioned synthetic inputs/results and deterministic provider-neutral simulators where an external source is required. Public datasets may be imported only when lawful and reproducible. Phase 2 adds selected authorized production sources after licensing, security, legal, and data-use gates.
 
 ## Commission+
 
@@ -80,4 +82,4 @@ Marketplace calculations, subsidy/QLE rules, HealthSherpa/carrier/e-app enrollme
 
 ## Next proof
 
-Model every product as an owned domain interface. Phase 1 must exercise authorized sandboxes/test APIs or lawful local/public-data substitutes with synthetic data; deterministic test doubles remain for automated tests only. Evaluate live result schemas through safe, authorized evidence, and never submit real quote/enrollment data, scrape, or bypass a gate to discover them.
+Model every product as an owned domain interface. Phase 1 must prove the complete user workflow, failure/retry/reconciliation states, persisted provenance, and shared adapter contract with deterministic synthetic provider behavior. A vendor sandbox may add evidence but is not a Phase 1 dependency. Never submit real quote/enrollment data, scrape, or bypass a gate; real-provider proof belongs to the approved Phase 2 integration slice.

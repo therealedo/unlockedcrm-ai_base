@@ -1,54 +1,68 @@
 # Integration catalog
 
-This catalog names required interfaces and candidate paths. **No production vendor is selected by this table.** Phase 1 must exercise each feasible interface end to end through a local service or lawful sandbox/test account using synthetic data and owned destinations. If access is vendor-gated, the required substitute is an adapter contract, documented blocker, and strongest lawful test path—not scraping or bypass.
+This catalog separates the owned product workflow from the external provider boundary. Phase 1 completes each audited workflow with synthetic data and a deterministic provider-neutral simulator when a real service is not yet selected. Phase 2 introduces selected lawful production providers before limited real-data use.
 
-| Integration ID | Capability | Phase 1 functional path | Production candidates/status | Required gates |
+**Status rule:** `SELECTED` in the vendor register means an approved target, not a current implementation. No production provider credentials are approved by this catalog.
+
+| Integration ID | Capability | Phase 1 owned workflow and boundary | Phase 2/3 provider status | Required gates |
 |---|---|---|---|---|
-| `INT-COMMS-001` | Phone/voice | Authorized sandbox/test account to owned numbers; local event simulator only if blocked | Telnyx `CANDIDATE`; alternatives `RESEARCH-NEEDED` | Numbers, webhooks, recording, routing, SIP, cost, BAA/conduit, retention |
-| `INT-COMMS-002` | SMS/MMS | Authorized sandbox/test traffic to owned numbers with delivery callbacks | Telnyx `CANDIDATE`; alternatives open | Consent, DNC, quiet hours, A2P/10DLC, opt-out, delivery, data use |
-| `INT-COMMS-003` | Personal email | Mailpit/test mailbox plus owned Google/Microsoft test inbox when authorized | Google and Microsoft `CANDIDATE` adapters | OAuth scopes, sync, revocation, retention, threading, audit |
-| `INT-COMMS-004` | Bulk/transactional email | Mailpit plus provider sandbox delivery to owned inboxes | SES `CANDIDATE`; alternatives open | Domain verification, suppression, bounce/complaint, reputation, BAA/service eligibility |
-| `INT-CAL-001` | Calendar sync | Owned test calendars through authorized Google/Microsoft adapters | Google/Microsoft `CANDIDATE` | OAuth, incremental sync, conflicts, timezones, revocation |
-| `INT-CAL-002` | Scheduling/booking | Locally hosted scheduler and owned test booking endpoint | Self-hosted Cal.com `CANDIDATE`; owned scheduler remains possible | Availability, webhooks, tenancy, data use, branding, upgrade path |
-| `INT-QUOTE-001` | Life quoting | Licensed sandbox/test API if available; otherwise contract, blocker and lawful versioned substitute | Compulife `CANDIDATE` | Commercial license, allowed storage/display, carrier coverage, pricing, data security, exit |
-| `INT-QUOTE-002` | Medicare plan data/quoting | Versioned local public-data import plus authorized test feed where available | CMS/public data and approved commercial feeds `RESEARCH-NEEDED` | Update cadence, terms, result provenance, drugs/providers, state/county |
-| `INT-QUOTE-003` | ACA quoting/subsidy | Versioned local rules plus authorized marketplace/aggregator test path where available | Marketplace/approved aggregator `RESEARCH-NEEDED` | QLE/subsidy authority, certification, consent, state coverage, audit |
-| `INT-INS-001` | Provider search | Versioned local CMS NPPES import and real search | CMS NPPES files `CANDIDATE` | Import cadence, normalization, quality, source attribution, no scraping |
-| `INT-INS-002` | Carrier/e-app enrollment | Authorized sandbox if available; otherwise adapter contract, blocker and local lifecycle simulator | Carrier/e-app adapters `RESEARCH-NEEDED` | Appointment/licensing, consent, signatures, status reconciliation, legal terms |
-| `INT-INS-003` | HealthSherpa | Authorized sandbox/webhook if available; otherwise adapter contract, blocker and strongest lawful substitute | HealthSherpa `RESEARCH-NEEDED` | Authorized access, webhook/API contract, signature, identity, data use, reconciliation |
-| `INT-AI-001` | General/quote/underwriting AI | Local model and/or authorized vendor sandbox through provider-neutral gateway | Provider-neutral gateway; local and BAA-capable production options `RESEARCH-NEEDED` | BAA, training/data use, retention, region, redaction, tool policy, cost, fallback |
-| `INT-AI-002` | Voice synthesis/agent | Local/test voice service and owned test-call workflow when lawful | Provider-neutral voice vendors `RESEARCH-NEEDED` | Voice consent, cloning rights, recording, disclosure, retention, abuse, BAA |
-| `INT-AUTO-001` | Durable workflows/jobs | Persisted local worker/workflow runtime with timers/retries | Self-hosted/managed engines `RESEARCH-NEEDED` | Idempotency, retry, timers, versioning, operations, portability |
-| `INT-BIZ-001` | Commission statements/sync | Synthetic files and authorized sandbox API import with real matching/reconciliation | Carrier aggregators and direct files/APIs `RESEARCH-NEEDED` | License, formats, reconciliation, splits, provenance, corrections, exit |
-| `INT-DOC-001` | Object storage | MinIO/S3-compatible local object lifecycle | MinIO local `CANDIDATE`; S3-compatible production provider open | Encryption, scopes, versioning, retention, backup, deletion, BAA as needed |
-| `INT-DOC-002` | OCR/extraction | Local OCR/extraction over synthetic documents | Local OCR and managed services `RESEARCH-NEEDED` | Accuracy, provenance, PHI handling, training/data use, human review |
-| `INT-FORM-001` | Hosted forms | Locally hosted submission service and synthetic responses | Owned service preferred; external form vendors open | Consent/legal version, abuse, uploads, validation, tenancy, export |
-| `INT-OBS-001` | Analytics/audit | Persisted local append-only events and PostgreSQL projections | PostgreSQL projections `CANDIDATE`; specialized stores later | Integrity, retention, access, redaction, query performance, export |
-| `INT-AUTH-001` | Auth/identity | Local synthetic identity/role service sufficient for development workflows | Self-hosted or managed OIDC `RESEARCH-NEEDED` | MFA, recovery, SCIM/SSO needs, BAA, tenant claims, admin access, export |
-| `INT-BILL-001` | Billing/subscriptions | Functional synthetic local ledger | Billing provider `RESEARCH-NEEDED` | Idempotency, taxes, disputes, metering, webhooks, portability |
-| `INT-MON-001` | Monitoring/alerting | Local structured logs/metrics for development workflows | OpenTelemetry-compatible stack `CANDIDATE`; managed sinks open | PHI/PII redaction, access, retention, region, on-call, cost |
-| `INT-BACKUP-001` | Backup/restore | Development database/object export rehearsal; production hardening is Phase 2 | Encrypted database/object backup tools `RESEARCH-NEEDED` | RPO/RTO, immutability, off-site copies, key recovery, restore drill |
-| `INT-UPDATE-001` | Signed updates | Release/migration contract may be designed in Phase 1; production system is Phase 2 | TUF/Sigstore-style tooling `RESEARCH-NEEDED` | Signing custody, provenance, channels, revocation, rollback, offline recovery |
+| `INT-COMMS-001` | Phone/voice | Persistent number/setup, inbound/outbound call, routing, voicemail, recording, callback, failure/retry and audit state via deterministic simulator | Telnyx `CANDIDATE`; alternatives `RESEARCH-NEEDED` | Numbers, webhooks, SIP, recording, BAA/conduit, consent, retention, cost |
+| `INT-COMMS-002` | SMS/MMS | Persistent conversation/send/receive/delivery/opt-out/DNC/A2P state via deterministic simulator | Telnyx `CANDIDATE`; alternatives `RESEARCH-NEEDED` | Consent, quiet hours, A2P/10DLC, delivery, data use, deletion |
+| `INT-COMMS-003` | Personal email | Mailbox connect/disconnect/sync/thread/send/revoke/error/retry state via simulator; Mailpit may capture development mail | Google/Microsoft adapters `CANDIDATE` | OAuth scopes/review, sync, revocation, threading, retention, audit |
+| `INT-COMMS-004` | Bulk/transactional email | Campaign delivery, suppression, bounce, complaint, retry and provider-event state via simulator/Mailpit | SES `CANDIDATE`; alternatives open | Domain identity, reputation, unsubscribe, service eligibility, BAA/data scope |
+| `INT-CAL-001` | Calendar sync | Connection, incremental event sync, conflict, timezone, revoke, failure and retry states via simulator | Google/Microsoft `CANDIDATE` | OAuth, incremental sync, limits, data use, revocation |
+| `INT-CAL-002` | Scheduling/booking | Owned availability, booking, reschedule, cancel, conflict and notification workflow; provider edge simulated | Self-hosted Cal.com `CANDIDATE`; owned scheduler remains possible | License, webhooks, branding, upgrades, public endpoint security |
+| `INT-QUOTE-001` | Life quoting | Complete intake, normalized synthetic results, comparison, provenance, save/share and failure/retry via deterministic rating adapter | Compulife `CANDIDATE` | Commercial license, permitted storage/display, coverage, security, price, exit |
+| `INT-QUOTE-002` | Medicare plans/quoting | Versioned synthetic/public-data snapshot, drug/provider inputs, normalized results, stale/unavailable states | CMS/public and approved commercial feeds `RESEARCH-NEEDED` | Source authority, cadence, attribution, geography, reconciliation |
+| `INT-QUOTE-003` | ACA quote/subsidy | Versioned synthetic rules/results, QLE/subsidy explanation, provenance, stale/unavailable/error states | Marketplace/approved aggregator `RESEARCH-NEEDED` | Certification, rule authority, consent, state coverage, audit |
+| `INT-INS-001` | Provider search | Deterministic versioned provider dataset; optional lawful NPPES snapshot import | CMS NPPES `CANDIDATE` | Import cadence, normalization, quality, attribution, no scraping |
+| `INT-INS-002` | Carrier/e-app enrollment | Complete application, consent, submission-attempt, external-status, failure/retry/cancel/reconcile lifecycle via simulator | Direct/aggregator adapters `RESEARCH-NEEDED` | Appointment/licensing, signatures, data contract, reconciliation |
+| `INT-INS-003` | HealthSherpa | Setup/disconnected, submission/status/webhook-shaped events, failure/retry/reconcile via simulator | HealthSherpa `RESEARCH-NEEDED` | Authorized access, API/webhook contract, identity, data use, BAA, exit |
+| `INT-AI-001` | General/quote/underwriting AI | Persistent prompt/result/tool/approval/usage lifecycle through deterministic provider-neutral model adapter | Local and BAA-capable providers `RESEARCH-NEEDED` | Training/data use, retention, region, redaction, tool policy, cost, fallback |
+| `INT-AI-002` | Voice AI | Synthetic voice/call lifecycle, approval, disclosure, usage, failure and retry through deterministic adapter | Provider-neutral voice vendors `RESEARCH-NEEDED` | Consent, cloning rights, disclosure, abuse, retention, BAA/data use |
+| `INT-AUTO-001` | Durable workflows/jobs | PostgreSQL-backed definitions/runs plus bounded local workers, timers, retries, cancellation and dead letters | Specialized engine `RESEARCH-NEEDED`; not required initially | Idempotency, versioning, recovery, portability, operations |
+| `INT-BIZ-001` | Commission statements/sync | Functional internal ledger, synthetic file import and deterministic API-shaped sync/reconciliation adapter | Carrier/aggregator adapters `RESEARCH-NEEDED` | License, formats, provenance, corrections, exit |
+| `INT-DOC-001` | Object storage | S3-compatible local object lifecycle with workspace-scoped keys and database metadata | MinIO `CANDIDATE`; managed S3-compatible provider open | Encryption, scopes, versions, retention, backup, deletion, BAA |
+| `INT-DOC-002` | OCR/extraction | Upload/scan/quarantine/extract/review/provenance workflow with deterministic OCR adapter | Local/managed engines `RESEARCH-NEEDED` | Accuracy, PHI/data use, training, retention, human review |
+| `INT-FORM-001` | Hosted forms | Locally served form, schema/version, validation, consent, upload, mapping, response and export | Owned service preferred; external vendors open | Abuse controls, legal version, object safety, public hosting, export |
+| `INT-OBS-001` | Analytics/audit | PostgreSQL workspace-scoped events and projections from real synthetic workflows | PostgreSQL projections `SELECTED`; specialized stores later if needed | Integrity, retention, access, redaction, performance, export |
+| `INT-AUTH-001` | Authentication/identity | One seeded development identity and centralized request/policy context; no production-auth claim | Self-hosted/managed OIDC `RESEARCH-NEEDED` for Phase 2 | MFA, recovery, fixed roles, admin/support, BAA, export/exit |
+| `INT-BILL-001` | Subscriptions/billing | Deferred; CRM may use synthetic entitlements only where audited UI needs a state | Phase 3 control-plane provider `RESEARCH-NEEDED` | Taxes, disputes, ledger, metering, webhooks, portability |
+| `INT-MON-001` | Monitoring/alerting | Development health and redacted structured logs | OpenTelemetry-compatible stack `CANDIDATE` for Phase 2 | PII/PHI redaction, access, retention, on-call, cost |
+| `INT-BACKUP-001` | Backup/restore | Development export/reseed may aid testing but is not production backup | Encrypted database/object tooling `RESEARCH-NEEDED` for Phase 2 | RPO/RTO, immutability, keys, off-site copy, restore drill |
+| `INT-UPDATE-001` | Signed updates | Deferred except migration compatibility discipline | TUF/Sigstore-style tooling `RESEARCH-NEEDED` for Phase 2 | Signing custody, provenance, channels, revocation, rollback |
+| `INT-HOST-001` | Product hosting | No provider: Fastify API, workers, and PostgreSQL run locally on Windows | Railway `PREFERRED-PHASE-2-CANDIDATE`; Vercel `CANDIDATE` for frontend previews only | Deployment spike, cost/limits, portability, backup/restore, continuous monitoring, upgrades, access control, application security, compliance, and exit |
 
-Deterministic test doubles remain required beside these paths for fast, repeatable automated tests; they do not replace Phase 1 end-to-end proof.
+## Phase 1 simulator acceptance
+
+A simulator counts only when it:
+
+- implements the same owned port and normalized types expected of a future real adapter;
+- drives the complete user workflow and persists attempts, correlation IDs, outcomes, retries, reconciliation, and synthetic audit/events;
+- exposes deterministic success, unavailable, timeout, rejected, duplicate-callback, and recovery scenarios as applicable;
+- has contract tests reusable against real adapters;
+- is visibly labeled as simulated/disconnected where users could otherwise infer real delivery;
+- needs no cloud account and cannot contact real customer destinations.
+
+Hard-coded cards, optimistic buttons without durable transitions, and unlabelled fake success remain `MOCK`.
 
 ## Product-specific Telnyx gate
 
-Telnyx must not be treated as a blanket compliance answer. Review each product and data flow against:
+Telnyx is replaceable and must not be treated as a blanket compliance answer. Review each product and data flow against:
 
 - [A2P/10DLC quickstart](https://developers.telnyx.com/docs/messaging/10dlc/quickstart)
 - [AI Services Addendum](https://telnyx.com/legal/ai-services-addendum)
 - [Acceptable Use Policy](https://telnyx.com/acceptable-use-policy)
 
-Explicit decisions are required for BAA/conduit treatment, recording/transcription, AI services, consent, A2P/10DLC, retention, data use, subprocessors, and deletion.
+BAA/conduit treatment, recording/transcription, AI, consent, A2P/10DLC, retention, data use, subprocessors, and deletion require separate approval.
 
 ## Other official planning references
 
 - [Cal.com availability documentation](https://cal.com/docs/availability)
 - [Compulife API](https://compulife.com/api/)
 - [CMS NPPES downloadable files](https://download.cms.gov/nppes/NPI_Files.html)
-- [AWS HIPAA eligible services reference](https://aws.amazon.com/id/compliance/hipaa-eligible-services-reference/) — eligibility is service/configuration-specific and does not itself make this application compliant.
+- [AWS HIPAA eligible services reference](https://aws.amazon.com/id/compliance/hipaa-eligible-services-reference/) — service eligibility never makes this application compliant.
 
 ## Evaluation flow
 
-Copy [the integration evaluation template](../07-templates/integration-evaluation-template.md), record evidence, and update the [vendor decision register](vendor-decision-register.md). Production credentials are prohibited before approval.
+Use the [integration evaluation template](../07-templates/integration-evaluation-template.md), record the provider-boundary result, and update the [vendor decision register](vendor-decision-register.md). Production credentials remain prohibited until the Phase 2 gates pass.

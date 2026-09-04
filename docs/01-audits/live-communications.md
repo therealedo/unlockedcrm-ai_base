@@ -53,19 +53,18 @@ Visible sample rates, domains, delivery percentages, and reputation values were 
 
 ## Phase boundaries
 
-### Phase 1
+### Phase 1 planning direction
 
-- Functional inbox, thread, call, SMS, voicemail, recording, and delivery workflows through local services or authorized sandbox/test accounts.
-- Test traffic is synthetic and restricted to explicitly owned numbers, inboxes, domains, and accounts.
-- Explicit disconnected/setup/pending/approved/rejected/restricted states plus real test callbacks, retries, and reconciliation.
-- Consent, DNC, quiet-hours, unsubscribe, bounce, complaint, and recording state machines enforced on the development path.
-- Deterministic test doubles remain for automated tests but do not replace the end-to-end proof.
-- A vendor gate requires an adapter contract, documented blocker, and strongest lawful simulator/test substitute; never scrape or bypass.
+- Make inbox, thread, call, SMS, voicemail, recording, sender/mailbox/number setup, and delivery workflows fully functional and PostgreSQL-backed for synthetic records.
+- Exercise every external edge through deterministic provider-neutral simulators unless a safe local service such as development mail capture is useful.
+- Persist setup/disconnected, pending, accepted/rejected/restricted, timeout, failure, retry, duplicate-callback, reconciliation, consent, DNC, quiet-hours, unsubscribe, bounce, complaint, and recording states.
+- Reuse owned port contracts and deterministic contract tests for future adapters; label simulated delivery explicitly.
+- Do not contact real destinations, scrape, or bypass a vendor gate.
 
-### Phase 2
+### Phase 2 planning direction
 
-- Harden the proven adapters with production credentials only after product-specific legal/security/BAA/conduit gates.
-- Add credential vault/rotation, production webhook verification, capacity, rate/cost controls, retained audit, monitoring, backup/recovery and runbooks.
-- Validate production recording/transcription consent and retention, domain reputation/suppression, and A2P/10DLC registration lifecycle before limited real use.
+- Add selected real adapters and production credentials only after product-specific legal/security/BAA/conduit gates.
+- Add vault/rotation, signed callbacks, capacity, rate/cost controls, retained audit, monitoring, backup/recovery, and runbooks.
+- Approve recording/transcription consent/retention, sender reputation/suppression, and A2P/10DLC before limited real use.
 
 Telnyx is only a candidate. Product-specific [10DLC requirements](https://developers.telnyx.com/docs/messaging/10dlc/quickstart), the [AI Services Addendum](https://telnyx.com/legal/ai-services-addendum), and [Acceptable Use Policy](https://telnyx.com/acceptable-use-policy) require separate review. BAA/conduit treatment, recording/transcription, AI, consent, A2P/10DLC, retention, and data use remain gates.
