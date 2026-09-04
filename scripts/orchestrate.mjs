@@ -16,7 +16,7 @@ const COMMANDS = new Set([
 export function validateExecutablePath(path) {
   if (
     path === 'docker.exe' ||
-    /^[A-Za-z]:\\Windows\\System32\\cmd\.exe$/i.test(path)
+    /^[A-Za-z]:\\Windows\\System32\\(?:cmd|taskkill)\.exe$/i.test(path)
   )
     return;
   throw new Error(`Untrusted executable: ${path}`);
@@ -83,6 +83,39 @@ function exit(child, name) {
   });
 }
 
+const hasExited = (child) => child.exitCode !== null || child.signalCode;
+
+export async function terminateProcessTree(
+  child,
+  { platform = process.platform, env = process.env, spawn = nodeSpawn } = {},
+  timeoutMs = 5000,
+) {
+  if (hasExited(child)) return;
+  if (platform !== 'win32') {
+    if (!child.killed) child.kill();
+    return;
+  }
+  if (!Number.isSafeInteger(child.pid) || child.pid <= 0)
+    throw new Error('Invalid child PID');
+  const executable = `${env.SystemRoot ?? 'C:\\Windows'}\\System32\\taskkill.exe`;
+  validateExecutablePath(executable);
+  const killer = spawn(executable, ['/pid', String(child.pid), '/t', '/f'], {
+    shell: false,
+    stdio: 'inherit',
+  });
+  try {
+    await within(() => exit(killer, 'taskkill'), timeoutMs);
+  } catch (error) {
+    if (!hasExited(killer) && !killer.killed) killer.kill?.();
+    if (!hasExited(child)) throw error;
+  }
+  if (!hasExited(child))
+    await within(
+      () => new Promise((resolve) => child.once('exit', resolve)),
+      timeoutMs,
+    );
+}
+
 async function spawnProcess(spec) {
   const child = nodeSpawn(spec.executable, spec.args, {
     cwd: process.cwd(),
@@ -99,7 +132,7 @@ async function spawnProcess(spec) {
   return {
     done: spec.wait ? undefined : exit(child, spec.name),
     stop: async () => {
-      if (!spec.wait && !child.killed) child.kill();
+      if (!spec.wait) await terminateProcessTree(child);
       if (spec.name === 'postgres')
         await exit(
           nodeSpawn('docker.exe', DOCKER_STOP, {
@@ -113,17 +146,32 @@ async function spawnProcess(spec) {
 }
 
 async function within(start, timeoutMs) {
-  if (timeoutMs <= 0) throw new Error('Process startup timed out');
+  if (timeoutMs <= 0) throw new Error('Operation timed out');
   let timer;
   return Promise.race([
     start(),
     new Promise((_, reject) => {
       timer = setTimeout(
-        () => reject(new Error('Process startup timed out')),
+        () => reject(new Error('Operation timed out')),
         timeoutMs,
       );
     }),
   ]).finally(() => clearTimeout(timer));
+}
+
+export async function stopProcessHandles(handles, primaryError) {
+  const errors = [];
+  for (const handle of [...handles].reverse()) {
+    try {
+      await handle.stop();
+    } catch (error) {
+      errors.push(error);
+    }
+  }
+  if (primaryError !== undefined) errors.unshift(primaryError);
+  if (errors.length === 1) throw errors[0];
+  if (errors.length > 1)
+    throw new AggregateError(errors, 'Process cleanup failed');
 }
 
 export async function runProcessPlan(
@@ -138,8 +186,7 @@ export async function runProcessPlan(
     }
     return handles;
   } catch (error) {
-    for (const handle of handles.reverse()) await handle.stop();
-    throw error;
+    await stopProcessHandles(handles, error);
   }
 }
 
@@ -152,14 +199,16 @@ async function main() {
     process.once('SIGINT', resolve);
     process.once('SIGTERM', resolve);
   });
+  let primaryError;
   try {
     await Promise.race([
       signal,
       ...handles.flatMap((handle) => (handle.done ? [handle.done] : [])),
     ]);
-  } finally {
-    for (const handle of handles.reverse()) await handle.stop();
+  } catch (error) {
+    primaryError = error;
   }
+  await stopProcessHandles(handles, primaryError);
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
