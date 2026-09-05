@@ -11,6 +11,7 @@
 - Seven create-only flows persist one JSON object in browser `localStorage`.
 - Most external-service and advanced product surfaces are `MOCK`.
 - No application backend, authentication, tenant isolation, server authorization, database, object storage, durable jobs, or real provider integrations exist.
+- The current lockfile passes full and production-only npm audits, with the Vinext bundled-parser caveat documented in [Current infrastructure](../04-infrastructure/current-infrastructure.md).
 - All 32 routes rendered at 1707×848 without blank/404/crash, document overflow, or console errors after settled waits.
 - The current Playwright suite contains 15 Chromium tests; it was not rerun during the documentation audit.
 
@@ -71,7 +72,7 @@ No application-level fetch, WebSocket, EventSource, API server, database domain 
 
 ## Current infrastructure
 
-- React 19.2.6, Vinext 1.0.0-beta.5, Vite 8, TypeScript 5.9, Node 22.13 or newer.
+- React 19.2.8, Vinext 1.0.0-beta.9, Vite 8.0.16, TypeScript 5.9, Node 22.13 or newer.
 - Vite/Vinext and Cloudflare/Sites plugins are configured.
 - `.openai/hosting.json` declares no D1 or R2 bindings.
 - Generated Wrangler configuration has no database, bucket, queue, service, or secret binding.

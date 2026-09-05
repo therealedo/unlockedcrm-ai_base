@@ -2,14 +2,14 @@
 
 > The current build is a fictional-data browser prototype. It is not safe for real PII/PHI, limited production use, or SaaS.
 
-**Evidence:** `LOCAL-VERIFIED` from the current repository and Engram audit #647. Target decisions below are planning, not implemented state.
+**Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, and `DEP-AUDIT-2026-09-04`. Target decisions below are planning, not implemented state.
 
 ## Verified current stack
 
 | Layer | Current implementation |
 |---|---|
-| UI/runtime | React 19.2.6 through Vinext 1.0.0-beta.5 |
-| Build | Vite 8 and TypeScript 5.9 |
+| UI/runtime | React 19.2.8 through Vinext 1.0.0-beta.9 |
+| Build | Vite 8.0.16 and TypeScript 5.9 |
 | Web runtime requirement | Node 22.13 or newer |
 | Toolchain pinning | `engines.node` is `>=22.13.0`; `package-lock.json` exists; no `packageManager` or exact Node/npm pin |
 | Routing | Root and catch-all entries render one client `CrmApp`; navigation uses custom `pushState` handling |
@@ -19,8 +19,17 @@
 | Hosting integration | Vinext/Vite with OpenAI Sites and Cloudflare plugins |
 | Local infrastructure orchestration | None; no Dockerfile, Compose configuration, or local PostgreSQL service |
 | Generated deployment metadata | Wrangler output, static headers, build ID |
+| Dependency audit | Full and `--omit=dev` npm audits returned zero findings on 2026-09-04 |
 
 Package scripts invoke `vinext dev`, `vinext build`, Wrangler for the generated server bundle, and Playwright. The repository does not install or run the official `next` package, pin an exact Node/npm toolchain, or expose a command that starts infrastructure plus both application processes.
+
+## Dependency-security baseline
+
+The current lockfile is `LOCAL-VERIFIED` with Node.js 24.18.0 and npm 12.0.2: a clean `npm ci`, `npm audit --json`, and `npm audit --omit=dev --json` completed with zero reported vulnerabilities. The direct update train keeps React, Vinext, Vite/RSC, and Cloudflare/Wrangler packages on compatible patched versions.
+
+Two root overrides, `deepmerge-ts` 8.0.1 and `mysql2` 3.23.1, are provisional mitigations for the already-approved incoming Prisma Foundation integration. Neither package is reachable from the current main dependency graph, so their effective compatibility must be reverified when Prisma lands.
+
+Vinext 1.0.0-beta.9 no longer exposes `image-size` through npm's installed dependency graph, but its published bundle still contains the 2.0.2 parser and invokes it for image metadata. Current application reachability is limited to trusted build metadata; this is a residual upstream risk, not a production-safety claim. Continue to prohibit untrusted build inputs and re-evaluate on each Vinext update.
 
 ## Framework is not infrastructure
 
