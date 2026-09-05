@@ -5,6 +5,7 @@ const DOCKER_UP =
   'compose -p unlockedcrm-renewal -f compose.yaml up -d postgres'.split(' ');
 const DOCKER_STOP =
   'compose -p unlockedcrm-renewal -f compose.yaml stop postgres'.split(' ');
+const INHERIT = { shell: false, stdio: 'inherit' };
 const COMMANDS = new Set([
   'npm.cmd run db:generate',
   'npm.cmd run db:migrate',
@@ -12,16 +13,13 @@ const COMMANDS = new Set([
   'npm.cmd run dev:api',
   'npm.cmd run dev:web',
 ]);
-
 export function validateExecutablePath(path) {
   if (
-    path === 'docker.exe' ||
-    /^[A-Za-z]:\\Windows\\System32\\(?:cmd|taskkill)\.exe$/i.test(path)
+    path !== 'docker.exe' &&
+    !/^[A-Za-z]:\\Windows\\System32\\(?:cmd|taskkill)\.exe$/i.test(path)
   )
-    return;
-  throw new Error(`Untrusted executable: ${path}`);
+    throw new Error(`Untrusted executable: ${path}`);
 }
-
 function cmdPath(env) {
   const expected = `${env.SystemRoot ?? 'C:\\Windows'}\\System32\\cmd.exe`;
   if (env.ComSpec && env.ComSpec.toLowerCase() !== expected.toLowerCase())
@@ -29,7 +27,6 @@ function cmdPath(env) {
   validateExecutablePath(expected);
   return expected;
 }
-
 function cmd(name, command, executable, wait = false, mode) {
   return {
     name,
@@ -39,7 +36,6 @@ function cmd(name, command, executable, wait = false, mode) {
     env: mode ? { APP_MODE: mode } : undefined,
   };
 }
-
 export function buildProcessPlan({
   mode,
   platform = process.platform,
@@ -61,19 +57,15 @@ export function buildProcessPlan({
   plan.push(cmd('web', 'npm.cmd run dev:web', executable, false, mode));
   return plan;
 }
-
 function validateSpec(spec) {
   validateExecutablePath(spec.executable);
-  if (spec.executable === 'docker.exe') {
-    if (spec.args.join(' ') !== DOCKER_UP.join(' '))
-      throw new Error('Untrusted argv');
-  } else if (
-    spec.args.slice(0, 3).join(' ') !== '/d /s /c' ||
-    !COMMANDS.has(spec.args[3])
-  )
-    throw new Error('Untrusted argv');
+  const trusted =
+    spec.executable === 'docker.exe'
+      ? spec.args.join(' ') === DOCKER_UP.join(' ')
+      : spec.args.slice(0, 3).join(' ') === '/d /s /c' &&
+        COMMANDS.has(spec.args[3]);
+  if (!trusted) throw new Error('Untrusted argv');
 }
-
 function exit(child, name) {
   return new Promise((resolve, reject) => {
     child.once('error', reject);
@@ -82,9 +74,7 @@ function exit(child, name) {
     );
   });
 }
-
 const hasExited = (child) => child.exitCode !== null || child.signalCode;
-
 export async function terminateProcessTree(
   child,
   { platform = process.platform, env = process.env, spawn = nodeSpawn } = {},
@@ -99,10 +89,11 @@ export async function terminateProcessTree(
     throw new Error('Invalid child PID');
   const executable = `${env.SystemRoot ?? 'C:\\Windows'}\\System32\\taskkill.exe`;
   validateExecutablePath(executable);
-  const killer = spawn(executable, ['/pid', String(child.pid), '/t', '/f'], {
-    shell: false,
-    stdio: 'inherit',
-  });
+  const killer = spawn(
+    executable,
+    ['/pid', String(child.pid), '/t', '/f'],
+    INHERIT,
+  );
   try {
     await within(() => exit(killer, 'taskkill'), timeoutMs);
   } catch (error) {
@@ -120,8 +111,7 @@ async function spawnProcess(spec) {
   const child = nodeSpawn(spec.executable, spec.args, {
     cwd: process.cwd(),
     env: { ...process.env, ...spec.env },
-    shell: false,
-    stdio: 'inherit',
+    ...INHERIT,
   });
   if (spec.wait) await exit(child, spec.name);
   else
@@ -135,30 +125,22 @@ async function spawnProcess(spec) {
       if (!spec.wait) await terminateProcessTree(child);
       if (spec.name === 'postgres')
         await exit(
-          nodeSpawn('docker.exe', DOCKER_STOP, {
-            shell: false,
-            stdio: 'inherit',
-          }),
+          nodeSpawn('docker.exe', DOCKER_STOP, INHERIT),
           'postgres cleanup',
         );
     },
   };
 }
-
 async function within(start, timeoutMs) {
   if (timeoutMs <= 0) throw new Error('Operation timed out');
   let timer;
   return Promise.race([
     start(),
     new Promise((_, reject) => {
-      timer = setTimeout(
-        () => reject(new Error('Operation timed out')),
-        timeoutMs,
-      );
+      timer = setTimeout(reject, timeoutMs, new Error('Operation timed out'));
     }),
   ]).finally(() => clearTimeout(timer));
 }
-
 export async function stopProcessHandles(handles, primaryError) {
   const errors = [];
   for (const handle of [...handles].reverse()) {
@@ -200,14 +182,12 @@ async function main() {
     process.once('SIGTERM', resolve);
   });
   let primaryError;
-  try {
-    await Promise.race([
-      signal,
-      ...handles.flatMap((handle) => (handle.done ? [handle.done] : [])),
-    ]);
-  } catch (error) {
+  await Promise.race([
+    signal,
+    ...handles.flatMap((handle) => (handle.done ? [handle.done] : [])),
+  ]).catch((error) => {
     primaryError = error;
-  }
+  });
   await stopProcessHandles(handles, primaryError);
 }
 

@@ -1,7 +1,9 @@
 /// <reference types="node" />
 import { spawn, spawnSync } from 'node:child_process';
 import { EventEmitter } from 'node:events';
-import { unlinkSync, writeFileSync } from 'node:fs';
+import * as fs from 'node:fs';
+import { tmpdir } from 'node:os';
+import * as path from 'node:path';
 
 import { describe, expect, it, vi } from 'vitest';
 
@@ -14,13 +16,50 @@ import {
 
 const processStub = (pid?: number) =>
   Object.assign(new EventEmitter(), { exitCode: null, signalCode: null, pid });
-
+const root = process.env.SystemRoot ?? 'C:\\Windows';
+const windows = {
+  platform: 'win32' as const,
+  env: { SystemRoot: root, ComSpec: `${root}\\System32\\cmd.exe` },
+};
+const basePlan = () => buildProcessPlan({ mode: 'foundation', ...windows });
+const expectGone = (pid: number) =>
+  expect(() => process.kill(pid, 0)).toThrow();
+const apiScript = path.resolve('scripts/api-check.mjs');
+const untrustedPaths =
+  'requirements.txt CMakeLists.txt guide.md component.mdx README.sh'.split(' ');
+const persistenceImport =
+  /^import .*?(generated\/prisma|database\/prisma|modules\/renewals)/m;
+function apiFixture() {
+  const project = fs.mkdtempSync(path.join(tmpdir(), 'api check '));
+  fs.writeFileSync(path.join(project, 'package.json'), '{}');
+  for (const [name, entry] of [
+    ['prisma', 'build/index.js'],
+    ['vitest', 'vitest.mjs'],
+  ]) {
+    const packageRoot = path.join(project, 'node_modules', name);
+    fs.mkdirSync(path.dirname(path.join(packageRoot, entry)), {
+      recursive: true,
+    });
+    fs.writeFileSync(path.join(packageRoot, 'package.json'), '{}');
+    fs.writeFileSync(
+      path.join(packageRoot, entry),
+      `console.log('${name}:' + process.argv.slice(2).join(' '));if(process.env.FAIL_CLI==='${name}')process.exitCode=7`,
+    );
+  }
+  return project;
+}
+function checkApi(cwd: string, mode: string, extraEnv = {}) {
+  return spawnSync(process.execPath, [apiScript, mode], {
+    cwd,
+    encoding: 'utf8',
+    env: { ...extraEnv, PATH: '' },
+  });
+}
 describe('the closed Windows process launcher', () => {
   it('terminates a real cmd.exe descendant tree and awaits its exit', async () => {
-    const root = process.env.SystemRoot ?? 'C:\\Windows';
     const taskkill = `${root}\\System32\\taskkill.exe`;
     const script = `${process.env.TEMP}\\tree-${process.pid}.cjs`;
-    writeFileSync(script, 'console.log(process.pid);setInterval(()=>0,1e3)');
+    fs.writeFileSync(script, 'console.log(process.pid);setInterval(()=>0,1e3)');
     const child = spawn(
       `${root}\\System32\\cmd.exe`,
       ['/d', '/s', '/c', `call "${process.execPath}" "${script}"`],
@@ -42,7 +81,7 @@ describe('the closed Windows process launcher', () => {
         });
       });
       await terminateProcessTree(child);
-      expect(() => process.kill(descendantPid, 0)).toThrow();
+      expectGone(descendantPid);
     } finally {
       for (const pid of [descendantPid, child.pid])
         if (
@@ -53,9 +92,9 @@ describe('the closed Windows process launcher', () => {
             timeout: 5000,
           }).status !== 0
         )
-          expect(() => process.kill(pid, 0)).toThrow();
-      expect(() => process.kill(descendantPid, 0)).toThrow();
-      unlinkSync(script);
+          expectGone(pid);
+      expectGone(descendantPid);
+      fs.unlinkSync(script);
     }
   });
   it.each(['taskkill completion', 'child exit'])(
@@ -65,8 +104,7 @@ describe('the closed Windows process launcher', () => {
         killer = processStub();
       if (wait === 'child exit') queueMicrotask(() => killer.emit('exit', 0));
       const options = {
-        platform: 'win32',
-        env: { SystemRoot: 'C:\\Windows' },
+        ...windows,
         spawn: () => killer,
       };
       await expect(
@@ -74,15 +112,20 @@ describe('the closed Windows process launcher', () => {
       ).rejects.toThrow('timed out');
     },
   );
-  it.each([
-    'requirements.txt',
-    'CMakeLists.txt',
-    'guide.md',
-    'component.mdx',
-    'README.sh',
-  ])('rejects documentation-like executable path %s before spawn', (path) => {
-    expect(() => validateExecutablePath(path)).toThrow('Untrusted executable');
-  });
+  it.each(untrustedPaths)(
+    'rejects documentation-like executable path %s before spawn',
+    (path) => {
+      expect(() => validateExecutablePath(path)).toThrow(
+        'Untrusted executable',
+      );
+    },
+  );
+  it.each(['api/src/app.ts', 'api/src/server.ts'])(
+    '%s has no static persistence import',
+    (file) => {
+      expect(fs.readFileSync(file, 'utf8')).not.toMatch(persistenceImport);
+    },
+  );
   it('rejects bad configuration and ignores an exited child', async () => {
     expect(() =>
       buildProcessPlan({ mode: 'preview', platform: 'win32' }),
@@ -98,40 +141,15 @@ describe('the closed Windows process launcher', () => {
     await terminateProcessTree({ exitCode: 0, signalCode: null }, { spawn });
     expect(spawn).not.toHaveBeenCalled();
   });
-
   it('uses fixed argv and propagates failure after reverse-order cleanup', async () => {
-    const plan = buildProcessPlan({
-      mode: 'foundation',
-      platform: 'win32',
-      env: {
-        SystemRoot: 'C:\\Windows',
-        ComSpec: 'C:\\Windows\\System32\\cmd.exe',
-      },
-    });
-    expect(plan.map(({ executable, args }) => [executable, args])).toEqual([
-      [
-        'docker.exe',
-        [
-          'compose',
-          '-p',
-          'unlockedcrm-renewal',
-          '-f',
-          'compose.yaml',
-          'up',
-          '-d',
-          'postgres',
-        ],
-      ],
-      [
-        'C:\\Windows\\System32\\cmd.exe',
-        ['/d', '/s', '/c', 'npm.cmd run dev:api'],
-      ],
-      [
-        'C:\\Windows\\System32\\cmd.exe',
-        ['/d', '/s', '/c', 'npm.cmd run dev:web'],
-      ],
+    const plan = basePlan();
+    expect(
+      plan.map(({ executable, args }) => [executable, ...args].join('|')),
+    ).toEqual([
+      'docker.exe|compose|-p|unlockedcrm-renewal|-f|compose.yaml|up|-d|postgres',
+      `${root}\\System32\\cmd.exe|/d|/s|/c|npm.cmd run dev:api`,
+      `${root}\\System32\\cmd.exe|/d|/s|/c|npm.cmd run dev:web`,
     ]);
-
     const primaryError = new Error('child failed');
     const cleanupErrors = [
       new Error('postgres cleanup failed'),
@@ -169,17 +187,9 @@ describe('the closed Windows process launcher', () => {
       'stop:postgres',
     ]);
   });
-
   it('times out and cleans up children', async () => {
     const events: string[] = [];
-    const plan = buildProcessPlan({
-      mode: 'foundation',
-      platform: 'win32',
-      env: {
-        SystemRoot: 'C:\\Windows',
-        ComSpec: 'C:\\Windows\\System32\\cmd.exe',
-      },
-    });
+    const plan = basePlan();
     const spawn = vi.fn(async (process: { name: string }) => {
       if (process.name === 'api') return new Promise<never>(() => {});
       return {
@@ -194,7 +204,6 @@ describe('the closed Windows process launcher', () => {
     );
     expect(events).toEqual(['stop:postgres']);
   });
-
   it('rejects altered argv before spawn', async () => {
     const spawn = vi.fn();
     const plan = [
@@ -204,5 +213,20 @@ describe('the closed Windows process launcher', () => {
       'Untrusted argv',
     );
     expect(spawn).not.toHaveBeenCalled();
+  });
+  it('runs installed API CLIs without command shims and propagates failure', () => {
+    const project = apiFixture();
+    try {
+      const test = checkApi(project, 'test');
+      expect(test.error).toBeUndefined();
+      expect(test.status, test.stderr).toBe(0);
+      expect(test.stdout.trim().split(/\r?\n/)).toEqual([
+        'prisma:generate --config prisma.config.ts',
+        'vitest:run --project api',
+      ]);
+      expect(checkApi(project, 'test', { FAIL_CLI: 'vitest' }).status).toBe(7);
+    } finally {
+      fs.rmSync(project, { recursive: true });
+    }
   });
 });
