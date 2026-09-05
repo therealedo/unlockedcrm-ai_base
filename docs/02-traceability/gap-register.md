@@ -101,7 +101,7 @@ This register assigns missing work to a phase without changing current implement
 | `GAP-OPS-003` | `P0` | Backups/restore/export | `MISSING` | Phase 2 | Encrypted automated backups and timed clean-host restore/export drills |
 | `GAP-OPS-004` | `P0` | Signed upgrade pipeline | `MISSING` | Phase 2 | Signed artifact/manifest, semantic version, preflight, backup, migration journal, health, atomic activation and rollback proof |
 | `GAP-OPS-005` | `P1` | Observability/alerts | `MISSING` | Phase 2 | Redacted logs/metrics/traces, health/SLO alerts and runbooks |
-| `GAP-OPS-006` | `P1` | CI/release/SBOM | `MISSING` | Phase 2; public license gate Phase 3 | Automated checks, provenance, release channels, dependency inventory and rollback |
+| `GAP-OPS-006` | `P1` | CI/release/SBOM | `MISSING`; point-in-time dependency audits `LOCAL-VERIFIED` by `DEP-AUDIT-2026-09-04` | Phase 2; public license gate Phase 3 | Automated recurring checks, provenance, release channels, dependency inventory and rollback |
 
 ## Triage rule
 

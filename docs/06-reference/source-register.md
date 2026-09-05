@@ -15,6 +15,7 @@ Use this register to keep direct observation, local verification, approved plann
 | `#650` | `architecture/integration-strategy` | Prior decision, refined | Adapter-first/vendor gates; simulators now satisfy Phase 1 external edges |
 | `PLAN-2026-09-02` | Owner-approved architecture and phase pivot | Owner decision | Online-first single workspace; Vinext/Vite retained; Fastify on Node.js 24, PostgreSQL/Prisma, workspace seams; Railway preferred Phase 2 candidate; Vercel preview-only; Python core API rejected; hosted Phase 2; clean-room control plane Phase 3; native/offline deferred |
 | `PLAN-DOCKER-2026-09-02` | Owner-approved Windows development topology | Owner decision | Host-run Vinext/Vite and Node.js/Fastify with exact Node/npm pins; Docker Desktop + Docker Compose for PostgreSQL and later slice-required infrastructure; one planned root startup command; no cloud required; full app containerization deferred pending measured parity problems |
+| `DEP-AUDIT-2026-09-04` | Dependency-security baseline | `LOCAL-VERIFIED` | Clean npm install; full and `--omit=dev` audits returned zero findings after the React/Vinext/Vite/Cloudflare update train; provisional Prisma overrides and the residual Vinext bundled-parser caveat remain explicit |
 
 When a prior decision conflicts with `PLAN-2026-09-02`, the current governance and roadmap documents control. Historical audit observations remain unchanged.
 
@@ -22,7 +23,8 @@ When a prior decision conflicts with `PLAN-2026-09-02`, the current governance a
 
 | Source | Supports |
 |---|---|
-| `package.json` and `package-lock.json` | Current `engines.node` allows `>=22.13.0`, npm lockfile exists, `packageManager` is absent, and no combined infrastructure/UI/API startup script exists; exact Node.js 24/npm pins are planned |
+| `package.json` and `package-lock.json` | React 19.2.8, Vinext 1.0.0-beta.9, Vite 8.0.16, Cloudflare Vite plugin 1.51.1, Wrangler 4.120.0, and Workers Types 5.20260801.1 are locked; full and `--omit=dev` npm audits returned zero findings on Node.js 24.18.0/npm 12.0.2; `engines.node` still allows `>=22.13.0`, `packageManager` is absent, and no combined startup script exists |
+| Installed Vinext 1.0.0-beta.9 package inspection | The published bundle still contains and invokes `image-size` 2.0.2 for build-time image metadata even though npm no longer exposes the dependency edge; current use is limited to trusted build inputs and does not prove production safety |
 | `vite.config.ts` | Vinext, OpenAI Sites, and Cloudflare Vite plugins |
 | `.openai/hosting.json` | No D1 or R2 application-data binding |
 | generated `dist/server/wrangler.json` audit | No database, bucket, queue, service, or secret bindings at audit time |
@@ -41,7 +43,7 @@ When a prior decision conflicts with `PLAN-2026-09-02`, the current governance a
 | `playwright.config.ts:1-21` | Chromium/viewport/server/artifact settings |
 | Repository file inventory (2026-09-02) | No Dockerfile or Compose configuration at decision-recording time |
 
-These paths prove current implementation only. Docker/Compose orchestration, Fastify, the Node.js 24 API, exact Node/npm pins, the combined root startup command, PostgreSQL, Prisma, workers, workspace scopes, Railway/Vercel deployment, real adapters, and PWA remain planned or missing until separately `LOCAL-VERIFIED`.
+These paths prove current implementation only. The root `deepmerge-ts` and `mysql2` overrides are provisional for the approved incoming Prisma Foundation integration and are not active dependencies on the current main graph. Docker/Compose orchestration, Fastify, the Node.js 24 API, exact Node/npm pins, the combined root startup command, PostgreSQL, Prisma, workers, workspace scopes, Railway/Vercel deployment, real adapters, and PWA remain planned or missing until separately `LOCAL-VERIFIED`.
 
 ## Official external references
 
