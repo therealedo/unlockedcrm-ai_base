@@ -280,7 +280,7 @@ These statuses describe provider connectivity, not the surrounding owned workflo
 | `CAP-PLAT-008` | Audit/analytics event store | `MISSING` | `LO`,`LV`,`I` | Phase 1 functional local events; Phase 2 hardening | Tamper-evident append/query/retention proof |
 | `CAP-PLAT-009` | Observability and incident response | `MISSING` | `LO`,`I` | Phase 2 | Redacted telemetry, alerts and runbook exercise |
 | `CAP-PLAT-010` | Backup/restore/export/recovery | `MISSING` | `LO`,`I` | Phase 2 | Encrypted backup and timed restore drill |
-| `CAP-PLAT-011` | Signed data-first update system | `MISSING` | `LO`,`I` | Phase 2 | Manifest/artifact/migration/health/rollback tests |
+| `CAP-PLAT-011` | Signed data-first update system | `MISSING` | `LO`,`I`; point-in-time dependency audit `LOCAL-VERIFIED` | Phase 2 | Recurring dependency checks plus manifest/artifact/migration/health/rollback tests |
 | `CAP-PLAT-012` | Subscription/billing/metering control plane | `MISSING` | `LO`,`LV`,`I` | Phase 3 | Separate control-plane ledger and API/event lifecycle tests; no direct product-table writes |
 | `CAP-PLAT-013` | Fastify Node.js TypeScript modular-monolith REST API | `MISSING` | `LO`,`I` | Phase 1 | Fastify on Node.js 24 LTS, stable REST/JSON contracts, module boundaries and Windows start/test proof |
 
