@@ -23,8 +23,13 @@ describe('the closed Windows process launcher', () => {
     writeFileSync(script, 'console.log(process.pid);setInterval(()=>0,1e3)');
     const child = spawn(
       `${root}\\System32\\cmd.exe`,
-      ['/d', '/s', '/c', `call ${process.execPath} ${script}`],
-      { shell: false, stdio: ['ignore', 'pipe', 'ignore'], windowsHide: true },
+      ['/d', '/s', '/c', `call "${process.execPath}" "${script}"`],
+      {
+        shell: false,
+        stdio: ['ignore', 'pipe', 'ignore'],
+        windowsHide: true,
+        windowsVerbatimArguments: true,
+      },
     );
     let descendantPid = 0;
     try {
@@ -53,7 +58,6 @@ describe('the closed Windows process launcher', () => {
       unlinkSync(script);
     }
   });
-
   it.each(['taskkill completion', 'child exit'])(
     'bounds a stalled %s wait',
     async (wait) => {
@@ -70,7 +74,6 @@ describe('the closed Windows process launcher', () => {
       ).rejects.toThrow('timed out');
     },
   );
-
   it.each([
     'requirements.txt',
     'CMakeLists.txt',
@@ -80,7 +83,6 @@ describe('the closed Windows process launcher', () => {
   ])('rejects documentation-like executable path %s before spawn', (path) => {
     expect(() => validateExecutablePath(path)).toThrow('Untrusted executable');
   });
-
   it('rejects bad configuration and ignores an exited child', async () => {
     expect(() =>
       buildProcessPlan({ mode: 'preview', platform: 'win32' }),
