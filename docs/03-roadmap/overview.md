@@ -12,7 +12,7 @@ The sequence is: **functional single-workspace product locally, secure hosted si
 
 ## Current position
 
-Phase 1 is in progress. The current Vinext/Vite UI covers 32 paths/30 screens, but persistence is browser-local, most workflows are partial or mocked, and no API, PostgreSQL, worker, production identity, real provider integration, or PWA exists.
+Phase 1 is in progress. The Vinext/Vite UI covers 32 paths/30 screens, and `npm run dev` starts the locally verified health-only Fastify/Compose PostgreSQL Foundation. Persistence remains browser-local, most workflows are partial or mocked, and no CRM/domain API, database persistence, worker, production identity, real provider integration, or PWA exists. Unit 2 introduces Prisma and persistence-aware startup.
 
 ## Phase 1 exit
 

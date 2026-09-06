@@ -1,6 +1,6 @@
 # Repository operating guide
 
-> **The current local build is a fictional-data browser prototype, not safe for real PII/PHI, hosted production use, or SaaS.**
+> **The current local build is a fictional-data browser prototype plus a health-only Foundation, not safe for real PII/PHI, hosted production use, or SaaS.**
 
 This repository studies observable CRM behavior and builds an original, synthetic-data implementation. Current behavior, planned architecture, and deferred work must remain visibly distinct.
 
@@ -31,20 +31,20 @@ See [Working agreements](docs/00-governance/working-agreements.md) and [Legal an
 | Boundary | Current implementation | Approved target |
 |---|---|---|
 | Web UI | React on Vinext 1.0 beta/Vite 8; Next-compatible source conventions | Retain for Phase 1; do not migrate to official Next.js without a demonstrated blocker |
-| Application API | Absent | Fastify on Node.js 24 LTS and TypeScript; modular monolith; REST/JSON |
+| Application API | Health-only Fastify process; no CRM/domain routes | Fastify on Node.js 24 LTS and TypeScript; modular monolith; REST/JSON |
 | Persistence | One browser `localStorage` object | Local PostgreSQL, accessed only through workspace-scoped repositories |
-| Local development infrastructure | No Dockerfile, Compose configuration, or local PostgreSQL service | Docker Desktop + Docker Compose on Windows; PostgreSQL first; add other services only for a functional slice |
-| Local process topology | Vinext/Vite UI runs on the Windows host; API is absent | Vinext/Vite UI and Node.js/Fastify API run on the Windows host; Compose manages infrastructure |
-| Toolchain versions | `engines.node` allows `>=22.13.0`; npm lockfile exists; no exact Node/npm pin | Pin an exact Node.js 24 LTS patch and npm version in repository metadata |
+| Local development infrastructure | PostgreSQL-only Compose service | Docker Desktop + Docker Compose on Windows; add services only for a functional slice |
+| Local process topology | `npm run dev` starts host-run Vinext/Vite and health-only Fastify plus Compose PostgreSQL | Extend the same topology with the Phase 1 product/data plane |
+| Toolchain versions | Node.js 24.18.0 and npm 12.0.2 are pinned | Revisit exact pins through controlled updates |
 | Data access | None | Prisma plus reviewed, isolated custom SQL escape hatches |
 | Async work | Absent | Bounded workers behind durable job/outbox contracts |
-| Deployment | Local Vite/Vinext and Wrangler tooling; no database bindings or combined startup command | One planned root startup command checks/starts Compose infrastructure plus both host app processes; Railway is the unvalidated preferred Phase 2 candidate; Vercel is optional for frontend previews only |
+| Deployment | `npm run dev` is the Windows Foundation command; no database bindings or persistent readiness | Unit 2 adds local persistence startup; Railway remains an unvalidated Phase 2 candidate and Vercel preview-only |
 | Auxiliary Python | Absent | Not part of the core API; permitted later only in an isolated worker for a proven specialized library, never as a second API/data authority |
 | PWA/offline | No manifest, service worker, or offline sync | Network-required responsive PWA shell may be added; offline data mutation/sync remains deferred |
 
 Vinext/Next.js are frontend application frameworks, and Fastify is the selected backend HTTP framework. Vite is build tooling. Railway, Vercel, OpenAI Sites, Cloudflare, and Wrangler are hosting/runtime choices. A framework is not hosting, and none of these hosting services is required for Phase 1 local development.
 
-Docker Desktop and Docker Compose are selected Phase 1 local-development dependencies, not current implementation evidence. Compose starts with PostgreSQL; object storage, mail capture, queues, and other services join only when a functional slice needs them. By default, the Vinext/Vite UI and Node.js/Fastify API run directly on the Windows host with pinned Node/npm versions. Full application containerization is deferred unless measured environment-parity problems justify it.
+Docker Desktop and Docker Compose are implemented Phase 1 Foundation dependencies. `npm run dev` starts PostgreSQL plus host-run Vinext/Vite and the health-only Fastify API with pinned Node/npm versions. Unit 2 introduces Prisma, migrations, seed, repositories, renewal routes, and persistence-aware startup. Object storage, mail capture, queues, and other services join only when a functional slice needs them; full application containerization remains deferred unless measured environment-parity problems justify it.
 
 ## Architecture seams required in Phase 1
 

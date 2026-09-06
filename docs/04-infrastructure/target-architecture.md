@@ -14,7 +14,7 @@ The approved target is an online-first, locally reproducible, single-workspace C
 | PostgreSQL | `PARTIAL` | PostgreSQL-only Compose service is `LOCAL-VERIFIED`; authoritative CRM persistence remains incomplete |
 | Docker Desktop + Docker Compose | `FUNCTIONAL` | PostgreSQL-only Foundation profile is `LOCAL-VERIFIED`; add services only when a slice requires them |
 | Windows application process topology | `FUNCTIONAL` | `dev:foundation` runs Vinext/Vite and Fastify on the host while Compose runs PostgreSQL (`LOCAL-VERIFIED`) |
-| Root startup command | `PARTIAL` | `dev:foundation` is `LOCAL-VERIFIED`; `dev:local` cannot become ready until migrations and seed land |
+| Root startup command | `PARTIAL` | `npm run dev` starts the `LOCAL-VERIFIED` Foundation; Unit 2 adds persistence preflight, migration, seed, and readiness |
 | Prisma plus reviewed custom SQL | `MISSING` | Unit 2 owns generation, typed access, migrations, repositories, and critical reviewed SQL |
 | Supabase | `CANDIDATE` | Optional PostgreSQL hosting provider only; never a required application dependency |
 | Railway | `PREFERRED-PHASE-2-CANDIDATE` | Candidate host for persistent Fastify API, bounded workers, and PostgreSQL; deployment spike required |
@@ -25,7 +25,7 @@ The approved target is an online-first, locally reproducible, single-workspace C
 
 Implementation rows use the project status vocabulary and `LOCAL-VERIFIED` evidence. Candidate, rejected, research, and optional rows remain architecture decision classifications rather than implementation claims.
 
-Application frameworks, process placement, and cloud infrastructure are different choices. Vinext/Next.js organize the frontend, Fastify provides the HTTP application framework, Docker Desktop/Compose orchestrates local infrastructure, and Railway/Vercel are hosting platforms. The `LOCAL-VERIFIED` Foundation pins Node.js/npm and uses `dev:foundation` to start PostgreSQL plus the host API/web without a cloud account. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Prisma migrations, deterministic seed, workspace-scoped persistence, and renewal behavior remain target architecture for Unit 2 and later work.
+Application frameworks, process placement, and cloud infrastructure are different choices. Vinext/Next.js organize the frontend, Fastify provides the HTTP application framework, Docker Desktop/Compose orchestrates local infrastructure, and Railway/Vercel are hosting platforms. The `LOCAL-VERIFIED` Foundation pins Node.js/npm and maps `npm run dev` to `dev:foundation`, starting PostgreSQL plus the host API/web without a cloud account. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Unit 2 introduces Prisma migrations, deterministic seed, workspace-scoped persistence, renewal behavior, and persistence-aware startup.
 
 ## Logical topology
 

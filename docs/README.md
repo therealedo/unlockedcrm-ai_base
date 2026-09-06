@@ -1,6 +1,6 @@
 # Documentation hub
 
-> **The current local build is a fictional-data browser prototype, not safe for real PII/PHI, hosted production use, or SaaS.**
+> **The current local build is a fictional-data browser prototype plus a health-only Foundation, not safe for real PII/PHI, hosted production use, or SaaS.**
 
 The approved direction is an online-first, locally reproducible, single-workspace CRM. Phase 1 runs on the user's Windows PC without cloud infrastructure; hosted production and public SaaS are later gates.
 
@@ -34,10 +34,10 @@ The approved direction is an online-first, locally reproducible, single-workspac
 
 - React currently runs through Vinext/Vite using Next-compatible source conventions; the official Next.js package is not the runtime.
 - Root and catch-all pages render one client CRM shell with custom browser routing.
-- Seven create-only flows persist one `localStorage` object; edit/delete, API, PostgreSQL, jobs, auth, real providers, and PWA support are absent.
+- Seven create-only flows persist one `localStorage` object; edit/delete, CRM/domain APIs, PostgreSQL persistence, jobs, auth, real providers, and PWA support are absent.
 - OpenAI Sites/Cloudflare tooling is configured for the web build, but no D1/R2 or other application data bindings exist.
-- The selected Phase 1 topology runs Vinext/Vite and Node.js/Fastify on the Windows host while Docker Desktop + Docker Compose manages PostgreSQL and later slice-required infrastructure. No Compose profile, API, exact Node/npm pin, or combined root startup command exists yet.
-- Phase 1 keeps this UI stack and adds a separate Fastify-based Node.js 24 LTS TypeScript modular-monolith REST/JSON API plus local PostgreSQL/Prisma.
+- `npm run dev` is the locally verified Windows Foundation: pinned Node/npm start host-run Vinext/Vite, a health-only Fastify API, and Compose PostgreSQL.
+- Unit 2 introduces Prisma, migrations, deterministic seed, workspace repositories, renewal routes, and persistence-aware startup; later Phase 1 work completes the product/data plane.
 - Phase 1 makes every audited owned/core workflow functional in one seeded workspace. External-provider boundaries may remain explicit deterministic simulators with complete workflows and contract tests.
 - Railway is the preferred but unvalidated Phase 2 hosting candidate for the persistent Fastify API, bounded workers, and PostgreSQL topology; Vercel is optional for frontend previews only.
 - Phase 2 securely hosts that single workspace and enables selected real integrations before limited real-data use.

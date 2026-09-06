@@ -1,6 +1,6 @@
 # Current infrastructure
 
-> The current build is a fictional-data browser prototype. It is not safe for real PII/PHI, limited production use, or SaaS.
+> The current build is a fictional-data browser prototype plus a health-only Foundation. It is not safe for real PII/PHI, limited production use, or SaaS.
 
 **Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, renewal-foundation checks, and `DEP-AUDIT-2026-09-04`. Durable CRM persistence remains planned until the PostgreSQL renewal slice lands; target decisions below are planning, not implemented state.
 
@@ -15,20 +15,20 @@
 | Routing | Root and catch-all entries render one client `CrmApp`; navigation uses custom `pushState` handling |
 | Persistence | One browser `localStorage` JSON object |
 | Styling | One large global CSS file plus mostly unused generated UI components |
-| Tests | 15 Playwright tests plus 15 focused Vitest Foundation tests |
+| Tests | 15 Playwright tests plus focused Vitest Foundation/API contracts |
 | Hosting integration | Vinext/Vite with OpenAI Sites and Cloudflare plugins |
-| Local infrastructure orchestration | `compose.yaml` defines PostgreSQL only; `dev:foundation` coordinates Compose plus host-run API/web processes |
+| Local infrastructure orchestration | `compose.yaml` defines PostgreSQL only; `npm run dev` maps to `dev:foundation` and coordinates Compose plus host-run API/web processes |
 | API foundation | Fastify exposes liveness and explicit `MIGRATIONS_UNAVAILABLE` readiness without generated persistence imports |
 | Generated deployment metadata | Wrangler output, static headers, build ID |
 | Dependency audit | Full and `--omit=dev` npm audits returned zero findings on 2026-09-04 |
 
-Package scripts retain Vinext/Vite, Wrangler, and Playwright while pinning Node.js 24.18.0 and npm 12.0.2. `dev:foundation` is locally proven to start the PostgreSQL-only Compose service plus the host Fastify and web processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE` without generated Prisma assets. The repository still does not install or run the official `next` package; Prisma generation, migrations, deterministic seed, repositories, and renewal behavior remain Unit 2 work.
+Package scripts retain Vinext/Vite, Wrangler, and Playwright while pinning Node.js 24.18.0 and npm 12.0.2. `npm run dev` is locally proven to start the PostgreSQL-only Compose service plus the host Fastify and web processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE` without generated Prisma assets. The repository still does not install or run the official `next` package; Prisma generation, migrations, deterministic seed, repositories, renewal behavior, and persistence-aware startup remain Unit 2 work.
 
 ## Dependency-security baseline
 
 The current lockfile is `LOCAL-VERIFIED` with Node.js 24.18.0 and npm 12.0.2: a clean `npm ci`, `npm audit --json`, and `npm audit --omit=dev --json` completed with zero reported vulnerabilities. The direct update train keeps React, Vinext, Vite/RSC, and Cloudflare/Wrangler packages on compatible patched versions.
 
-Two root overrides, `deepmerge-ts` 8.0.1 and `mysql2` 3.23.1, are active provisional mitigations for the Prisma Foundation integration. The integrated dependency graph resolves `@prisma/config` through `deepmerge-ts` 8.0.1 and Prisma through `mysql2` 3.23.1; retain and reverify these overrides until Prisma publishes a compatible patched dependency graph.
+Two inherited root overrides, `deepmerge-ts` 8.0.1 and `mysql2` 3.23.1, remain provisional but are currently unreached because Prisma is deferred to Unit 2. Re-evaluate both against Prisma's then-current dependency graph before persistence dependencies return.
 
 Vinext 1.0.0-beta.9 no longer exposes `image-size` through npm's installed dependency graph, but its published bundle still contains the 2.0.2 parser and invokes it for image metadata. Current application reachability is limited to trusted build metadata; this is a residual upstream risk, not a production-safety claim. Continue to prohibit untrusted build inputs and re-evaluate on each Vinext update.
 
@@ -79,4 +79,4 @@ Protect parity with behavior tests before consolidating the active renderer and 
 
 ## Next proof
 
-Follow the [target architecture](target-architecture.md) and [Phase 1 roadmap](../03-roadmap/phase-1-replica.md). The next proof is Unit 2: generate Prisma, apply the initial migration, replay the deterministic synthetic seed, exercise workspace-scoped repositories, and expose the renewal GET through `dev:local`. Add object storage, mail capture, queues, or other services only with slice evidence.
+Follow the [target architecture](target-architecture.md) and [Phase 1 roadmap](../03-roadmap/phase-1-replica.md). The next proof is Unit 2: introduce Prisma, apply the initial migration, replay the deterministic synthetic seed, exercise workspace-scoped repositories, expose the renewal GET, and add persistence-aware startup. Add object storage, mail capture, queues, or other services only with slice evidence.

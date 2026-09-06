@@ -275,14 +275,14 @@ These statuses describe provider connectivity, not the surrounding owned workflo
 | `CAP-PLAT-003` | PostgreSQL durable data/migrations | `MISSING` | `LO`,`I` | Phase 1 development-grade persistence; Phase 2 hardening | Schema/migration/transaction/restore tests |
 | `CAP-PLAT-004` | Workspace ownership seam / tenant isolation | `MISSING` | `LO`,`LV`,`I` | Phase 1 one-workspace `workspace_id` scope; Phase 3 tenant isolation | Workspace constraints now; cross-tenant negative tests only in clean-room SaaS |
 | `CAP-PLAT-005` | Durable jobs/workflows | `MISSING` | `LO`,`I` | Phase 1 functional local runtime; Phase 2 hardening | Idempotency/retry/dead-letter/replay proof |
-| `CAP-PLAT-006` | Secrets/configuration | `MISSING` | `LO`,`I` | Phase 1 externalized development config; Phase 2 secure secret rotation/hardening | Encrypted vault, rotation and log-redaction tests |
+| `CAP-PLAT-006` | Secrets/configuration | `PARTIAL` | `LO`,`I` | Phase 1 externalized development config; Phase 2 secure secret rotation/hardening | Extend the defaulted Foundation host plus validated mode/port and Docker-path config to checked slice config; then add vault, rotation, and redaction proof |
 | `CAP-PLAT-007` | S3-compatible secure objects | `MISSING` | `LO`,`I` | Phase 1 development-grade local objects; Phase 2 hardening | MinIO local + production adapter and access tests |
 | `CAP-PLAT-008` | Audit/analytics event store | `MISSING` | `LO`,`LV`,`I` | Phase 1 functional local events; Phase 2 hardening | Tamper-evident append/query/retention proof |
 | `CAP-PLAT-009` | Observability and incident response | `MISSING` | `LO`,`I` | Phase 2 | Redacted telemetry, alerts and runbook exercise |
 | `CAP-PLAT-010` | Backup/restore/export/recovery | `MISSING` | `LO`,`I` | Phase 2 | Encrypted backup and timed restore drill |
 | `CAP-PLAT-011` | Signed data-first update system | `MISSING` | `LO`,`I`; point-in-time dependency audit `LOCAL-VERIFIED` | Phase 2 | Recurring dependency checks plus manifest/artifact/migration/health/rollback tests |
 | `CAP-PLAT-012` | Subscription/billing/metering control plane | `MISSING` | `LO`,`LV`,`I` | Phase 3 | Separate control-plane ledger and API/event lifecycle tests; no direct product-table writes |
-| `CAP-PLAT-013` | Fastify Node.js TypeScript modular-monolith REST API | `MISSING` | `LO`,`I` | Phase 1 | Fastify on Node.js 24 LTS, stable REST/JSON contracts, module boundaries and Windows start/test proof |
+| `CAP-PLAT-013` | Fastify Node.js TypeScript modular-monolith REST API | `PARTIAL` | `LO`,`I` | Phase 1 | Health-only Fastify/Node.js 24 Foundation is `LOCAL-VERIFIED`; Unit 2 adds the first domain route and persistence boundary |
 
 ## Maintenance rule
 

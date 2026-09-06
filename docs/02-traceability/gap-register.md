@@ -11,8 +11,8 @@ This register assigns missing work to a phase without changing current implement
 | `GAP-PLAT-003` | `P0` | Durable records | `MISSING`, `LOCAL-VERIFIED` | Phase 1 | Node.js API, Prisma migrations plus reviewed SQL constraints, PostgreSQL transactions, reload and concurrency tests |
 | `GAP-PLAT-004` | `P0` | Workspace ownership seam | `MISSING`, `LOCAL-VERIFIED`; hierarchy `LIVE-VERIFIED` | Phase 1 seam; Phase 3 multi-workspace isolation | `workspace_id` enforced in repositories and constraints for business data, jobs, files, events, search, exports, and audit; only one seeded workspace initially |
 | `GAP-PLAT-005` | `P1` | Events and bounded async workers | `MISSING`, `LOCAL-VERIFIED` | Phase 1 functional slice; Phase 2 operations | Transactional outbox/inbox, persisted jobs, idempotency, retry and reconciliation; capacity/dead-letter operations later |
-| `GAP-PLAT-006` | `P1` | Configuration and secrets | `MISSING`, `LOCAL-VERIFIED` | Phase 1 externalized development config; Phase 2 secret hardening | Checked environment schema and safe local defaults; vaulting, rotation and redaction before production credentials |
-| `GAP-PLAT-007` | `P0` | Application API | `MISSING`, `LOCAL-VERIFIED` | Phase 1 | Separate Fastify-based Node.js 24 LTS TypeScript modular monolith exposes stable REST/JSON APIs; browser never reaches PostgreSQL directly |
+| `GAP-PLAT-006` | `P1` | Configuration and secrets | `PARTIAL`, `LOCAL-VERIFIED` | Phase 1 externalized development config; Phase 2 secret hardening | Extend the defaulted Foundation host plus validated mode/port and Docker-path config to every slice; vaulting, rotation, and redaction before production credentials |
+| `GAP-PLAT-007` | `P0` | Application API | `PARTIAL`, `LOCAL-VERIFIED` | Phase 1 | Health-only Fastify/Node.js 24 Foundation exists; Unit 2 adds the first stable CRM REST/JSON route and keeps PostgreSQL behind repositories |
 | `GAP-PLAT-008` | `P2` | Network-required PWA shell | `MISSING`, `LOCAL-VERIFIED` | Optional Phase 1 enhancement | Installability and online routing work without claiming offline data access; sensitive responses are not cached |
 | `GAP-PLAT-009` | `P3` | Native/offline clients and sync | `MISSING`, `INFERRED` | Deferred outside current roadmap | Separate approved initiative for device database, mutation sync, conflict UX, leases, native adapters, and distribution |
 
@@ -96,7 +96,7 @@ This register assigns missing work to a phase without changing current implement
 
 | Gap ID | Priority | Capability | Current status/evidence | Target ownership | Exit proof |
 |---|---|---|---|---|---|
-| `GAP-OPS-001` | `P0` | Reproducible Windows development | `MISSING`, `LOCAL-VERIFIED`; no Docker/Compose artifacts, exact Node/npm pins, API, or combined startup command | Phase 1 | Pinned Node.js 24/npm run host UI/API; Docker Desktop/Compose runs the PostgreSQL-first profile; one root command checks/starts infrastructure and both app processes without a cloud account |
+| `GAP-OPS-001` | `P0` | Reproducible Windows development | `PARTIAL`, `LOCAL-VERIFIED`; pinned Foundation, Compose PostgreSQL, health API, and `npm run dev` exist | Phase 1 | Unit 2 adds migrations, deterministic seed, persistence-aware readiness/startup, and clean-machine replay without a cloud account |
 | `GAP-OPS-002` | `P0` | Hosted deployment and one-command operations | `MISSING` | Phase 2 | Railway spike first, then reproducible provision/start/stop/status/log/support workflow if promoted; Vercel remains preview-only |
 | `GAP-OPS-003` | `P0` | Backups/restore/export | `MISSING` | Phase 2 | Encrypted automated backups and timed clean-host restore/export drills |
 | `GAP-OPS-004` | `P0` | Signed upgrade pipeline | `MISSING` | Phase 2 | Signed artifact/manifest, semantic version, preflight, backup, migration journal, health, atomic activation and rollback proof |

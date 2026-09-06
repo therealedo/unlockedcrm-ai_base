@@ -30,11 +30,11 @@ Phase 1 ends when every audited owned/core CRM workflow works coherently through
 | Configuration | `PARTIAL` (`LOCAL-VERIFIED`): Foundation API/process configuration is externalized and synthetic-only; later slices add their settings |
 | External providers | `MISSING`: later slices add owned ports with explicit simulated or real adapter status |
 | Process placement | `FUNCTIONAL` for Foundation (`LOCAL-VERIFIED`): Vinext/Vite and Fastify run on the Windows host; Compose runs PostgreSQL |
-| Development | `PARTIAL` (`LOCAL-VERIFIED`): `dev:foundation` starts PostgreSQL plus host API/web; `dev:local` readiness awaits Unit 2 |
+| Development | `PARTIAL` (`LOCAL-VERIFIED`): `npm run dev` starts the Foundation; Unit 2 adds persistence-aware startup and readiness |
 
 Application frameworks and cloud infrastructure are separate decisions. Vinext/Next.js organize the frontend, Fastify is the selected HTTP framework for the API, and Vite builds the web client. Railway, Vercel, Sites, and Cloudflare are hosting/runtime choices. None replaces the API or PostgreSQL, and none is required for Phase 1 local development.
 
-The `LOCAL-VERIFIED` Foundation pins Node.js/npm and provides `dev:foundation`, which starts the PostgreSQL-only Compose service plus the host Fastify and Vinext/Vite processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Unit 2 still owns Prisma generation, migrations, deterministic seed, repositories, and renewal GET behavior. Object storage, mail capture, queues, and other services remain incomplete until a functional slice requires them. Full local application containerization remains deferred unless measured environment-parity problems justify it.
+The `LOCAL-VERIFIED` Foundation pins Node.js/npm and maps `npm run dev` to `dev:foundation`, which starts the PostgreSQL-only Compose service plus the host Fastify and Vinext/Vite processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Unit 2 introduces Prisma generation, migrations, deterministic seed, repositories, renewal GET behavior, and persistence-aware startup. Object storage, mail capture, queues, and other services remain incomplete until a functional slice requires them. Full local application containerization remains deferred unless measured environment-parity problems justify it.
 
 ## External-provider acceptance
 
@@ -89,6 +89,6 @@ Responsive phone/tablet/desktop web UX is required. A network-required installab
 - [ ] Every external workflow has complete simulator/adapter status and contract evidence.
 - [ ] Cross-module records, jobs, events, notifications, analytics, and audit agree.
 - [x] Foundation startup is `LOCAL-VERIFIED`: exact Node.js 24.18.0/npm 12.0.2 pins, host-run UI/health API, PostgreSQL-only Compose, and `dev:foundation` with live HTTP 200 and ready HTTP 503 `MIGRATIONS_UNAVAILABLE`.
-- [ ] Unit 2 makes `dev:local` ready with Prisma generation, migration, deterministic seed, workspace-scoped repositories, and renewal GET behavior.
+- [ ] Unit 2 adds Prisma generation, migration, deterministic seed, workspace-scoped repositories, renewal GET behavior, and persistence-aware startup.
 - [ ] Responsive Windows-local proof passes; any PWA claim is network-required only.
 - [ ] Documentation and source register are current.

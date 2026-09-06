@@ -16,7 +16,7 @@
 | Durable job | Persisted, idempotent work that survives restart and supports retry/reconciliation |
 | Effective screen | Unique renderer; aliases may expose multiple paths to one screen |
 | Evidence status | `LIVE-VERIFIED`, `LOCAL-VERIFIED`, `PRIOR-VERIFIED`, `GATED`, or `INFERRED` |
-| Fastify | Selected target HTTP framework for the single Node.js 24 LTS TypeScript product API; not currently implemented |
+| Fastify | HTTP framework used by the current health-only Foundation and selected for the future Node.js 24 LTS TypeScript product API |
 | FastAPI | Rejected for the core API; Python may appear only in a separately justified isolated worker |
 | Gated | Unavailable, blank, activation-dependent, or deliberately unsafe to exercise |
 | HIPAA-ready | Not a current claim; requires applicable safeguards, agreements, operations, and independent review |
