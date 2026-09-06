@@ -16,7 +16,7 @@ Build an online-first insurance CRM without confusing local reproducibility, app
 
 Phase 1 is locally reproducible, not local-first or offline-first. The browser, API, and PostgreSQL may all run on one Windows PC, but CRM behavior still uses a networked REST/JSON application boundary.
 
-Docker Desktop and Docker Compose are selected for Phase 1 Windows infrastructure, starting with PostgreSQL. Add object storage, mail capture, queues, or other services only when a functional slice requires them. By default, Vinext/Vite and Node.js/Fastify run directly on the Windows host with pinned Node/npm versions; one planned root command checks/starts infrastructure and both app processes. Full application containerization is deferred unless measured environment-parity problems justify it. None of this topology is implemented yet.
+The locally verified Foundation pins Node/npm and uses `npm run dev` to start host-run Vinext/Vite, a health-only Fastify API, and Docker Compose PostgreSQL. Unit 2 introduces Prisma, migration/seed, workspace repositories, renewal routes, and persistence-aware startup. Add object storage, mail capture, queues, or other services only when a functional slice requires them. Full application containerization is deferred unless measured environment-parity problems justify it.
 
 Required owned/core outcomes:
 

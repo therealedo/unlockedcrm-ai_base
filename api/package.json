@@ -1,0 +1,11 @@
+{
+  "name": "@unlockedcrm/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/server.ts"
+  },
+  "dependencies": {
+    "fastify": "5.12.1"
+  }
+}

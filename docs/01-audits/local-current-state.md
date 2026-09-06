@@ -1,8 +1,8 @@
 # Local current state
 
-> **The current local build is a fictional-data browser prototype, not safe for real PII/PHI or SaaS.**
+> **The current local build is a fictional-data browser prototype plus a health-only Foundation, not safe for real PII/PHI or SaaS.**
 
-**Evidence:** `LOCAL-VERIFIED`. Source: Engram #647, current repository inspection and 32-route runtime smoke audit.
+**Evidence:** `LOCAL-VERIFIED`. Source: Engram #647, current repository inspection, 32-route runtime smoke audit, and Foundation checks.
 
 ## Executive summary
 
@@ -10,7 +10,7 @@
 - Root uses a separate home screen; active non-root routes use `LiveParityRouter`.
 - Seven create-only flows persist one JSON object in browser `localStorage`.
 - Most external-service and advanced product surfaces are `MOCK`.
-- No application backend, authentication, tenant isolation, server authorization, database, object storage, durable jobs, or real provider integrations exist.
+- A health-only Fastify API and Compose PostgreSQL service exist; no CRM/domain backend, database persistence, authentication, tenant isolation, server authorization, object storage, durable jobs, or real provider integrations exist.
 - The current lockfile passes full and production-only npm audits, with the Vinext bundled-parser caveat documented in [Current infrastructure](../04-infrastructure/current-infrastructure.md).
 - All 32 routes rendered at 1707×848 without blank/404/crash, document overflow, or console errors after settled waits.
 - The current Playwright suite contains 15 Chromium tests; it was not rerun during the documentation audit.
@@ -68,21 +68,22 @@ See [Route map](../02-traceability/route-map.md) for all paths and [Capability m
 
 ## External-service reality
 
-No application-level fetch, WebSocket, EventSource, API server, database domain layer, job queue, worker, event bus, or tenant service was found. Phone/SMS/email/calendar, carrier quoting/enrollment, AI/voice, campaigns/forms, documents, commissions, webhooks, and integrations are absent or simulated.
+No application-level CRM fetch, WebSocket, EventSource, database domain layer, job queue, worker, event bus, or tenant service was found. The Fastify process exposes health only. Phone/SMS/email/calendar, carrier quoting/enrollment, AI/voice, campaigns/forms, documents, commissions, webhooks, and integrations are absent or simulated.
 
 ## Current infrastructure
 
-- React 19.2.8, Vinext 1.0.0-beta.9, Vite 8.0.16, TypeScript 5.9, Node 22.13 or newer.
+- React 19.2.8, Vinext 1.0.0-beta.9, Vite 8.0.16, TypeScript 5.9, Node 24.18.0, and npm 12.0.2 are pinned.
 - Vite/Vinext and Cloudflare/Sites plugins are configured.
+- `npm run dev` starts Compose PostgreSQL plus host-run health-only Fastify and Vinext/Vite processes on Windows.
 - `.openai/hosting.json` declares no D1 or R2 bindings.
 - Generated Wrangler configuration has no database, bucket, queue, service, or secret binding.
-- Missing: README/runbook, CI, container/deployment recipe, migrations, environment example, backup/restore, rollback, and incident procedures.
+- Missing: CRM/domain APIs, Prisma, migrations, seed, repositories, CI, production deployment, environment example, backup/restore, rollback, and incident procedures.
 
 ## Tests
 
 `tests/crm.spec.ts:8-587` contains 15 Playwright tests. Chromium defaults to 1440×900 on port 3000 with screenshot/trace retention on failure. Coverage includes shell, contact creation/reload, route landmarks, four responsive widths, rail popovers, global search, and icon-only mode.
 
-Gaps: six other create flows, malformed storage, edit/delete, unit/API tests, accessibility, authorization/tenancy, cross-browser, small mobile, performance, and visual-diff baselines.
+Gaps: six other create flows, malformed storage, edit/delete, CRM/domain API tests, accessibility, authorization/tenancy, cross-browser, small mobile, performance, and visual-diff baselines. Foundation unit/API tests cover launcher and health contracts.
 
 ## Production blockers
 
@@ -92,4 +93,4 @@ Do not use real data until the [Phase 2 gate](../03-roadmap/phase-2-local-produc
 
 ## Planning direction after this audit
 
-The evidence above remains current-state evidence. The approved Phase 1 target keeps the Vinext/Vite UI, adds a separate Node.js 24 LTS REST API and local PostgreSQL, and makes every audited owned/core workflow functional for one synthetic workspace. External-provider edges may use explicit deterministic simulators with complete state machines, owned ports, contract tests, and persisted synthetic events. Phase 2 hosts and secures that product for limited real use and introduces selected lawful real providers.
+The evidence above remains current-state evidence. Phase 1 extends the health-only Node.js 24/Fastify Foundation and Compose PostgreSQL into a complete REST product/data plane for one synthetic workspace. Unit 2 first introduces Prisma, migrations, deterministic seed, workspace repositories, renewal routes, and persistence-aware startup. External-provider edges may use explicit deterministic simulators with complete state machines, owned ports, contract tests, and persisted synthetic events. Phase 2 hosts and secures that product for limited real use and introduces selected lawful real providers.

@@ -1,23 +1,20 @@
 # Deployment, backup, restore, and updates
 
-This document separates Phase 1 local development from Phase 2 hosted operations. The current browser prototype has neither workflow and contains no Dockerfile, Compose configuration, exact Node/npm pin, API, or combined root startup command.
+This document separates Phase 1 local development from Phase 2 hosted operations. The current browser prototype includes a locally verified Foundation: exact Node/npm pins, Compose PostgreSQL, a health-only Fastify API, and `npm run dev`. It has no persistence migration/seed workflow or hosted operations.
 
 ## Phase 1: reproducible Windows development
 
-A clean Windows PC must be able to run and test one synthetic workspace without a cloud account. Docker Desktop + Docker Compose is the selected local-infrastructure dependency, not current implementation evidence.
+A clean Windows PC must be able to run and test one synthetic workspace without a cloud account. Docker Desktop + Docker Compose is implemented for the PostgreSQL-only Foundation; complete clean-machine and persistence proof remains Phase 1 work.
 
 Required operator path:
 
 1. verify Docker Desktop/Compose prerequisites and the repository-pinned Node.js 24 LTS/npm versions;
 2. install locked application dependencies with the pinned package manager;
 3. configure checked, non-secret development values;
-4. start PostgreSQL as the first Compose service, then migrate it;
+4. use `npm run dev` for the current Foundation; Unit 2 adds PostgreSQL migration and deterministic seed before persistent readiness;
 5. add object storage, mail capture, queues, or other services only when the selected functional slice requires them;
-6. seed exactly one fictional workspace and deterministic provider scenarios;
-7. use one root command to check/start Compose infrastructure plus the host-run Vinext/Vite UI and Fastify API, including any slice-required worker;
-8. check health/readiness, run the test suite, and reset or reseed synthetic data safely.
 
-The root command's name and implementation remain future work. Full application containerization is deferred unless measured environment-parity problems justify it; Docker Compose owns infrastructure by default, not the UI or API processes.
+`npm run dev` is the Foundation root command. Unit 2 extends startup with persistence preflight, migration, deterministic seed of exactly one fictional workspace and provider scenarios, safe reset/reseed, and readiness rather than exposing a premature local mode. Full application containerization is deferred unless measured environment-parity problems justify it; Docker Compose owns infrastructure by default, not the UI or API processes.
 
 Cloud hosting, production credentials, real customer destinations, and real PII/PHI are forbidden prerequisites. An optional PWA shell remains network-required; service-worker caches must not imply offline CRM behavior.
 
@@ -104,7 +101,7 @@ The future control plane may orchestrate product deployment through authenticate
 
 ## Acceptance drills
 
-- Phase 1 clean Windows setup with pinned Node.js 24 LTS/npm, host-run UI/API, Docker Desktop + Docker Compose PostgreSQL, and one root command that checks/starts both layers before migrate, seed, health, and tests without cloud.
+- Phase 1 clean Windows setup with pinned Node.js 24 LTS/npm, host-run UI/API, Docker Desktop + Docker Compose PostgreSQL, and `npm run dev`; Unit 2 adds migration, seed, persistent readiness, and replay proof without cloud.
 - Phase 2 Railway spike for Fastify API, worker, PostgreSQL, health, restart, cost, backup/restore, and rollback behavior.
 - Phase 2 clean-host provision and first boot.
 - Encrypted backup followed by isolated restore and record/object reconciliation.
