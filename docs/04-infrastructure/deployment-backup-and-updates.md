@@ -13,11 +13,8 @@ Required operator path:
 3. configure checked, non-secret development values;
 4. use `npm run dev` for the current Foundation; Unit 2 adds PostgreSQL migration and deterministic seed before persistent readiness;
 5. add object storage, mail capture, queues, or other services only when the selected functional slice requires them;
-6. seed exactly one fictional workspace and deterministic provider scenarios;
-7. use one root command to check/start Compose infrastructure plus the host-run Vinext/Vite UI and Fastify API, including any slice-required worker;
-8. check health/readiness, run the test suite, and reset or reseed synthetic data safely.
 
-`npm run dev` is the Foundation root command. Unit 2 extends startup with persistence preflight, migration, seed, and readiness rather than exposing a premature local mode. Full application containerization is deferred unless measured environment-parity problems justify it; Docker Compose owns infrastructure by default, not the UI or API processes.
+`npm run dev` is the Foundation root command. Unit 2 extends startup with persistence preflight, migration, deterministic seed of exactly one fictional workspace and provider scenarios, safe reset/reseed, and readiness rather than exposing a premature local mode. Full application containerization is deferred unless measured environment-parity problems justify it; Docker Compose owns infrastructure by default, not the UI or API processes.
 
 Cloud hosting, production credentials, real customer destinations, and real PII/PHI are forbidden prerequisites. An optional PWA shell remains network-required; service-worker caches must not imply offline CRM behavior.
 

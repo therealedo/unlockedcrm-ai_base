@@ -12,8 +12,9 @@ const { d1, r2 } = hostingConfig;
 
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === 'seatbelt';
+const urlHost = (host: string) => (host.includes(':') ? `[${host}]` : host);
 export const apiProxyTarget = (env = process.env) =>
-  `http://127.0.0.1:${readConfig(env).port}`;
+  (({ host, port }) => `http://${urlHost(host)}:${port}`)(readConfig(env));
 
 const localBindingConfig = {
   main: 'vinext/server/fetch-handler',

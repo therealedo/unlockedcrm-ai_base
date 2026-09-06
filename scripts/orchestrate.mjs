@@ -50,8 +50,7 @@ export function resolveDockerExecutable({
     win32.join(env.LOCALAPPDATA ?? '', USER_DOCKER),
     win32.join(env.ProgramFiles ?? '', SYSTEM_DOCKER),
   ]) {
-    const canonical =
-      candidate && inspectFile(candidate, repoRoot, 'docker.exe').canonical;
+    const { canonical } = inspectFile(candidate, repoRoot, 'docker.exe');
     if (canonical) return canonical;
   }
   throw new Error('Docker CLI not found; set UNLOCKEDCRM_DOCKER_CLI');
@@ -134,17 +133,14 @@ export async function terminateProcessTree(
   }
   if (!hasExited(child)) await within(once(child, 'exit'), timeoutMs);
 }
-function stopCompose(startup, spec, spawn, options, timeoutMs) {
+function stopCompose(up, spec, spawn, options, ms) {
   const stop = () => {
     const cleanup = spawn(spec.executable, DOCKER_STOP, options);
-    return within(exit(cleanup, 'postgres cleanup'), timeoutMs).catch((error) =>
-      stopProcessHandles([{ stop: () => cancel(cleanup, timeoutMs) }], error),
+    return within(exit(cleanup, 'postgres cleanup'), ms).catch((error) =>
+      stopProcessHandles([{ stop: () => cancel(cleanup, ms) }], error),
     );
   };
-  return stopProcessHandles([
-    { stop },
-    { stop: () => cancel(startup, timeoutMs) },
-  ]);
+  return stopProcessHandles([{ stop }, { stop: () => cancel(up, ms) }]);
 }
 export function spawnProcess(
   spec,
@@ -160,7 +156,7 @@ export function spawnProcess(
     done,
     stop: postgres
       ? () => stopCompose(child, spec, spawn, options, timeoutMs)
-      : () => terminateProcessTree(child),
+      : () => terminateProcessTree(child, undefined, timeoutMs),
   };
 }
 function within(operation, timeoutMs) {
@@ -198,8 +194,7 @@ export async function runProcessPlan(
 }
 export const reportError = (error, log = console.error) => log(error);
 async function main() {
-  const index = process.argv.indexOf('--mode');
-  const mode = index >= 0 ? process.argv[index + 1] : undefined;
+  const mode = process.argv.find((_, i, args) => args[i - 1] === '--mode');
   const handles = await runProcessPlan(buildProcessPlan({ mode }));
   if (mode === 'infra') return;
   const primaryError = await Promise.race([
