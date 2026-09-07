@@ -1,12 +1,10 @@
 # Local route map
 
-The local registry exposes **32 paths and 30 effective screens**. `/underwrite-ai` aliases `/underwriting`; `/imo-fmo` aliases `/org/dashboard`. Separately, local mode exposes renewal GET and task-completion POST routes as `PARTIAL` / `LOCAL-VERIFIED`; the browser does not consume them yet.
+The local registry exposes **32 paths and 30 effective screens**. `/underwrite-ai` aliases `/underwriting`; `/imo-fmo` aliases `/org/dashboard`. Local mode exposes renewal GET and task-completion POST routes as `PARTIAL` / `LOCAL-VERIFIED`; `/policies` and linked `/contacts/:contactId` views consume the validated GET without storing its graph.
 
 ## Renderer ownership
 
-- Root `/`: `HomeScreen` in `components/crm-app.tsx:847-1023`.
-- Non-root: `LiveParityRouter` in `components/live-parity-pages.tsx:375-465`.
-- Do not confuse the active renderer with the unused legacy screen set at `components/crm-app.tsx:1069-2815`.
+- Symbol anchors: root `/` uses `HomeScreen`; non-root paths use `LiveParityRouter`; both are in `components/crm-app.tsx` or `components/live-parity-pages.tsx` respectively. Do not confuse them with the unused legacy screen set in `components/crm-app.tsx`.
 
 ## Registered paths
 

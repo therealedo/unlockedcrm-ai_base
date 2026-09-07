@@ -67,6 +67,11 @@ import {
   RailWorkspacePopover,
   usesLiveContextSidebar,
 } from '@/components/live-parity-pages';
+import { useRenewalWorkflow } from '@/hooks/use-renewal-workflow';
+import {
+  hydrateLegacyCrmData,
+  serializeLegacyCrmData,
+} from '@/lib/legacy-crm-storage';
 
 type ModalName =
   | 'contact'
@@ -236,6 +241,7 @@ export default function CrmApp() {
   );
   const [toast, setToast] = useState('');
   const [railPopover, setRailPopover] = useState<RailPopoverName | null>(null);
+  const renewalWorkflow = useRenewalWorkflow(route);
 
   useEffect(() => {
     const syncRoute = () => setRoute(window.location.pathname || '/');
@@ -244,7 +250,7 @@ export default function CrmApp() {
       syncRoute();
       try {
         const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) setData(JSON.parse(stored) as CrmData);
+        setData(hydrateLegacyCrmData(stored, cloneDefaults()));
         setCollapsed(
           localStorage.getItem('unlockedcrm-nav-collapsed') === 'true',
         );
@@ -262,7 +268,7 @@ export default function CrmApp() {
 
   useEffect(() => {
     if (!hydrated) return;
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.setItem(STORAGE_KEY, serializeLegacyCrmData(data));
   }, [data, hydrated]);
 
   useEffect(() => {
@@ -302,6 +308,7 @@ export default function CrmApp() {
   }
 
   const routeTitle =
+    renewalWorkflow.contactTitle ??
     routeTitles[route] ??
     route.split('/').filter(Boolean).pop()?.replaceAll('-', ' ') ??
     'Home';
@@ -762,6 +769,7 @@ export default function CrmApp() {
             <LiveParityRouter
               route={route}
               data={data}
+              renewalWorkflow={renewalWorkflow}
               navigate={navigate}
               pipelineView={pipelineView}
               taskView={taskView}
