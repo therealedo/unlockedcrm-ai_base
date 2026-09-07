@@ -36,6 +36,7 @@ Windows host
   |     HTTPS REST/JSON
   |          |
   |-- Fastify on pinned Node.js 24 LTS and npm
+      |-- Prisma/reviewed SQL renewal persistence and read-only API (Units 2B–2C)
       |-- centralized request identity and authorization context
       |-- CRM, sales, insurance, communications, business, AI modules
       |-- application commands, queries, policies, and stable provider ports
@@ -43,7 +44,6 @@ Windows host
               |
 Docker Compose
   |-- PostgreSQL (Foundation)
-  |       `-- Prisma/reviewed SQL renewal persistence and read-only API (Units 2B–2C)
   `-- slice-triggered object storage, mail capture, queues, and provider simulators
               |
 bounded async workers use the selected host/infrastructure boundary for their slice

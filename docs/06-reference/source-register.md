@@ -27,7 +27,7 @@ When a prior decision conflicts with `PLAN-2026-09-02`, the current governance a
 
 | Source | Supports |
 |---|---|
-| `package.json` and `package-lock.json` | React 19.2.8, Vinext 1.0.0-beta.9, Vite 8.0.16, Cloudflare Vite plugin 1.51.1, Wrangler 4.120.0, and Workers Types 5.20260801.1 are locked; full and `--omit=dev` npm audits returned zero findings on pinned Node.js 24.18.0/npm 12.0.2; `npm run dev` maps to the Foundation launcher |
+| `package.json` and `package-lock.json` | React 19.2.8, Vinext 1.0.0-beta.9, Vite 8.0.16, Cloudflare Vite plugin 1.51.1, Wrangler 4.120.0, and Workers Types 5.20260801.1 are locked; full and `--omit=dev` npm audits returned zero findings on pinned Node.js 24.18.0/npm 12.0.2; `npm run dev` maps to `dev:local` for persistence startup; `dev:foundation` retains the explicit health-only path |
 | Installed Vinext 1.0.0-beta.9 package inspection | The published bundle still contains and invokes `image-size` 2.0.2 for build-time image metadata even though npm no longer exposes the dependency edge; current use is limited to trusted build inputs and does not prove production safety |
 | `vite.config.ts` | Vinext, OpenAI Sites, and Cloudflare Vite plugins |
 | `.openai/hosting.json` | No D1 or R2 application-data binding |

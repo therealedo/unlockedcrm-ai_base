@@ -34,7 +34,7 @@ The approved direction is an online-first, locally reproducible, single-workspac
 
 - React currently runs through Vinext/Vite using Next-compatible source conventions; the official Next.js package is not the runtime.
 - Root and catch-all pages render one client CRM shell with custom browser routing.
-- Seven create-only flows persist one `localStorage` object; edit/delete, CRM/domain APIs, PostgreSQL persistence, jobs, auth, real providers, and PWA support are absent.
+- Seven create-only flows persist one `localStorage` object; beyond the PostgreSQL-backed renewal GET, edit/delete, mutation and broader CRM APIs, browser PostgreSQL authority, jobs, auth, real providers, and PWA support remain absent.
 - OpenAI Sites/Cloudflare tooling is configured for the web build, but no D1/R2 or other application data bindings exist.
 - `npm run dev` is the locally verified Windows persistence startup: it validates the synthetic DSN, starts Compose PostgreSQL, generates/migrates/seeds, and starts host-run Fastify plus Vinext/Vite; `dev:foundation` remains available.
 - One workspace-scoped renewal GET now reads PostgreSQL with explicit 200/empty/400/404/503 behavior; browser `localStorage` remains UI authority until later Phase 1 work.

@@ -83,7 +83,7 @@ One application-level CRM fetch is active in local mode: `GET /api/v1/workspaces
 
 `tests/crm.spec.ts:8-587` contains 15 Playwright tests. Chromium defaults to 1440×900 on port 3000 with screenshot/trace retention on failure. Coverage includes shell, contact creation/reload, route landmarks, four responsive widths, rail popovers, global search, and icon-only mode.
 
-Gaps: six other create flows, malformed storage, edit/delete, CRM/domain API tests, accessibility, authorization/tenancy, cross-browser, small mobile, performance, and visual-diff baselines. Foundation unit/API tests cover launcher and health contracts.
+Gaps: six other create flows, malformed storage, edit/delete, mutation and remaining CRM/domain API tests, accessibility, authorization/tenancy, cross-browser, small mobile, performance, and visual-diff baselines. Foundation and renewal tests cover launcher, health, domain assembly, GET contracts, and PostgreSQL persistence.
 
 ## Production blockers
 

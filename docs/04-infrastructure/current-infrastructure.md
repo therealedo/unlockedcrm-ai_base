@@ -36,7 +36,7 @@ Vinext 1.0.0-beta.9 no longer exposes `image-size` through npm's installed depen
 
 Vinext/Next.js are frontend application frameworks, Fastify is the API HTTP framework, and Vite is build tooling. Railway, Vercel, OpenAI Sites, Cloudflare, and Wrangler are hosting/runtime choices. Frameworks do not supply hosting, data, jobs, identity, or compliant operations.
 
-Keeping Vinext/Vite for the parity UI does not require cloud infrastructure. The local shell runs its browser, one-read API, PostgreSQL service, and development dependencies on the user's Windows PC.
+Keeping Vinext/Vite for the parity UI does not require cloud infrastructure. The local shell runs its web server, one-read API, PostgreSQL service, and development dependencies on the user's Windows PC.
 
 ## Configured bindings
 
