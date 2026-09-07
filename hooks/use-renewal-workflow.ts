@@ -9,7 +9,10 @@ import {
   RenewalWorkflowClientError,
   type RenewalWorkflowResponse,
 } from '@/lib/renewal-workflow-client';
-import { selectManagedContact } from '@/lib/renewal-workflow-selectors';
+import {
+  selectManagedContact,
+  selectManagedPolicy,
+} from '@/lib/renewal-workflow-selectors';
 
 export type RenewalWorkflowState =
   | { status: 'idle' | 'loading' | 'empty' | 'not-found' | 'error' }
@@ -22,7 +25,11 @@ export function useRenewalWorkflow(route: string) {
   const target = matchRenewalRoute(route);
 
   useEffect(() => {
-    if (!target || (target.kind === 'contact' && !target.contactId)) {
+    if (
+      !target ||
+      (target.kind === 'contact' && !target.contactId) ||
+      (target.kind === 'policy' && !target.policyId)
+    ) {
       setState({ status: target ? 'not-found' : 'idle' });
       return;
     }
@@ -30,6 +37,11 @@ export function useRenewalWorkflow(route: string) {
       if (
         target.kind === 'contact' &&
         !selectManagedContact(graph, target.contactId ?? '')
+      )
+        setState({ status: 'not-found' });
+      else if (
+        target.kind === 'policy' &&
+        !selectManagedPolicy(graph, target.policyId ?? '')
       )
         setState({ status: 'not-found' });
       else if (graph.items.length === 0) setState({ status: 'empty' });
@@ -50,7 +62,7 @@ export function useRenewalWorkflow(route: string) {
       .catch((error: unknown) => {
         if (controller.signal.aborted) return;
         setState(
-          target.kind === 'contact' &&
+          (target.kind === 'contact' || target.kind === 'policy') &&
             error instanceof RenewalWorkflowClientError &&
             error.code === 'not-found'
             ? { status: 'not-found' }
@@ -60,16 +72,23 @@ export function useRenewalWorkflow(route: string) {
     return () => controller.abort();
   }, [route, attempt]);
 
-  const contactTitle =
+  const routeTitle =
     target?.kind === 'contact'
       ? target.contactId && state.status === 'ready'
         ? (selectManagedContact(state.graph, target.contactId)?.contact
             .displayName ?? 'Contact')
         : 'Contact'
-      : null;
+      : target?.kind === 'policy'
+        ? target.policyId && state.status === 'ready'
+          ? (selectManagedPolicy(state.graph, target.policyId)?.policy
+              .displayLabel ?? 'Policy')
+          : 'Policy'
+        : target?.kind === 'renewals'
+          ? 'Renewal Dashboard'
+          : null;
   return {
     state,
-    contactTitle,
+    routeTitle,
     retry: () => {
       cache.current = null;
       setAttempt((value) => value + 1);

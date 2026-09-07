@@ -13,6 +13,7 @@ import {
 } from './renewal-workflow-client';
 import {
   selectManagedContact,
+  selectManagedPolicy,
   selectManagedPolicies,
 } from './renewal-workflow-selectors';
 
@@ -84,14 +85,28 @@ function graph(): RenewalWorkflowResponse {
 }
 
 describe('renewal routes', () => {
-  it('enables only the policy list and contact detail routes', () => {
+  it('matches managed collection and detail routes in safe order', () => {
     expect(matchRenewalRoute('/policies')).toEqual({ kind: 'policies' });
+    expect(matchRenewalRoute('/policies/renewals')).toEqual({
+      kind: 'renewals',
+    });
+    expect(matchRenewalRoute(`/policies/${ids.policy}`)).toEqual({
+      kind: 'policy',
+      policyId: ids.policy,
+    });
+    expect(matchRenewalRoute('/policies/policy%2Dencoded')).toEqual({
+      kind: 'policy',
+      policyId: 'policy-encoded',
+    });
+    expect(matchRenewalRoute('/policies/%E0%A4%A')).toEqual({
+      kind: 'policy',
+      policyId: null,
+    });
     expect(matchRenewalRoute(`/contacts/${ids.contact}`)).toEqual({
       kind: 'contact',
       contactId: ids.contact,
     });
     expect(matchRenewalRoute('/contacts')).toBeNull();
-    expect(matchRenewalRoute(`/policies/${ids.policy}`)).toBeNull();
     expect(matchRenewalRoute('/contacts/contact-does-not-exist')).toEqual({
       kind: 'contact',
       contactId: 'contact-does-not-exist',
@@ -144,6 +159,17 @@ describe('renewal workflow client', () => {
     ).rejects.toMatchObject({ code: 'invalid-response', retryable: true });
   });
 
+  it('rejects a policy link that is not bound to the exact stable ID', async () => {
+    const body = structuredClone(graph());
+    body.items[0].links.policy = '/policies/Synthetic%20Term%20Policy';
+    const fetcher = vi.fn(
+      async () => new Response(JSON.stringify(body), { status: 200 }),
+    );
+    await expect(
+      fetchRenewalWorkflow(new AbortController().signal, fetcher),
+    ).rejects.toMatchObject({ code: 'invalid-response', retryable: true });
+  });
+
   it('reports a network failure as retryable', async () => {
     const fetcher = vi.fn(async () => {
       throw new TypeError('offline');
@@ -163,12 +189,20 @@ describe('renewal selectors', () => {
       ids.renewal,
     );
     expect(selectManagedContact(graph(), 'unknown-contact')).toBeUndefined();
+    expect(selectManagedPolicy(graph(), ids.policy)?.contact.id).toBe(
+      ids.contact,
+    );
+    expect(
+      selectManagedPolicy(graph(), 'Synthetic Term Policy'),
+    ).toBeUndefined();
+    expect(selectManagedPolicy(graph(), 'unknown-policy')).toBeUndefined();
   });
 
   it('returns honest empty selections', () => {
     const empty = { ...graph(), asOf: null, items: [] };
     expect(selectManagedPolicies(empty)).toEqual([]);
     expect(selectManagedContact(empty, ids.contact)).toBeUndefined();
+    expect(selectManagedPolicy(empty, ids.policy)).toBeUndefined();
   });
 });
 

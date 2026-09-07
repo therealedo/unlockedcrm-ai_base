@@ -2,6 +2,7 @@ import { expect, test, type Route } from '@playwright/test';
 
 const workspaceId = '10000000-0000-4000-8000-000000000001';
 const contactId = '20000000-0000-4000-8000-000000000001';
+const policyId = '30000000-0000-4000-8000-000000000001';
 const managedIds = Array.from(
   { length: 9 },
   (_, index) => `${index + 1}0000000-0000-4000-8000-000000000001`,
@@ -17,9 +18,331 @@ function renewalBody(items: unknown[]) {
   };
 }
 
+function managedRenewalItem({
+  suffix = 1,
+  taskStatus = 'completed',
+  displayLabel = 'Synthetic Term Policy',
+}: {
+  suffix?: number;
+  taskStatus?: 'pending' | 'completed' | null;
+  displayLabel?: string;
+} = {}) {
+  const id = (prefix: number) =>
+    `${prefix}0000000-0000-4000-8000-${String(suffix).padStart(12, '0')}`;
+  const itemContactId = id(2);
+  const itemPolicyId = id(3);
+  const renewalId = id(4);
+  return {
+    source: { version: 'renewal-seed.v1', hash: 'synthetic-hash' },
+    contact: { id: itemContactId, displayName: `Avery Harbor ${suffix}` },
+    policy: {
+      id: itemPolicyId,
+      contactId: itemContactId,
+      displayLabel,
+      renewalDate: '2027-01-15',
+    },
+    renewal: {
+      id: renewalId,
+      policyId: itemPolicyId,
+      displayLabel: 'Synthetic Annual Renewal',
+      status: 'open',
+    },
+    followUpTask:
+      taskStatus === null
+        ? null
+        : {
+            id: id(5),
+            renewalId,
+            title: 'Review synthetic renewal',
+            status: taskStatus,
+            version: taskStatus === 'completed' ? 2 : 1,
+            dueAt: '2027-01-01T12:00:00.000Z',
+            completedAt:
+              taskStatus === 'completed' ? '2026-09-07T08:56:12.175Z' : null,
+          },
+    auditEvents: [
+      {
+        id: id(6),
+        type: 'renewal.created',
+        occurredAt: '2026-09-01T12:00:00.000Z',
+        actorId: '70000000-0000-4000-8000-000000000001',
+        recordId: renewalId,
+        correlationId: '80000000-0000-4000-8000-000000000001',
+        provenanceId: '90000000-0000-4000-8000-000000000001',
+      },
+    ],
+    links: {
+      home: '/',
+      contact: `/contacts/${itemContactId}`,
+      policy: `/policies/${itemPolicyId}`,
+      renewals: '/policies/renewals',
+      tasks: '/tasks',
+      audit: '/analytics/audit',
+    },
+  };
+}
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
+});
+
+test('Unit 4C projects policy detail and Renewal Dashboard from one cached graph', async ({
+  page,
+}) => {
+  let requests = 0;
+  const pattern = `**/api/v1/workspaces/${workspaceId}/renewals`;
+  await page.route(pattern, async (route) => {
+    requests += 1;
+    await route.fulfill({
+      status: 200,
+      json: renewalBody([
+        managedRenewalItem(),
+        managedRenewalItem({
+          suffix: 2,
+          taskStatus: 'pending',
+          displayLabel: 'Synthetic Indexed Policy',
+        }),
+        managedRenewalItem({
+          suffix: 3,
+          taskStatus: null,
+          displayLabel: 'Synthetic Universal Policy',
+        }),
+      ]),
+    });
+  });
+
+  await page.goto('/policies');
+  await page
+    .getByRole('button', { name: 'Synthetic Term Policy', exact: true })
+    .click();
+  await expect(page).toHaveURL(`/policies/${policyId}`);
+  await expect(page.locator('h1')).toHaveText('Synthetic Term Policy');
+  await expect(page.getByText('Avery Harbor 1', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Synthetic Annual Renewal', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText('Review synthetic renewal', { exact: true }),
+  ).toBeVisible();
+  await page.getByRole('button', { name: 'Renewal Dashboard' }).click();
+
+  await expect(page).toHaveURL('/policies/renewals');
+  await expect(page.locator('h1')).toHaveText('Renewal Dashboard');
+  await expect(page.getByText('Open renewals', { exact: true })).toBeVisible();
+  await expect(
+    page.getByText('Completed follow-ups', { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Avery Harbor 1', exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('button', { name: 'Synthetic Term Policy', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('QA-MA-ACTIVE-001')).toHaveCount(0);
+  await expect(
+    page.locator('article', { hasText: 'Open renewals' }).locator('b'),
+  ).toHaveText('3');
+  await expect(
+    page.locator('article', { hasText: 'Pending follow-ups' }).locator('b'),
+  ).toHaveText('1');
+  await expect(
+    page.locator('article', { hasText: 'Completed follow-ups' }).locator('b'),
+  ).toHaveText('1');
+  expect(requests).toBe(1);
+});
+
+test('Unit 4C keeps dashboard and policy failures route-specific', async ({
+  page,
+}) => {
+  const pattern = `**/api/v1/workspaces/${workspaceId}/renewals`;
+  let responseStatus = 200;
+  await page.route(pattern, (route) =>
+    route.fulfill({ status: responseStatus, json: renewalBody([]) }),
+  );
+  await page.goto('/policies/renewals');
+  await expect(page.getByText('No server-managed renewals')).toBeVisible();
+  await expect(page.getByText('QA-MA-ACTIVE-001')).toHaveCount(0);
+
+  await page.goto(`/policies/${policyId}`);
+  await expect(page.locator('h1')).toHaveText('Policy');
+  await expect(
+    page.getByRole('heading', { name: 'Policy not found' }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    history.pushState({}, '', '/policies/%E0%A4%A');
+    dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page.locator('h1')).toHaveText('Policy');
+  await expect(
+    page.getByRole('heading', { name: 'Policy not found' }),
+  ).toBeVisible();
+
+  await page.waitForLoadState('networkidle');
+  responseStatus = 404;
+  await page.goto(`/policies/${policyId}`);
+  await expect(
+    page.getByRole('heading', { name: 'Policy not found' }),
+  ).toBeVisible();
+  await page.goto('/policies/renewals');
+  await expect(page.getByRole('alert')).toContainText('could not be loaded');
+  await expect(page.getByText('Contact not found')).toHaveCount(0);
+  await expect(page.getByText('Policy not found')).toHaveCount(0);
+});
+
+test('Unit 4C retry replaces an invalid dashboard response with fresh rows', async ({
+  page,
+}) => {
+  let attempt = 0;
+  const pattern = `**/api/v1/workspaces/${workspaceId}/renewals`;
+  await page.route(pattern, async (route) => {
+    attempt += 1;
+    await route.fulfill(
+      attempt === 1
+        ? { status: 200, json: { schemaVersion: 'renewal-workflow.v1' } }
+        : {
+            status: 200,
+            json: renewalBody([
+              managedRenewalItem(),
+              managedRenewalItem({
+                suffix: 2,
+                taskStatus: 'pending',
+                displayLabel: 'Synthetic Indexed Policy',
+              }),
+              managedRenewalItem({
+                suffix: 3,
+                taskStatus: 'pending',
+                displayLabel: 'Synthetic Universal Policy',
+              }),
+              managedRenewalItem({
+                suffix: 4,
+                taskStatus: null,
+                displayLabel: 'Synthetic Variable Policy',
+              }),
+            ]),
+          },
+    );
+  });
+  await page.goto('/policies/renewals');
+  await expect(page.getByRole('alert')).toContainText('could not be loaded');
+  await expect(page.getByText('Synthetic Term Policy')).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Retry server-managed renewals' })
+    .click();
+  await expect(
+    page.getByRole('button', { name: 'Synthetic Term Policy', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('Open renewals', { exact: true })).toBeVisible();
+  await expect(
+    page.locator('article', { hasText: 'Open renewals' }).locator('b'),
+  ).toHaveText('4');
+  await expect(
+    page.locator('article', { hasText: 'Pending follow-ups' }).locator('b'),
+  ).toHaveText('2');
+  await expect(
+    page.locator('article', { hasText: 'Completed follow-ups' }).locator('b'),
+  ).toHaveText('1');
+  expect(attempt).toBe(2);
+});
+
+test('Unit 4C ignores a managed response after leaving its route', async ({
+  page,
+}) => {
+  await page.addInitScript((id) => {
+    const nativeFetch = window.fetch;
+    window.fetch = (input, init) => {
+      const url = input instanceof Request ? input.url : input.toString();
+      if (!url.includes(`/api/v1/workspaces/${id}/renewals`))
+        return nativeFetch(input, init);
+      init?.signal?.addEventListener(
+        'abort',
+        () => (document.documentElement.dataset.renewalAbort = 'true'),
+        { once: true },
+      );
+      return nativeFetch(input, { ...init, signal: undefined });
+    };
+  }, workspaceId);
+  let release: (() => void) | undefined;
+  const delayed = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let returning = false;
+  let initialRequests = 0;
+  let handledInitialResponses = 0;
+  let freshRequests = 0;
+  await page.route(
+    `**/api/v1/workspaces/${workspaceId}/renewals`,
+    async (route) => {
+      if (!returning) {
+        initialRequests += 1;
+        await delayed;
+        await route
+          .fulfill({
+            status: 200,
+            json: renewalBody([
+              managedRenewalItem({ displayLabel: 'Stale policy' }),
+            ]),
+          })
+          .catch(() => undefined);
+        handledInitialResponses += 1;
+        return;
+      }
+      freshRequests += 1;
+      await route.fulfill({
+        status: 200,
+        json: renewalBody([
+          managedRenewalItem({ displayLabel: 'Fresh policy' }),
+        ]),
+      });
+    },
+  );
+  await page.goto('/policies/renewals');
+  await expect(
+    page.getByText('Loading server-managed renewals…'),
+  ).toBeVisible();
+  await page.evaluate(
+    () => delete document.documentElement.dataset.renewalAbort,
+  );
+  await page.evaluate(() => {
+    history.pushState({}, '', '/commissions');
+    dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(page.locator('h1')).toHaveText('Commissions');
+  await expect
+    .poll(() =>
+      page.evaluate(() => document.documentElement.dataset.renewalAbort),
+    )
+    .toBe('true');
+  await expect(page.getByText('Synthetic Term Policy')).toHaveCount(0);
+  const initialRequestCount = initialRequests;
+  returning = true;
+  await page.evaluate(() => {
+    history.pushState({}, '', '/policies/renewals');
+    dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(
+    page.getByRole('button', { name: 'Fresh policy', exact: true }),
+  ).toBeVisible();
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  release?.();
+  await expect.poll(() => handledInitialResponses).toBe(initialRequestCount);
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) =>
+        requestAnimationFrame(() => requestAnimationFrame(() => resolve())),
+      ),
+  );
+  await expect(
+    page.getByRole('button', { name: 'Fresh policy', exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText('Stale policy', { exact: true })).toHaveCount(0);
+  expect(initialRequestCount).toBeGreaterThanOrEqual(1);
+  expect(freshRequests).toBeGreaterThanOrEqual(1);
 });
 
 test('projects the seeded policy into its server-authoritative contact detail', async ({
