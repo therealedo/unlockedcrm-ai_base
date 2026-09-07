@@ -1,6 +1,6 @@
 # Deployment, backup, restore, and updates
 
-This document separates Phase 1 local development from Phase 2 hosted operations. The current browser prototype includes a locally verified Foundation: exact Node/npm pins, Compose PostgreSQL, a health-only Fastify API, and `npm run dev`. It has no persistence migration/seed workflow or hosted operations.
+This document separates Phase 1 local development from Phase 2 hosted operations. The current browser prototype includes a locally verified Foundation plus validated manual migration/seed commands for one synthetic renewal graph. The Fastify API remains health-only, browser state remains local, and hosted operations are absent.
 
 ## Phase 1: reproducible Windows development
 
@@ -11,10 +11,10 @@ Required operator path:
 1. verify Docker Desktop/Compose prerequisites and the repository-pinned Node.js 24 LTS/npm versions;
 2. install locked application dependencies with the pinned package manager;
 3. configure checked, non-secret development values;
-4. use `npm run dev` for the current Foundation; Unit 2 adds PostgreSQL migration and deterministic seed before persistent readiness;
+4. use `npm run db:migrate` and `npm run db:seed` only with an approved synthetic-local DSN; `npm run dev` remains the Foundation command until Unit 2C adds persistent readiness;
 5. add object storage, mail capture, queues, or other services only when the selected functional slice requires them;
 
-`npm run dev` is the Foundation root command. Unit 2 extends startup with persistence preflight, migration, deterministic seed of exactly one fictional workspace, safe reset/reseed, and readiness rather than exposing a premature local mode. Unit 2A already provides generate-first API checks and an isolated test database lifecycle; it does not activate persistent startup. Full application containerization is deferred unless measured environment-parity problems justify it; Docker Compose owns infrastructure by default, not the UI or API processes.
+`npm run dev` is the Foundation root command. Unit 2B provides validated manual migration and deterministic seed of exactly one fictional workspace; replay is a no-op and drift refuses rather than resetting or overwriting data. Unit 2C extends startup with persistence preflight and readiness. A destructive synthetic-local reset remains separately owner-approved and deferred. Full application containerization is deferred unless measured environment-parity problems justify it; Docker Compose owns infrastructure by default, not the UI or API processes.
 
 Cloud hosting, production credentials, real customer destinations, and real PII/PHI are forbidden prerequisites. An optional PWA shell remains network-required; service-worker caches must not imply offline CRM behavior.
 

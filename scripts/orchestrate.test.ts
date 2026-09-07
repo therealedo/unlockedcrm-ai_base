@@ -50,7 +50,7 @@ const env = {
 const windows = { platform: 'win32' as const, env };
 const UP = 'compose -p unlockedcrm-renewal -f compose.yaml up -d postgres';
 const STOP = 'compose -p unlockedcrm-renewal -f compose.yaml stop postgres';
-const BAD = 'dev:local db:migrate db:seed db:reset dotenv';
+const BAD = 'dev:local db:reset dotenv';
 type Call = [string, string[], { cwd: string; shell: boolean }];
 const plan = (override?: string, exe = node) =>
   build({
@@ -106,6 +106,8 @@ it('keeps Foundation boundaries closed', async () => {
   expect(pkg.scripts).toMatchObject({
     dev: 'npm run dev:foundation',
     'db:generate': 'node scripts/api-check.mjs --generate',
+    'db:migrate': 'node scripts/api-check.mjs --migrate',
+    'db:seed': 'node scripts/api-check.mjs --seed',
     'test:api': 'node scripts/api-check.mjs --test',
     'typecheck:api': 'node scripts/api-check.mjs --typecheck',
   });
@@ -125,7 +127,7 @@ it('keeps Foundation boundaries closed', async () => {
   expect(unit2).toContain('seed of exactly one fictional workspace');
   expect(unit2).not.toContain('provider scenarios');
   expect(read('docs/04-infrastructure/current-infrastructure.md')).toContain(
-    'Prisma 7.10.0 generation and adapter-backed test connectivity are `LOCAL-VERIFIED`',
+    'Prisma generation/connectivity, migration, deterministic seed, and scoped repository are `LOCAL-VERIFIED`',
   );
   expect(read('docs/04-infrastructure/target-architecture.md')).toContain(
     '| Prisma plus reviewed custom SQL | `PARTIAL` |',
@@ -134,13 +136,13 @@ it('keeps Foundation boundaries closed', async () => {
     '| Data access | `PARTIAL` (`LOCAL-VERIFIED`): Prisma 7.10.0 generation',
   );
   expect(read('docs/02-traceability/gap-register.md')).toContain(
-    'generated Prisma client and isolated adapter connectivity are `LOCAL-VERIFIED`',
+    'renewal migration, deterministic seed, constraints and scoped repository exist',
   );
   expect(read('docs/02-traceability/capability-matrix.md')).toContain(
-    'Prisma generation and isolated adapter connectivity are `LOCAL-VERIFIED`',
+    'Initial migration, deterministic renewal seed, immutable audit and repository tests are `LOCAL-VERIFIED`',
   );
   expect(read('docs/06-reference/source-register.md')).toContain(
-    '`UNIT2A-2026-09-06`',
+    '`UNIT2B-2026-09-07`',
   );
   for (const mode of ['preview', 'local'])
     expect(() => build({ mode, platform: 'win32' })).toThrow('Unknown mode');
@@ -159,9 +161,22 @@ it('keeps Foundation boundaries closed', async () => {
   expect(apiPlan.steps.map(({ name }) => name)).toEqual([
     'test-postgres-up',
     'prisma-generate',
+    'prisma-migrate',
     'api-tests',
   ]);
   expect(apiPlan.cleanup.name).toBe('test-postgres-down');
+  expect(
+    buildApiCheckPlan({
+      operation: 'migrate',
+      databaseUrl: TEST_DATABASE_URL,
+    }).steps.map(({ name }) => name),
+  ).toEqual(['prisma-generate', 'prisma-migrate']);
+  expect(
+    buildApiCheckPlan({
+      operation: 'seed',
+      databaseUrl: TEST_DATABASE_URL,
+    }).steps.map(({ name }) => name),
+  ).toEqual(['prisma-generate', 'prisma-seed']);
   for (const spec of [...apiPlan.steps, apiPlan.cleanup]) {
     expect(spec.executable.toLowerCase()).not.toMatch(/(?:cmd|npm)\.exe$/);
     expect(spec.options).toMatchObject({ cwd: process.cwd(), shell: false });
@@ -182,6 +197,13 @@ it('keeps Foundation boundaries closed', async () => {
     ).rejects.toThrow('test database URL');
     expect(execute).not.toHaveBeenCalled();
   }
+  for (const operation of ['migrate', 'seed']) {
+    const execute = vi.fn();
+    await expect(
+      runApiCheck({ operation, databaseUrl: 'postgresql://unsafe', execute }),
+    ).rejects.toThrow('approved synthetic local database URL');
+    expect(execute).not.toHaveBeenCalled();
+  }
   expect(TEST_DATABASE_URL).toContain('127.0.0.1:54330/unlockedcrm_test');
   const testCompose = read('compose.test.yaml');
   expect(testCompose).toContain('name: unlockedcrm-renewal-test');
@@ -200,6 +222,7 @@ it('keeps Foundation boundaries closed', async () => {
   expect(execute.mock.calls.map(([spec]) => spec.name)).toEqual([
     'test-postgres-up',
     'prisma-generate',
+    'prisma-migrate',
     'api-tests',
     'test-postgres-down',
   ]);

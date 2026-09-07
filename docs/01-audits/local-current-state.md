@@ -10,7 +10,7 @@
 - Root uses a separate home screen; active non-root routes use `LiveParityRouter`.
 - Seven create-only flows persist one JSON object in browser `localStorage`.
 - Most external-service and advanced product surfaces are `MOCK`.
-- A health-only Fastify API, development Compose PostgreSQL service, pinned Prisma 7.10.0 generated client, and isolated adapter-backed test database exist; no CRM/domain backend, migration, seed, repository, database authority, authentication, tenant isolation, server authorization, object storage, durable jobs, or real provider integrations exist.
+- A health-only Fastify API and a tested PostgreSQL persistence slice now exist: Prisma migration, reviewed workspace constraints, deterministic synthetic renewal seed, scoped repository, and immutable creation audit. No CRM route uses that slice yet, so browser `localStorage` remains the visible product authority.
 - The current lockfile passes full and production-only npm audits, with the Vinext bundled-parser caveat documented in [Current infrastructure](../04-infrastructure/current-infrastructure.md).
 - All 32 routes rendered at 1707×848 without blank/404/crash, document overflow, or console errors after settled waits.
 - The current Playwright suite contains 15 Chromium tests; it was not rerun during the documentation audit.
@@ -68,7 +68,7 @@ See [Route map](../02-traceability/route-map.md) for all paths and [Capability m
 
 ## External-service reality
 
-No application-level CRM fetch, WebSocket, EventSource, database domain layer, job queue, worker, event bus, or tenant service was found. The Fastify process exposes health only. Phone/SMS/email/calendar, carrier quoting/enrollment, AI/voice, campaigns/forms, documents, commissions, webhooks, and integrations are absent or simulated.
+No application-level CRM fetch, WebSocket, EventSource, job queue, worker, event bus, or tenant service is active. The Fastify process exposes health only; the renewal persistence module is not registered as a route. Phone/SMS/email/calendar, carrier quoting/enrollment, AI/voice, campaigns/forms, documents, commissions, webhooks, and integrations are absent or simulated.
 
 ## Current infrastructure
 
@@ -77,7 +77,7 @@ No application-level CRM fetch, WebSocket, EventSource, database domain layer, j
 - `npm run dev` starts Compose PostgreSQL plus host-run health-only Fastify and Vinext/Vite processes on Windows.
 - `.openai/hosting.json` declares no D1 or R2 bindings.
 - Generated Wrangler configuration has no database, bucket, queue, service, or secret binding.
-- Missing: CRM/domain APIs, migrations, seed, repositories, CI, production deployment, environment example, backup/restore, rollback, and incident procedures. Prisma generation and isolated test connectivity are implemented but do not make PostgreSQL the product authority.
+- Missing: CRM/domain routes, persistence-aware startup/readiness, CI, production deployment, environment example, backup/restore, rollback, and incident procedures. The Unit 2B migration, deterministic seed, and scoped repository are implemented but do not yet make PostgreSQL the browser product authority.
 
 ## Tests
 
@@ -93,4 +93,4 @@ Do not use real data until the [Phase 2 gate](../03-roadmap/phase-2-local-produc
 
 ## Planning direction after this audit
 
-The evidence above remains current-state evidence. Phase 1 extends the health-only Node.js 24/Fastify Foundation and Compose PostgreSQL into a complete REST product/data plane for one synthetic workspace. Unit 2A introduced pinned Prisma generation and an isolated PostgreSQL connectivity harness; Units 2B–2C still own migrations, deterministic seed, workspace repositories, renewal routes, and persistence-aware startup. External-provider edges may use explicit deterministic simulators with complete state machines, owned ports, contract tests, and persisted synthetic events. Phase 2 hosts and secures that product for limited real use and introduces selected lawful real providers.
+The evidence above remains current-state evidence. Phase 1 extends the health-only Node.js 24/Fastify Foundation and Compose PostgreSQL into a complete REST product/data plane for one synthetic workspace. Units 2A–2B now cover Prisma generation, isolated connectivity, the initial migration, deterministic seed, workspace-scoped repository, and database invariants. Unit 2C still owns the renewal GET and persistence-aware startup. External-provider edges may use explicit deterministic simulators with complete state machines, owned ports, contract tests, and persisted synthetic events. Phase 2 hosts and secures that product for limited real use and introduces selected lawful real providers.

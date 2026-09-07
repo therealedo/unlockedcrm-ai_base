@@ -2,7 +2,7 @@
 
 > The current build is a fictional-data browser prototype plus a health-only Foundation. It is not safe for real PII/PHI, limited production use, or SaaS.
 
-**Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, renewal-foundation checks, `DEP-AUDIT-2026-09-04`, and `UNIT2A-2026-09-06`. Durable CRM persistence remains planned until the PostgreSQL renewal slice lands; target decisions below are planning, not implemented state.
+**Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, renewal-foundation checks, `DEP-AUDIT-2026-09-04`, `UNIT2A-2026-09-06`, and `UNIT2B-2026-09-07`. Browser authority remains unchanged until the PostgreSQL renewal route lands.
 
 ## Verified current stack
 
@@ -22,7 +22,7 @@
 | Generated deployment metadata | Wrangler output, static headers, build ID |
 | Dependency audit | Full and `--omit=dev` npm audits returned zero findings on 2026-09-04 |
 
-Package scripts retain Vinext/Vite, Wrangler, and Playwright while pinning Node.js 24.18.0 and npm 12.0.2. `npm run dev` is locally proven to start the PostgreSQL-only Compose service plus the host Fastify and web processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. The repository still does not install or run the official `next` package. Prisma 7.10.0 generation and adapter-backed test connectivity are `LOCAL-VERIFIED`; migrations, deterministic seed, repositories, renewal behavior, and persistence-aware startup remain Units 2B–2C work.
+Package scripts retain Vinext/Vite, Wrangler, and Playwright while pinning Node.js 24.18.0 and npm 12.0.2. `npm run dev` is locally proven to start the PostgreSQL-only Compose service plus the host Fastify and web processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Prisma generation/connectivity, migration, deterministic seed, and scoped repository are `LOCAL-VERIFIED`; renewal routes and persistence-aware startup remain Unit 2C work.
 
 ## Dependency-security baseline
 
@@ -46,7 +46,7 @@ Keeping Vinext/Vite for the parity UI does not require cloud infrastructure. The
 
 - No application containers; Compose currently supplies only the local PostgreSQL service.
 - No server-side renewal domain API, domain validation, or durable CRM behavior beyond the health shell.
-- A generator-only Prisma schema and isolated test harness exist; no migration, seed, domain model, or workspace-scoped repository exists.
+- Prisma migration, reviewed SQL constraints, deterministic renewal seed, domain assembly, workspace-scoped repository, and immutable creation audit exist; no CRM route loads them yet.
 - No secure authentication, MFA, fixed-role enforcement, or centralized request identity.
 - No object storage, scanning boundary, durable worker, scheduler, outbox/inbox, or webhook ingress.
 - No phone/SMS, delivered email, calendar, quote/enrollment, commission sync, AI/voice, or OCR adapter implementation.
@@ -63,7 +63,7 @@ Keeping Vinext/Vite for the parity UI does not require cloud infrastructure. The
 | Phase 2 | Run an explicit Railway deployment spike, then decide whether to host the persistent Fastify API, bounded workers, and PostgreSQL there; if promoted, add production identity, encryption, backup/restore, observability, upgrades, operations, and selected real providers; Vercel remains preview-only |
 | Phase 3 | Build the clean-room public product and a separate SaaS control plane; the control plane may call product APIs/events but must not access CRM product tables directly |
 
-The pinned host toolchain, Fastify health shell, PostgreSQL-only Compose file, and closed Windows foundation launcher are `FUNCTIONAL` for the Foundation boundary and `LOCAL-VERIFIED`. `GET /health/live` returns HTTP 200 with `{"status":"live"}`, while `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Prisma 7.10.0 generation and isolated test connectivity are `PARTIAL` and `LOCAL-VERIFIED`; migrations, deterministic seed, repositories, and renewal routes remain `MISSING`, so local readiness still fails honestly. Full application containerization remains deferred. Railway is only the unvalidated preferred Phase 2 candidate, and Vercel is only an optional frontend-preview candidate; neither is current infrastructure or a Phase 1 dependency. Supabase remains optional only as a future PostgreSQL hosting provider.
+The pinned host toolchain, Fastify health shell, PostgreSQL-only Compose file, and closed Windows foundation launcher are `FUNCTIONAL` for the Foundation boundary and `LOCAL-VERIFIED`. Prisma 7.10.0 generation, the initial migration, deterministic seed, reviewed constraints, scoped repository, and immutable audit trigger are `PARTIAL` and `LOCAL-VERIFIED`; renewal routes and persistence-aware readiness remain `MISSING`. Cross-platform host support is explicitly deferred by the owner; this does not weaken the Windows-local contract or imply production readiness.
 
 Python/FastAPI is not part of the core stack. A future Python process is permitted only as an isolated worker when a proven specialized library requires it; it cannot expose a second product API or own product data.
 
@@ -79,4 +79,4 @@ Protect parity with behavior tests before consolidating the active renderer and 
 
 ## Next proof
 
-Follow the [target architecture](target-architecture.md) and [Phase 1 roadmap](../03-roadmap/phase-1-replica.md). The next proof is Unit 2: introduce Prisma, apply the initial migration, replay the deterministic synthetic seed, exercise workspace-scoped repositories, expose the renewal GET, and add persistence-aware startup. Add object storage, mail capture, queues, or other services only with slice evidence.
+Follow the [target architecture](target-architecture.md) and [Phase 1 roadmap](../03-roadmap/phase-1-replica.md). Unit 2C next exposes the workspace-scoped renewal GET and adds persistence-aware startup/readiness without changing browser authority yet. Add object storage, mail capture, queues, or other services only with slice evidence.
