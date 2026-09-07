@@ -2,7 +2,7 @@
 
 > The current build is a fictional-data browser prototype plus a health-only Foundation. It is not safe for real PII/PHI, limited production use, or SaaS.
 
-**Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, renewal-foundation checks, and `DEP-AUDIT-2026-09-04`. Durable CRM persistence remains planned until the PostgreSQL renewal slice lands; target decisions below are planning, not implemented state.
+**Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, renewal-foundation checks, `DEP-AUDIT-2026-09-04`, and `UNIT2A-2026-09-06`. Durable CRM persistence remains planned until the PostgreSQL renewal slice lands; target decisions below are planning, not implemented state.
 
 ## Verified current stack
 
@@ -18,17 +18,17 @@
 | Tests | 15 Playwright tests plus focused Vitest Foundation/API contracts |
 | Hosting integration | Vinext/Vite with OpenAI Sites and Cloudflare plugins |
 | Local infrastructure orchestration | `compose.yaml` defines PostgreSQL only; `npm run dev` maps to `dev:foundation` and coordinates Compose plus host-run API/web processes |
-| API foundation | Fastify exposes liveness and explicit `MIGRATIONS_UNAVAILABLE` readiness without generated persistence imports |
+| API foundation | Fastify exposes liveness and explicit `MIGRATIONS_UNAVAILABLE` readiness; Prisma 7.10.0 generation and adapter-backed test connectivity are `LOCAL-VERIFIED`, but no persistence plugin is activated |
 | Generated deployment metadata | Wrangler output, static headers, build ID |
 | Dependency audit | Full and `--omit=dev` npm audits returned zero findings on 2026-09-04 |
 
-Package scripts retain Vinext/Vite, Wrangler, and Playwright while pinning Node.js 24.18.0 and npm 12.0.2. `npm run dev` is locally proven to start the PostgreSQL-only Compose service plus the host Fastify and web processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE` without generated Prisma assets. The repository still does not install or run the official `next` package; Prisma generation, migrations, deterministic seed, repositories, renewal behavior, and persistence-aware startup remain Unit 2 work.
+Package scripts retain Vinext/Vite, Wrangler, and Playwright while pinning Node.js 24.18.0 and npm 12.0.2. `npm run dev` is locally proven to start the PostgreSQL-only Compose service plus the host Fastify and web processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. The repository still does not install or run the official `next` package. Prisma 7.10.0 generation and adapter-backed test connectivity are `LOCAL-VERIFIED`; migrations, deterministic seed, repositories, renewal behavior, and persistence-aware startup remain Units 2B–2C work.
 
 ## Dependency-security baseline
 
 The current lockfile is `LOCAL-VERIFIED` with Node.js 24.18.0 and npm 12.0.2: a clean `npm ci`, `npm audit --json`, and `npm audit --omit=dev --json` completed with zero reported vulnerabilities. The direct update train keeps React, Vinext, Vite/RSC, and Cloudflare/Wrangler packages on compatible patched versions.
 
-Two inherited root overrides, `deepmerge-ts` 8.0.1 and `mysql2` 3.23.1, remain provisional but are currently unreached because Prisma is deferred to Unit 2. Re-evaluate both against Prisma's then-current dependency graph before persistence dependencies return.
+Two inherited root overrides, `deepmerge-ts` 8.0.1 and `mysql2` 3.23.1, remain provisional. Prisma 7.10.0 generation and the isolated runtime harness pass with them, but that bounded proof does not establish broader compatibility for later migrations or deployment.
 
 Vinext 1.0.0-beta.9 no longer exposes `image-size` through npm's installed dependency graph, but its published bundle still contains the 2.0.2 parser and invokes it for image metadata. Current application reachability is limited to trusted build metadata; this is a residual upstream risk, not a production-safety claim. Continue to prohibit untrusted build inputs and re-evaluate on each Vinext update.
 
@@ -46,7 +46,7 @@ Keeping Vinext/Vite for the parity UI does not require cloud infrastructure. The
 
 - No application containers; Compose currently supplies only the local PostgreSQL service.
 - No server-side renewal domain API, domain validation, or durable CRM behavior beyond the health shell.
-- No Prisma schema, migrations, seed, or workspace-scoped repositories.
+- A generator-only Prisma schema and isolated test harness exist; no migration, seed, domain model, or workspace-scoped repository exists.
 - No secure authentication, MFA, fixed-role enforcement, or centralized request identity.
 - No object storage, scanning boundary, durable worker, scheduler, outbox/inbox, or webhook ingress.
 - No phone/SMS, delivered email, calendar, quote/enrollment, commission sync, AI/voice, or OCR adapter implementation.
@@ -63,7 +63,7 @@ Keeping Vinext/Vite for the parity UI does not require cloud infrastructure. The
 | Phase 2 | Run an explicit Railway deployment spike, then decide whether to host the persistent Fastify API, bounded workers, and PostgreSQL there; if promoted, add production identity, encryption, backup/restore, observability, upgrades, operations, and selected real providers; Vercel remains preview-only |
 | Phase 3 | Build the clean-room public product and a separate SaaS control plane; the control plane may call product APIs/events but must not access CRM product tables directly |
 
-The pinned host toolchain, Fastify health shell, PostgreSQL-only Compose file, and closed Windows foundation launcher are `FUNCTIONAL` for the Foundation boundary and `LOCAL-VERIFIED`. `GET /health/live` returns HTTP 200 with `{"status":"live"}`, while `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Prisma schema, migrations, deterministic seed, repositories, and renewal routes remain `MISSING`; local readiness therefore fails honestly until Unit 2 lands. Full application containerization remains deferred. Railway is only the unvalidated preferred Phase 2 candidate, and Vercel is only an optional frontend-preview candidate; neither is current infrastructure or a Phase 1 dependency. Supabase remains optional only as a future PostgreSQL hosting provider.
+The pinned host toolchain, Fastify health shell, PostgreSQL-only Compose file, and closed Windows foundation launcher are `FUNCTIONAL` for the Foundation boundary and `LOCAL-VERIFIED`. `GET /health/live` returns HTTP 200 with `{"status":"live"}`, while `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Prisma 7.10.0 generation and isolated test connectivity are `PARTIAL` and `LOCAL-VERIFIED`; migrations, deterministic seed, repositories, and renewal routes remain `MISSING`, so local readiness still fails honestly. Full application containerization remains deferred. Railway is only the unvalidated preferred Phase 2 candidate, and Vercel is only an optional frontend-preview candidate; neither is current infrastructure or a Phase 1 dependency. Supabase remains optional only as a future PostgreSQL hosting provider.
 
 Python/FastAPI is not part of the core stack. A future Python process is permitted only as an isolated worker when a proven specialized library requires it; it cannot expose a second product API or own product data.
 

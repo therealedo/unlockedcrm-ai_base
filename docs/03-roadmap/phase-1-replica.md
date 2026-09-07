@@ -22,7 +22,7 @@ Phase 1 ends when every audited owned/core CRM workflow works coherently through
 | Transport | `PARTIAL` (`LOCAL-VERIFIED`): REST/JSON health endpoints exist; CRM contracts remain incomplete |
 | Local infrastructure | `FUNCTIONAL` for Foundation (`LOCAL-VERIFIED`): Docker Compose runs PostgreSQL only on Windows |
 | Database | `PARTIAL` (`LOCAL-VERIFIED`): PostgreSQL service exists; migrations, constraints, deterministic seed, and transaction tests remain Unit 2 |
-| Data access | `MISSING`: Unit 2 adds Prisma and reviewed custom SQL behind repository interfaces |
+| Data access | `PARTIAL` (`LOCAL-VERIFIED`): Prisma 7.10.0 generation and isolated adapter-backed connectivity exist; Unit 2B adds migrations and workspace repositories |
 | Async | `MISSING`: modular monolith plus bounded TypeScript workers using durable job/outbox contracts remain later Phase 1 work |
 | Auxiliary Python | `MISSING` and deferred unless a proven specialized library requires one isolated worker; never a second API/data authority |
 | Workspace | `MISSING`: Unit 2 adds one deterministic seeded workspace and `workspace_id` on the renewal graph |
@@ -34,7 +34,7 @@ Phase 1 ends when every audited owned/core CRM workflow works coherently through
 
 Application frameworks and cloud infrastructure are separate decisions. Vinext/Next.js organize the frontend, Fastify is the selected HTTP framework for the API, and Vite builds the web client. Railway, Vercel, Sites, and Cloudflare are hosting/runtime choices. None replaces the API or PostgreSQL, and none is required for Phase 1 local development.
 
-The `LOCAL-VERIFIED` Foundation pins Node.js/npm and maps `npm run dev` to `dev:foundation`, which starts the PostgreSQL-only Compose service plus the host Fastify and Vinext/Vite processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Unit 2 introduces Prisma generation, migrations, deterministic seed, repositories, renewal GET behavior, and persistence-aware startup. Object storage, mail capture, queues, and other services remain incomplete until a functional slice requires them. Full local application containerization remains deferred unless measured environment-parity problems justify it.
+The `LOCAL-VERIFIED` Foundation pins Node.js/npm and maps `npm run dev` to `dev:foundation`, which starts the PostgreSQL-only Compose service plus the host Fastify and Vinext/Vite processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Unit 2A adds Prisma 7.10.0 generation and an isolated PostgreSQL connectivity harness; Units 2B–2C still own migrations, deterministic seed, repositories, renewal GET behavior, and persistence-aware startup. Object storage, mail capture, queues, and other services remain incomplete until a functional slice requires them. Full local application containerization remains deferred unless measured environment-parity problems justify it.
 
 ## External-provider acceptance
 
@@ -89,6 +89,6 @@ Responsive phone/tablet/desktop web UX is required. A network-required installab
 - [ ] Every external workflow has complete simulator/adapter status and contract evidence.
 - [ ] Cross-module records, jobs, events, notifications, analytics, and audit agree.
 - [x] Foundation startup is `LOCAL-VERIFIED`: exact Node.js 24.18.0/npm 12.0.2 pins, host-run UI/health API, PostgreSQL-only Compose, and `dev:foundation` with live HTTP 200 and ready HTTP 503 `MIGRATIONS_UNAVAILABLE`.
-- [ ] Unit 2 adds Prisma generation, migration, deterministic seed, workspace-scoped repositories, renewal GET behavior, and persistence-aware startup.
+- [ ] Unit 2A has added Prisma generation and isolated test connectivity; Units 2B–2C add migration, deterministic seed, workspace-scoped repositories, renewal GET behavior, and persistence-aware startup.
 - [ ] Responsive Windows-local proof passes; any PWA claim is network-required only.
 - [ ] Documentation and source register are current.

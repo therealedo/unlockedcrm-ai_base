@@ -7,6 +7,11 @@ import { afterAll, expect, it, vi } from 'vitest';
 import pw from '../playwright.config';
 import { apiProxyTarget as proxy } from '../vite.config';
 import {
+  buildApiCheckPlan,
+  runApiCheck,
+  TEST_DATABASE_URL,
+} from './api-check.mjs';
+import {
   buildProcessPlan as build,
   reportError,
   runProcessPlan as run,
@@ -45,7 +50,7 @@ const env = {
 const windows = { platform: 'win32' as const, env };
 const UP = 'compose -p unlockedcrm-renewal -f compose.yaml up -d postgres';
 const STOP = 'compose -p unlockedcrm-renewal -f compose.yaml stop postgres';
-const BAD = 'dev:local db:generate db:migrate db:seed db:reset dotenv prisma';
+const BAD = 'dev:local db:migrate db:seed db:reset dotenv';
 type Call = [string, string[], { cwd: string; shell: boolean }];
 const plan = (override?: string, exe = node) =>
   build({
@@ -100,17 +105,43 @@ it('keeps Foundation boundaries closed', async () => {
   const api = JSON.parse(read('api/package.json'));
   expect(pkg.scripts).toMatchObject({
     dev: 'npm run dev:foundation',
-    'test:api': 'vitest run --project api',
-    'typecheck:api': 'tsc -p api/tsconfig.json --noEmit --incremental false',
+    'db:generate': 'node scripts/api-check.mjs --generate',
+    'test:api': 'node scripts/api-check.mjs --test',
+    'typecheck:api': 'node scripts/api-check.mjs --typecheck',
   });
   const inactive = { ...pkg.scripts, ...pkg.devDependencies };
   for (const entry of BAD.split(' '))
     expect(inactive).not.toHaveProperty(entry);
-  expect(api.dependencies).toEqual({ fastify: '5.12.1' });
+  expect(pkg.devDependencies.prisma).toBe('7.10.0');
+  expect(api.dependencies).toEqual({
+    '@prisma/adapter-pg': '7.10.0',
+    '@prisma/client': '7.10.0',
+    fastify: '5.12.1',
+    pg: '8.23.0',
+  });
   const doc = read('docs/04-infrastructure/deployment-backup-and-updates.md');
   const [foundation, unit2] = doc.split('root command. Unit 2');
   expect(foundation).not.toContain('seed exactly one fictional workspace');
   expect(unit2).toContain('seed of exactly one fictional workspace');
+  expect(unit2).not.toContain('provider scenarios');
+  expect(read('docs/04-infrastructure/current-infrastructure.md')).toContain(
+    'Prisma 7.10.0 generation and adapter-backed test connectivity are `LOCAL-VERIFIED`',
+  );
+  expect(read('docs/04-infrastructure/target-architecture.md')).toContain(
+    '| Prisma plus reviewed custom SQL | `PARTIAL` |',
+  );
+  expect(read('docs/03-roadmap/phase-1-replica.md')).toContain(
+    '| Data access | `PARTIAL` (`LOCAL-VERIFIED`): Prisma 7.10.0 generation',
+  );
+  expect(read('docs/02-traceability/gap-register.md')).toContain(
+    'generated Prisma client and isolated adapter connectivity are `LOCAL-VERIFIED`',
+  );
+  expect(read('docs/02-traceability/capability-matrix.md')).toContain(
+    'Prisma generation and isolated adapter connectivity are `LOCAL-VERIFIED`',
+  );
+  expect(read('docs/06-reference/source-register.md')).toContain(
+    '`UNIT2A-2026-09-06`',
+  );
   for (const mode of ['preview', 'local'])
     expect(() => build({ mode, platform: 'win32' })).toThrow('Unknown mode');
   expect(() => build({ mode: 'foundation', platform: 'linux' })).toThrow(
@@ -124,6 +155,58 @@ it('keeps Foundation boundaries closed', async () => {
   expect(() => proxy({ API_PORT: '0' })).toThrow('API_PORT');
   expect(pw.webServer).toMatchObject({ command: 'npm run dev:web' });
   if (process.platform !== 'win32') return;
+  const apiPlan = buildApiCheckPlan({ operation: 'test' });
+  expect(apiPlan.steps.map(({ name }) => name)).toEqual([
+    'test-postgres-up',
+    'prisma-generate',
+    'api-tests',
+  ]);
+  expect(apiPlan.cleanup.name).toBe('test-postgres-down');
+  for (const spec of [...apiPlan.steps, apiPlan.cleanup]) {
+    expect(spec.executable.toLowerCase()).not.toMatch(/(?:cmd|npm)\.exe$/);
+    expect(spec.options).toMatchObject({ cwd: process.cwd(), shell: false });
+    expect(spec.timeoutMs).toBeGreaterThan(0);
+    expect(spec.timeoutMs).toBeLessThanOrEqual(120_000);
+  }
+  expect(apiPlan.cleanup.args.join(' ')).toBe(
+    'compose -f compose.test.yaml --project-name unlockedcrm-renewal-test down --remove-orphans',
+  );
+  expect(apiPlan.cleanup.args).not.toContain('--volumes');
+  for (const databaseUrl of [
+    'postgresql://unlockedcrm:synthetic-local-only@127.0.0.1:54329/unlockedcrm_dev?schema=public',
+    'postgresql://unlockedcrm:synthetic-local-only@127.0.0.1:54330/unlockedcrm_dev?schema=public',
+  ]) {
+    const execute = vi.fn();
+    await expect(
+      runApiCheck({ operation: 'test', databaseUrl, execute }),
+    ).rejects.toThrow('test database URL');
+    expect(execute).not.toHaveBeenCalled();
+  }
+  expect(TEST_DATABASE_URL).toContain('127.0.0.1:54330/unlockedcrm_test');
+  const testCompose = read('compose.test.yaml');
+  expect(testCompose).toContain('name: unlockedcrm-renewal-test');
+  expect(testCompose).not.toContain('54329');
+  expect(testCompose).not.toContain('renewal-postgres');
+  const developmentCompose = read('compose.yaml');
+  expect(developmentCompose).toContain('127.0.0.1:54329:5432');
+  expect(developmentCompose).toContain('renewal-postgres');
+  const execute = vi.fn(async ({ name }: { name: string }) => {
+    if (['api-tests', 'test-postgres-down'].includes(name))
+      throw new Error(`${name} failed`);
+  });
+  const apiFailure = await rejected(
+    runApiCheck({ operation: 'test', execute }),
+  );
+  expect(execute.mock.calls.map(([spec]) => spec.name)).toEqual([
+    'test-postgres-up',
+    'prisma-generate',
+    'api-tests',
+    'test-postgres-down',
+  ]);
+  expect((apiFailure as AggregateError).errors.map(String)).toEqual([
+    'Error: api-tests failed',
+    'Error: test-postgres-down failed',
+  ]);
   const bad = { ...windows, env: { SystemRoot: 'C:\\tools' } };
   await expect(terminate(stub(123), bad, 5)).rejects.toThrow(
     'Untrusted taskkill',

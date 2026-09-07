@@ -38,4 +38,5 @@ next-env.d.ts
 /.wrangler/
 /outputs/
 /work/
+/api/src/generated/prisma/
 *.tsbuildinfo

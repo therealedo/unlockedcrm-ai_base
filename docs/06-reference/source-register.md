@@ -15,7 +15,8 @@ Use this register to keep direct observation, local verification, approved plann
 | `#650` | `architecture/integration-strategy` | Prior decision, refined | Adapter-first/vendor gates; simulators now satisfy Phase 1 external edges |
 | `PLAN-2026-09-02` | Owner-approved architecture and phase pivot | Owner decision | Online-first single workspace; Vinext/Vite retained; Fastify on Node.js 24, PostgreSQL/Prisma, workspace seams; Railway preferred Phase 2 candidate; Vercel preview-only; Python core API rejected; hosted Phase 2; clean-room control plane Phase 3; native/offline deferred |
 | `PLAN-DOCKER-2026-09-02` | Owner-approved Windows development topology | Owner decision | Host-run Vinext/Vite and Node.js/Fastify with exact Node/npm pins; Docker Desktop + Docker Compose for PostgreSQL and later slice-required infrastructure; one planned root startup command; no cloud required; full app containerization deferred pending measured parity problems |
-| `DEP-AUDIT-2026-09-04` | Dependency-security baseline | `LOCAL-VERIFIED` | Clean npm install; full and `--omit=dev` audits returned zero findings after the React/Vinext/Vite/Cloudflare update train; inherited Prisma-related overrides are currently unreached and the residual Vinext bundled-parser caveat remains explicit |
+| `DEP-AUDIT-2026-09-04` | Dependency-security baseline | `LOCAL-VERIFIED` | Historical clean npm install and zero-finding full/production audits after the React/Vinext/Vite/Cloudflare update train; superseded for Prisma reachability by `UNIT2A-2026-09-06`; the Vinext bundled-parser caveat remains explicit |
+| `UNIT2A-2026-09-06` | Prisma generation and isolated PostgreSQL test harness | `LOCAL-VERIFIED` | Pinned Prisma/client/adapter 7.10.0 and pg 8.23.0; generate-first API checks; exact 54330 test DSN; adapter query; bounded Compose cleanup without volume deletion; no migration, seed, repository, or CRM route |
 
 When a prior decision conflicts with `PLAN-2026-09-02`, the current governance and roadmap documents control. Historical audit observations remain unchanged.
 
@@ -44,7 +45,7 @@ When a prior decision conflicts with `PLAN-2026-09-02`, the current governance a
 | Repository file inventory (2026-09-02) | No Dockerfile or Compose configuration at decision-recording time |
 | `compose.yaml`; `api/src/{app,config,server}.ts`; `api/test/*`; `scripts/orchestrate.{mjs,test.ts}` | Foundation PostgreSQL Compose, health-only Fastify API, canonical Windows launcher/cleanup, and their local verification evidence (`LOCAL-VERIFIED`) |
 
-These paths prove current implementation only. The root `deepmerge-ts` and `mysql2` overrides are inherited, provisional, and currently unreached until Prisma returns in Unit 2. Exact Node/npm pins, PostgreSQL-only Compose, the health-only Fastify API, and `npm run dev` are `LOCAL-VERIFIED`; Prisma, CRM/domain routes, workers, workspace scopes, Railway/Vercel deployment, real adapters, and PWA remain planned or missing.
+These paths prove current implementation only. The root `deepmerge-ts` and `mysql2` overrides remain provisional; Unit 2A generation/connectivity passes, but broader migration and deployment compatibility is unproven. Exact Node/npm pins, PostgreSQL-only development Compose, the health-only Fastify API, `npm run dev`, Prisma generation, and the isolated test harness are `LOCAL-VERIFIED`; migrations, CRM/domain routes, workers, workspace scopes, Railway/Vercel deployment, real adapters, and PWA remain planned or missing.
 
 ## Official external references
 
