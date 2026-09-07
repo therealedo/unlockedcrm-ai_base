@@ -69,6 +69,109 @@ it('replays the fixed seed as a no-op and refuses drift', async () => {
   });
 });
 
+it('preserves an exact legally completed fixture on seed replay', async () => {
+  await withDatabase(async (client) => {
+    await seedSyntheticRenewalGraph(client);
+    const completedAt = new Date('2026-12-15T15:01:00.000Z');
+    await client.followUpTask.update({
+      where: { id: SYNTHETIC_RENEWAL.taskId },
+      data: { status: 'completed', version: 2, completedAt },
+    });
+    await client.auditEvent.create({
+      data: {
+        id: '60000000-0000-4000-8000-000000000002',
+        workspaceId: SYNTHETIC_RENEWAL.workspaceId,
+        actorId: SYNTHETIC_RENEWAL.actorId,
+        eventType: 'task.completed',
+        recordId: SYNTHETIC_RENEWAL.taskId,
+        correlationId: '80000000-0000-4000-8000-000000000002',
+        provenanceId: SYNTHETIC_RENEWAL.provenanceId,
+        sourceVersion: SYNTHETIC_RENEWAL.sourceVersion,
+        sourceHash: SYNTHETIC_RENEWAL.sourceHash,
+        occurredAt: completedAt,
+        createdAt: completedAt,
+      },
+    });
+    const before = await client.workspace.findUniqueOrThrow({
+      where: { id: SYNTHETIC_RENEWAL.workspaceId },
+      include: {
+        contacts: true,
+        policies: true,
+        renewals: true,
+        tasks: true,
+        auditEvents: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+
+    await seedSyntheticRenewalGraph(client);
+
+    const after = await client.workspace.findUniqueOrThrow({
+      where: { id: SYNTHETIC_RENEWAL.workspaceId },
+      include: {
+        contacts: true,
+        policies: true,
+        renewals: true,
+        tasks: true,
+        auditEvents: { orderBy: { createdAt: 'asc' } },
+      },
+    });
+    expect(after).toEqual(before);
+    expect(after.renewals).toEqual([
+      expect.objectContaining({
+        id: SYNTHETIC_RENEWAL.renewalId,
+        status: 'open',
+      }),
+    ]);
+    expect(after.tasks).toEqual([
+      expect.objectContaining({
+        id: SYNTHETIC_RENEWAL.taskId,
+        status: 'completed',
+        version: 2,
+        completedAt,
+      }),
+    ]);
+    expect(after.auditEvents).toHaveLength(2);
+    expect(after.auditEvents[1]).toMatchObject({
+      eventType: 'task.completed',
+      workspaceId: SYNTHETIC_RENEWAL.workspaceId,
+      actorId: SYNTHETIC_RENEWAL.actorId,
+      recordId: SYNTHETIC_RENEWAL.taskId,
+      correlationId: '80000000-0000-4000-8000-000000000002',
+      provenanceId: SYNTHETIC_RENEWAL.provenanceId,
+      sourceVersion: SYNTHETIC_RENEWAL.sourceVersion,
+      sourceHash: SYNTHETIC_RENEWAL.sourceHash,
+      occurredAt: completedAt,
+      createdAt: completedAt,
+    });
+  });
+});
+
+it('refuses extra fixed-workspace rows without writing', async () => {
+  await withDatabase(async (client) => {
+    await seedSyntheticRenewalGraph(client);
+    await client.contact.create({
+      data: {
+        id: '20000000-0000-4000-8000-000000000002',
+        workspaceId: SYNTHETIC_RENEWAL.workspaceId,
+        displayName: 'Extra synthetic contact',
+      },
+    });
+    const before = await client.contact.findMany({
+      where: { workspaceId: SYNTHETIC_RENEWAL.workspaceId },
+      orderBy: { id: 'asc' },
+    });
+    await expect(seedSyntheticRenewalGraph(client)).rejects.toThrow(
+      'Synthetic renewal seed drift',
+    );
+    expect(
+      await client.contact.findMany({
+        where: { workspaceId: SYNTHETIC_RENEWAL.workspaceId },
+        orderBy: { id: 'asc' },
+      }),
+    ).toEqual(before);
+  });
+});
+
 it('enforces workspace links, partial uniqueness, and immutable audit events', async () => {
   await withDatabase(async (client) => {
     await seedSyntheticRenewalGraph(client);

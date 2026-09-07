@@ -10,7 +10,7 @@
 - Root uses a separate home screen; active non-root routes use `LiveParityRouter`.
 - Seven create-only flows persist one JSON object in browser `localStorage`.
 - Most external-service and advanced product surfaces are `MOCK`.
-- Fastify now exposes health endpoints and one workspace-scoped renewal GET backed by the tested PostgreSQL migration, deterministic seed, scoped repository, and immutable audit. Browser `localStorage` remains the visible product authority.
+- Fastify now exposes health endpoints and one workspace-scoped renewal GET backed by the tested PostgreSQL migration, completion-aware deterministic seed classifier, scoped repository, and immutable audit. Startup accepts only an empty, exact pending, or exact completed fixed graph; browser `localStorage` remains the visible product authority.
 - The current lockfile passes full and production-only npm audits, with the Vinext bundled-parser caveat documented in [Current infrastructure](../04-infrastructure/current-infrastructure.md).
 - All 32 routes rendered at 1707×848 without blank/404/crash, document overflow, or console errors after settled waits.
 - The current Playwright suite contains 15 Chromium tests; it was not rerun during the documentation audit.
