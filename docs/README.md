@@ -1,6 +1,6 @@
 # Documentation hub
 
-> **The current local build is a fictional-data browser prototype plus one local synthetic renewal GET, not safe for real PII/PHI, hosted production use, or SaaS.**
+> **The current local build is a fictional-data browser prototype plus local synthetic, workspace-scoped renewal GET and task-completion POST routes; browser `localStorage` remains UI authority. It is not safe for real PII/PHI, hosted production use, or SaaS.**
 
 The approved direction is an online-first, locally reproducible, single-workspace CRM. Phase 1 runs on the user's Windows PC without cloud infrastructure; hosted production and public SaaS are later gates.
 

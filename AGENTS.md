@@ -44,7 +44,7 @@ See [Working agreements](docs/00-governance/working-agreements.md) and [Legal an
 
 Vinext/Next.js are frontend application frameworks, and Fastify is the selected backend HTTP framework. Vite is build tooling. Railway, Vercel, OpenAI Sites, Cloudflare, and Wrangler are hosting/runtime choices. A framework is not hosting, and none of these hosting services is required for Phase 1 local development.
 
-Docker Desktop and Docker Compose are implemented Phase 1 dependencies. `npm run dev` performs the bounded persistence startup and starts the host API/web; `dev:foundation` preserves the generation-independent health shell. The current API exposes one synthetic, workspace-scoped renewal GET while browser authority remains unchanged. Object storage, mail capture, queues, and other services join only when a functional slice needs them; full application containerization remains deferred unless measured environment-parity problems justify it.
+Docker Desktop and Docker Compose are implemented Phase 1 dependencies. `npm run dev` performs the bounded persistence startup and starts the host API/web; `dev:foundation` preserves the generation-independent health shell. The current API exposes a synthetic, workspace-scoped renewal GET and task-completion POST while browser `localStorage` remains UI authority. Object storage, mail capture, queues, and other services join only when a functional slice needs them; full application containerization remains deferred unless measured environment-parity problems justify it.
 
 ## Architecture seams required in Phase 1
 
