@@ -14,7 +14,7 @@ Required operator path:
 4. use default `npm run dev` for DSN-validated local persistence startup; retain `dev:foundation` for the generation-independent health shell;
 5. add object storage, mail capture, queues, or other services only when the selected functional slice requires them;
 
-`dev:foundation` remains the health-only root command. Unit 2B provides validated manual migration and deterministic seed of exactly one fictional workspace; replay is a no-op and drift refuses rather than resetting or overwriting data. `npm run dev` now uses `dev:local` to validate the exact development DSN, wait for PostgreSQL, generate/migrate/seed, then start the API/web. A destructive synthetic-local reset remains separately owner-approved and deferred. Full application containerization remains deferred.
+`dev:foundation` remains the health-only root command. Unit 2B provides validated manual migration and deterministic seed of exactly one fictional workspace. Unit 3A makes replay completion-aware: only an empty, exact pending, or exact completed fixed graph is accepted; partial, extra, or drifted state refuses before writes. `npm run dev` uses `dev:local` to validate the exact development DSN, wait for PostgreSQL, generate/migrate/seed, then start the API/web. A destructive synthetic-local reset remains separately owner-approved and deferred. Full application containerization remains deferred.
 
 Cloud hosting, production credentials, real customer destinations, and real PII/PHI are forbidden prerequisites. An optional PWA shell remains network-required; service-worker caches must not imply offline CRM behavior.
 

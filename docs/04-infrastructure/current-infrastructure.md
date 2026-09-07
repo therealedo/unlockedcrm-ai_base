@@ -46,7 +46,7 @@ Keeping Vinext/Vite for the parity UI does not require cloud infrastructure. The
 
 - No application containers; Compose currently supplies only the local PostgreSQL service.
 - No server-side CRM mutation or browser API authority; the current domain API is one renewal GET only.
-- Prisma migration, reviewed SQL constraints, deterministic renewal seed, domain assembly, workspace-scoped repository, and immutable creation audit feed the GET.
+- Prisma migration, reviewed SQL constraints, a completion-aware exact-state seed classifier, domain assembly, workspace-scoped repository, and immutable audits feed the GET. The classifier preserves a legal completed task and its single completion event but does not provide the still-missing completion command.
 - No secure authentication, MFA, fixed-role enforcement, or centralized request identity.
 - No object storage, scanning boundary, durable worker, scheduler, outbox/inbox, or webhook ingress.
 - No phone/SMS, delivered email, calendar, quote/enrollment, commission sync, AI/voice, or OCR adapter implementation.

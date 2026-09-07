@@ -6,7 +6,7 @@ This model describes owned concepts inferred from repository/live evidence and a
 
 | Entity | Purpose |
 |---|---|
-| Workspace | Ownership root for product data and configuration; exactly one fictional workspace is seeded in Phase 1 |
+| Workspace | Ownership root for product data and configuration; exactly one fixed fictional workspace is initialized only from an empty graph, and exact pending or completed graph state is preserved on replay |
 | Development Identity | Seeded actor used by centralized request/policy context; not production authentication |
 | User | Product identity and preferences; production session/MFA behavior arrives in Phase 2 |
 | Membership/Role | Fixed-profile assignment and policy input within the workspace |

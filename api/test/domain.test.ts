@@ -1,5 +1,10 @@
 import { expect, it } from 'vitest';
 import {
+  classifySyntheticRenewalSeedState,
+  SYNTHETIC_RENEWAL_SEED,
+  type SyntheticRenewalSeedInspection,
+} from '../prisma/seed.js';
+import {
   assembleRenewalGraph,
   SYNTHETIC_RENEWAL,
   type RenewalGraphInput,
@@ -53,6 +58,21 @@ const records = (): RenewalGraphInput => ({
   ],
 });
 
+const pendingSeedInspection = (): SyntheticRenewalSeedInspection => {
+  const fixture = structuredClone(SYNTHETIC_RENEWAL_SEED);
+  return {
+    fixed: fixture,
+    graph: {
+      ...fixture.workspace,
+      contacts: [fixture.contact],
+      policies: [fixture.policy],
+      renewals: [fixture.renewal],
+      tasks: [fixture.task],
+      auditEvents: [fixture.creationAudit],
+    },
+  };
+};
+
 it('assembles one stable workspace-scoped renewal graph', () => {
   const graph = assembleRenewalGraph(records());
   expect(graph).toMatchObject({
@@ -80,4 +100,146 @@ it('retains an open renewal without a task and still validates relationships', (
   expect(assembleRenewalGraph(input).followUpTask).toBeNull();
   input.policy.contactId = '20000000-0000-4000-8000-000000000099';
   expect(() => assembleRenewalGraph(input)).toThrow('relationship mismatch');
+});
+
+it('classifies only the exact empty, pending, and completed seed states', () => {
+  const empty: SyntheticRenewalSeedInspection = {
+    fixed: {
+      workspace: null,
+      contact: null,
+      policy: null,
+      renewal: null,
+      task: null,
+      creationAudit: null,
+    },
+    graph: null,
+  };
+  expect(classifySyntheticRenewalSeedState(empty)).toBe('empty');
+
+  const pending = pendingSeedInspection();
+  expect(classifySyntheticRenewalSeedState(pending)).toBe('pending');
+
+  const completed = pendingSeedInspection();
+  const completedAt = new Date('2026-12-15T15:01:00.000Z');
+  completed.fixed.task!.status = 'completed';
+  completed.fixed.task!.version = 2;
+  completed.fixed.task!.completedAt = completedAt;
+  completed.graph!.tasks[0] = completed.fixed.task!;
+  completed.graph!.auditEvents.push({
+    ...completed.fixed.creationAudit!,
+    id: '60000000-0000-4000-8000-000000000002',
+    eventType: 'task.completed',
+    recordId: SYNTHETIC_RENEWAL.taskId,
+    correlationId: '80000000-0000-4000-8000-000000000002',
+    occurredAt: completedAt,
+    createdAt: completedAt,
+  });
+  expect(classifySyntheticRenewalSeedState(completed)).toBe('completed');
+});
+
+it.each([
+  [
+    'partial identity',
+    (state: SyntheticRenewalSeedInspection) => (state.fixed.contact = null),
+  ],
+  [
+    'extra business row',
+    (state: SyntheticRenewalSeedInspection) =>
+      state.graph!.contacts.push({
+        ...state.fixed.contact!,
+        id: '20000000-0000-4000-8000-000000000002',
+      }),
+  ],
+  [
+    'relationship drift',
+    (state: SyntheticRenewalSeedInspection) =>
+      (state.fixed.policy!.contactId = '20000000-0000-4000-8000-000000000002'),
+  ],
+  [
+    'source drift',
+    (state: SyntheticRenewalSeedInspection) =>
+      (state.fixed.workspace!.sourceHash = 'sha256:drift'),
+  ],
+  [
+    'label drift',
+    (state: SyntheticRenewalSeedInspection) =>
+      (state.fixed.renewal!.displayLabel = 'Drifted renewal'),
+  ],
+  [
+    'date drift',
+    (state: SyntheticRenewalSeedInspection) =>
+      (state.fixed.task!.dueAt = new Date('2026-12-16T15:00:00.000Z')),
+  ],
+  [
+    'creation audit drift',
+    (state: SyntheticRenewalSeedInspection) =>
+      (state.fixed.creationAudit!.actorId =
+        '70000000-0000-4000-8000-000000000002'),
+  ],
+])('rejects %s before seed writes', (_name, mutate) => {
+  const state = pendingSeedInspection();
+  mutate(state);
+  expect(() => classifySyntheticRenewalSeedState(state)).toThrow(
+    'Synthetic renewal seed drift',
+  );
+});
+
+it.each([
+  [
+    'invalid event UUID',
+    (state: SyntheticRenewalSeedInspection) =>
+      (state.graph!.auditEvents[1].id = 'not-a-uuid'),
+  ],
+  [
+    'invalid correlation UUID',
+    (state: SyntheticRenewalSeedInspection) =>
+      (state.graph!.auditEvents[1].correlationId = 'not-a-uuid'),
+  ],
+  [
+    'reused creation correlation UUID',
+    (state: SyntheticRenewalSeedInspection) =>
+      (state.graph!.auditEvents[1].correlationId =
+        SYNTHETIC_RENEWAL.correlationId),
+  ],
+  [
+    'timestamp mismatch',
+    (state: SyntheticRenewalSeedInspection) =>
+      (state.graph!.auditEvents[1].createdAt = new Date(
+        '2026-12-15T15:02:00.000Z',
+      )),
+  ],
+  [
+    'completion audit drift',
+    (state: SyntheticRenewalSeedInspection) =>
+      (state.graph!.auditEvents[1].provenanceId =
+        '90000000-0000-4000-8000-000000000002'),
+  ],
+  [
+    'extra completion audit',
+    (state: SyntheticRenewalSeedInspection) =>
+      state.graph!.auditEvents.push({
+        ...state.graph!.auditEvents[1],
+        id: '60000000-0000-4000-8000-000000000003',
+      }),
+  ],
+])('rejects completed-state %s', (_name, mutate) => {
+  const state = pendingSeedInspection();
+  const completedAt = new Date('2026-12-15T15:01:00.000Z');
+  state.fixed.task!.status = 'completed';
+  state.fixed.task!.version = 2;
+  state.fixed.task!.completedAt = completedAt;
+  state.graph!.tasks[0] = state.fixed.task!;
+  state.graph!.auditEvents.push({
+    ...state.fixed.creationAudit!,
+    id: '60000000-0000-4000-8000-000000000002',
+    eventType: 'task.completed',
+    recordId: SYNTHETIC_RENEWAL.taskId,
+    correlationId: '80000000-0000-4000-8000-000000000002',
+    occurredAt: completedAt,
+    createdAt: completedAt,
+  });
+  mutate(state);
+  expect(() => classifySyntheticRenewalSeedState(state)).toThrow(
+    'Synthetic renewal seed drift',
+  );
 });
