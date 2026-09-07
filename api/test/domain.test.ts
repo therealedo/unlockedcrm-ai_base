@@ -45,6 +45,10 @@ const records = (): RenewalGraphInput => ({
       workspaceId: SYNTHETIC_RENEWAL.workspaceId,
       eventType: 'renewal.created',
       occurredAt: new Date('2026-09-02T12:00:00.000Z'),
+      actorId: SYNTHETIC_RENEWAL.actorId,
+      recordId: SYNTHETIC_RENEWAL.renewalId,
+      correlationId: SYNTHETIC_RENEWAL.correlationId,
+      provenanceId: SYNTHETIC_RENEWAL.provenanceId,
     },
   ],
 });

@@ -5,7 +5,10 @@ import { win32 } from 'node:path';
 import { fileURLToPath } from 'node:url';
 const COMPOSE = 'compose -p unlockedcrm-renewal -f compose.yaml';
 const DOCKER_UP = `${COMPOSE} up -d postgres`.split(' ');
+const DOCKER_UP_WAIT = `${COMPOSE} up -d --wait postgres`.split(' ');
 const DOCKER_STOP = `${COMPOSE} stop postgres`.split(' ');
+const DEVELOPMENT_DATABASE_URL =
+  'postgresql://unlockedcrm:synthetic-local-only@127.0.0.1:54329/unlockedcrm_dev?schema=public';
 const USER_DOCKER = 'Programs/DockerDesktop/resources/bin/docker.exe';
 const SYSTEM_DOCKER = 'Docker/Docker/resources/bin/docker.exe';
 const INHERIT = { shell: false, stdio: 'inherit' };
@@ -63,11 +66,13 @@ function resolveNpmLaunch(nodeExecutable, repoRoot) {
   if (!isInside(nodeRoot, npmCli)) throw new Error('npm CLI escaped Node');
   return { executable, npmCli };
 }
-const appSpec = (name, npm, cwd) => ({
+const npmSpec = (name, script, npm, cwd, mode, env) => ({
   name,
   executable: npm.executable,
-  args: [npm.npmCli, 'run', `dev:${name}`],
+  args: [npm.npmCli, 'run', script],
   cwd,
+  mode,
+  env,
 });
 export function buildProcessPlan({
   mode,
@@ -76,31 +81,72 @@ export function buildProcessPlan({
   cwd = process.cwd(),
   repoRoot = ROOT,
   nodeExecutable = process.execPath,
+  resolveDocker = resolveDockerExecutable,
 }) {
-  if (!['infra', 'foundation'].includes(mode)) throw new Error('Unknown mode');
+  if (!['infra', 'foundation', 'local'].includes(mode))
+    throw new Error('Unknown mode');
   if (platform !== 'win32') throw new Error('Windows only');
+  const databaseUrl = env.DATABASE_URL ?? DEVELOPMENT_DATABASE_URL;
+  if (mode === 'local' && databaseUrl !== DEVELOPMENT_DATABASE_URL)
+    throw new Error('Invalid development database URL');
   const postgres = {
     name: 'postgres',
-    executable: resolveDockerExecutable({ env, repoRoot }),
-    args: DOCKER_UP,
+    executable: resolveDocker({ env, repoRoot }),
+    args: mode === 'local' ? DOCKER_UP_WAIT : DOCKER_UP,
     cwd,
+    mode,
+    env: mode === 'local' ? { ...env, DATABASE_URL: databaseUrl } : env,
   };
   if (mode === 'infra') return [postgres];
   const npm = resolveNpmLaunch(nodeExecutable, repoRoot);
-  return [postgres, ...['api', 'web'].map((name) => appSpec(name, npm, cwd))];
+  if (mode === 'foundation')
+    return [
+      postgres,
+      ...['api', 'web'].map((name) =>
+        npmSpec(name, `dev:${name}`, npm, cwd, mode, env),
+      ),
+    ];
+  const localEnv = { ...env, DATABASE_URL: databaseUrl, APP_MODE: 'local' };
+  return [
+    postgres,
+    ...['generate', 'migrate', 'seed'].map((operation) =>
+      npmSpec(
+        `database-${operation}`,
+        `db:${operation}`,
+        npm,
+        cwd,
+        mode,
+        localEnv,
+      ),
+    ),
+    ...['api', 'web'].map((name) =>
+      npmSpec(name, `dev:${name}`, npm, cwd, mode, localEnv),
+    ),
+  ];
 }
 function validateSpec(spec) {
   const docker = spec.name === 'postgres';
-  if (!docker && !['api', 'web'].includes(spec.name))
+  const database = spec.name.startsWith('database-');
+  if (!docker && !database && !['api', 'web'].includes(spec.name))
     throw new Error('Untrusted argv');
   const basename = `${docker ? 'docker' : 'node'}.exe`;
   const executable = runtimeFile(spec.executable, ROOT, basename);
+  const operation = spec.name.replace('database-', '');
+  const script = database ? `db:${operation}` : `dev:${spec.name}`;
   const args = docker
-    ? DOCKER_UP
-    : [resolveNpmLaunch(executable, ROOT).npmCli, 'run', `dev:${spec.name}`];
+    ? spec.mode === 'local'
+      ? DOCKER_UP_WAIT
+      : DOCKER_UP
+    : [resolveNpmLaunch(executable, ROOT).npmCli, 'run', script];
   const received = [spec.executable, ...spec.args].join('\0');
   const expected = [executable, ...args].join('\0');
   if (received !== expected) throw new Error('Untrusted argv');
+  if (spec.mode === 'local') {
+    if (spec.env?.DATABASE_URL !== DEVELOPMENT_DATABASE_URL)
+      throw new Error('Invalid development database URL');
+    if (!docker && spec.env?.APP_MODE !== 'local')
+      throw new Error('Invalid local application mode');
+  }
 }
 async function exit(child, name) {
   const [code] = await once(child, 'exit');
@@ -146,13 +192,16 @@ export function spawnProcess(
   spec,
   { spawn = nodeSpawn, env = process.env, timeoutMs = 5000 } = {},
 ) {
-  const options = { cwd: spec.cwd, env, ...INHERIT };
+  const options = { cwd: spec.cwd, env: spec.env ?? env, ...INHERIT };
   const child = spawn(spec.executable, spec.args, options);
   const postgres = spec.name === 'postgres';
-  const done = postgres ? undefined : exit(child, spec.name);
+  const oneShot = postgres || spec.name.startsWith('database-');
+  const done = oneShot ? undefined : exit(child, spec.name);
+  const ready = oneShot ? exit(child, spec.name) : once(child, 'spawn');
+  ready.catch(() => {});
   done?.catch(() => {});
   return {
-    ready: postgres ? exit(child, spec.name) : once(child, 'spawn'),
+    ready,
     done,
     stop: postgres
       ? () => stopCompose(child, spec, spawn, options, timeoutMs)

@@ -38,7 +38,16 @@ export interface RenewalGraphInput {
         completedAt: Date | null;
       })
     | null;
-  auditEvents: Array<Scoped & { eventType: string; occurredAt: Date }>;
+  auditEvents: Array<
+    Scoped & {
+      eventType: string;
+      occurredAt: Date;
+      actorId: string;
+      recordId: string;
+      correlationId: string;
+      provenanceId: string;
+    }
+  >;
 }
 
 export type RenewalGraph = RenewalGraphInput & {

@@ -12,9 +12,10 @@
   "scripts": {
     "dev:infra": "node scripts/orchestrate.mjs --mode infra",
     "dev:foundation": "node scripts/orchestrate.mjs --mode foundation",
+    "dev:local": "node scripts/orchestrate.mjs --mode local",
     "dev:api": "npm run dev --workspace @unlockedcrm/api",
     "dev:web": "vinext dev",
-    "dev": "npm run dev:foundation",
+    "dev": "npm run dev:local",
     "db:generate": "node scripts/api-check.mjs --generate",
     "db:migrate": "node scripts/api-check.mjs --migrate",
     "db:seed": "node scripts/api-check.mjs --seed",

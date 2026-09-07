@@ -8,6 +8,7 @@ import pw from '../playwright.config';
 import { apiProxyTarget as proxy } from '../vite.config';
 import {
   buildApiCheckPlan,
+  DEVELOPMENT_DATABASE_URL,
   runApiCheck,
   TEST_DATABASE_URL,
 } from './api-check.mjs';
@@ -50,7 +51,7 @@ const env = {
 const windows = { platform: 'win32' as const, env };
 const UP = 'compose -p unlockedcrm-renewal -f compose.yaml up -d postgres';
 const STOP = 'compose -p unlockedcrm-renewal -f compose.yaml stop postgres';
-const BAD = 'dev:local db:reset dotenv';
+const BAD = 'db:reset dotenv';
 type Call = [string, string[], { cwd: string; shell: boolean }];
 const plan = (override?: string, exe = node) =>
   build({
@@ -104,7 +105,9 @@ it('keeps Foundation boundaries closed', async () => {
   const pkg = JSON.parse(read('package.json'));
   const api = JSON.parse(read('api/package.json'));
   expect(pkg.scripts).toMatchObject({
-    dev: 'npm run dev:foundation',
+    dev: 'npm run dev:local',
+    'dev:foundation': 'node scripts/orchestrate.mjs --mode foundation',
+    'dev:local': 'node scripts/orchestrate.mjs --mode local',
     'db:generate': 'node scripts/api-check.mjs --generate',
     'db:migrate': 'node scripts/api-check.mjs --migrate',
     'db:seed': 'node scripts/api-check.mjs --seed',
@@ -144,7 +147,7 @@ it('keeps Foundation boundaries closed', async () => {
   expect(read('docs/06-reference/source-register.md')).toContain(
     '`UNIT2B-2026-09-07`',
   );
-  for (const mode of ['preview', 'local'])
+  for (const mode of ['preview'])
     expect(() => build({ mode, platform: 'win32' })).toThrow('Unknown mode');
   expect(() => build({ mode: 'foundation', platform: 'linux' })).toThrow(
     'Windows only',
@@ -205,6 +208,48 @@ it('keeps Foundation boundaries closed', async () => {
     expect(execute).not.toHaveBeenCalled();
   }
   expect(TEST_DATABASE_URL).toContain('127.0.0.1:54330/unlockedcrm_test');
+  const local = build({
+    mode: 'local',
+    ...windows,
+    cwd: repo,
+    repoRoot: repo,
+    nodeExecutable: node,
+    env: {
+      ...env,
+      DATABASE_URL: DEVELOPMENT_DATABASE_URL,
+      UNLOCKEDCRM_DOCKER_CLI: docker,
+    },
+  });
+  expect(local.map(({ name }) => name)).toEqual([
+    'postgres',
+    'database-generate',
+    'database-migrate',
+    'database-seed',
+    'api',
+    'web',
+  ]);
+  expect(local.map(({ args }) => args.join(' '))).toEqual([
+    'compose -p unlockedcrm-renewal -f compose.yaml up -d --wait postgres',
+    `${real(npmCli)} run db:generate`,
+    `${real(npmCli)} run db:migrate`,
+    `${real(npmCli)} run db:seed`,
+    `${real(npmCli)} run dev:api`,
+    `${real(npmCli)} run dev:web`,
+  ]);
+  expect(local[4].env).toMatchObject({
+    APP_MODE: 'local',
+    DATABASE_URL: DEVELOPMENT_DATABASE_URL,
+  });
+  const resolveDocker = vi.fn();
+  expect(() =>
+    build({
+      mode: 'local',
+      ...windows,
+      env: { ...env, DATABASE_URL: 'postgresql://unsafe' },
+      resolveDocker,
+    }),
+  ).toThrow('development database URL');
+  expect(resolveDocker).not.toHaveBeenCalled();
   const testCompose = read('compose.test.yaml');
   expect(testCompose).toContain('name: unlockedcrm-renewal-test');
   expect(testCompose).not.toContain('54329');

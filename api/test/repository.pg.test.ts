@@ -81,6 +81,14 @@ it('enforces workspace links, partial uniqueness, and immutable audit events', a
         sourceHash: 'test',
       },
     });
+    const repository = new PrismaRenewalRepository(client);
+    expect(
+      await repository.workspaceExists(SYNTHETIC_RENEWAL.workspaceId),
+    ).toBe(true);
+    expect(await repository.workspaceExists(other)).toBe(true);
+    expect(
+      await repository.workspaceExists('10000000-0000-4000-8000-000000000098'),
+    ).toBe(false);
     await expect(
       client.$executeRawUnsafe(
         `INSERT INTO policies (id, workspace_id, contact_id, display_label, renewal_date) VALUES ('20000000-0000-4000-8000-000000000099', '${other}', '${SYNTHETIC_RENEWAL.contactId}', 'Cross scope', DATE '2027-02-01')`,
@@ -135,14 +143,20 @@ it('enforces workspace links, partial uniqueness, and immutable audit events', a
         completedAt: null,
       },
     });
-    const [graph] = await new PrismaRenewalRepository(
-      client,
-    ).findOpenByWorkspace(SYNTHETIC_RENEWAL.workspaceId);
+    const [graph] = await repository.findOpenByWorkspace(
+      SYNTHETIC_RENEWAL.workspaceId,
+    );
     expect(graph.followUpTask).toMatchObject({ status: 'pending' });
     expect(graph.auditEvents.map(({ eventType }) => eventType)).toEqual([
       'renewal.created',
       'task.completed',
     ]);
+    expect(graph.auditEvents[0]).toMatchObject({
+      actorId: SYNTHETIC_RENEWAL.actorId,
+      recordId: SYNTHETIC_RENEWAL.renewalId,
+      correlationId: SYNTHETIC_RENEWAL.correlationId,
+      provenanceId: SYNTHETIC_RENEWAL.provenanceId,
+    });
     await expect(
       client.auditEvent.create({
         data: { id: '60000000-0000-4000-8000-000000000003', ...completion },

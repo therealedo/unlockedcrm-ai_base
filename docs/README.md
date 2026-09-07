@@ -1,6 +1,6 @@
 # Documentation hub
 
-> **The current local build is a fictional-data browser prototype plus a health-only Foundation, not safe for real PII/PHI, hosted production use, or SaaS.**
+> **The current local build is a fictional-data browser prototype plus one local synthetic renewal GET, not safe for real PII/PHI, hosted production use, or SaaS.**
 
 The approved direction is an online-first, locally reproducible, single-workspace CRM. Phase 1 runs on the user's Windows PC without cloud infrastructure; hosted production and public SaaS are later gates.
 
@@ -36,8 +36,8 @@ The approved direction is an online-first, locally reproducible, single-workspac
 - Root and catch-all pages render one client CRM shell with custom browser routing.
 - Seven create-only flows persist one `localStorage` object; edit/delete, CRM/domain APIs, PostgreSQL persistence, jobs, auth, real providers, and PWA support are absent.
 - OpenAI Sites/Cloudflare tooling is configured for the web build, but no D1/R2 or other application data bindings exist.
-- `npm run dev` is the locally verified Windows Foundation: pinned Node/npm start host-run Vinext/Vite, a health-only Fastify API, and Compose PostgreSQL.
-- Unit 2 introduces Prisma, migrations, deterministic seed, workspace repositories, renewal routes, and persistence-aware startup; later Phase 1 work completes the product/data plane.
+- `npm run dev` is the locally verified Windows persistence startup: it validates the synthetic DSN, starts Compose PostgreSQL, generates/migrates/seeds, and starts host-run Fastify plus Vinext/Vite; `dev:foundation` remains available.
+- One workspace-scoped renewal GET now reads PostgreSQL with explicit 200/empty/400/404/503 behavior; browser `localStorage` remains UI authority until later Phase 1 work.
 - Phase 1 makes every audited owned/core workflow functional in one seeded workspace. External-provider boundaries may remain explicit deterministic simulators with complete workflows and contract tests.
 - Railway is the preferred but unvalidated Phase 2 hosting candidate for the persistent Fastify API, bounded workers, and PostgreSQL topology; Vercel is optional for frontend previews only.
 - Phase 2 securely hosts that single workspace and enables selected real integrations before limited real-data use.

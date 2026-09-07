@@ -7,15 +7,15 @@ The approved target is an online-first, locally reproducible, single-workspace C
 | Decision | State | Boundary |
 |---|---|---|
 | Keep Vinext/Vite React UI for Phase 1 | `FUNCTIONAL` | Existing parity UI retained (`LOCAL-VERIFIED`); no migration to official Next.js now |
-| Fastify HTTP API on Node.js 24 LTS and TypeScript | `PARTIAL` | Health-only package/process boundary is `LOCAL-VERIFIED`; domain modules and routes remain incomplete |
+| Fastify HTTP API on Node.js 24 LTS and TypeScript | `PARTIAL` | Health plus one workspace-scoped renewal GET are `LOCAL-VERIFIED`; mutations and remaining domains are incomplete |
 | Exact Node.js 24 LTS and npm pins | `FUNCTIONAL` | Node 24.18.0 and npm 12.0.2 are pinned in repository metadata (`LOCAL-VERIFIED`) |
 | Modular monolith plus bounded async workers | `MISSING` | Domain modules and durable asynchronous workers remain target work |
 | REST/JSON transport | `PARTIAL` | Health endpoints are `LOCAL-VERIFIED`; browser-facing CRM APIs remain incomplete |
 | PostgreSQL | `PARTIAL` | PostgreSQL-only Compose service is `LOCAL-VERIFIED`; authoritative CRM persistence remains incomplete |
 | Docker Desktop + Docker Compose | `FUNCTIONAL` | PostgreSQL-only Foundation profile is `LOCAL-VERIFIED`; add services only when a slice requires them |
-| Windows application process topology | `FUNCTIONAL` | `dev:foundation` runs Vinext/Vite and Fastify on the host while Compose runs PostgreSQL (`LOCAL-VERIFIED`) |
-| Root startup command | `PARTIAL` | `npm run dev` starts the `LOCAL-VERIFIED` Foundation; Unit 2C adds persistence preflight, migration/seed execution, and readiness |
-| Prisma plus reviewed custom SQL | `PARTIAL` | Generation, adapter connectivity, initial migration, workspace constraints, deterministic seed, repository, and audit immutability are `LOCAL-VERIFIED`; route wiring remains Unit 2C |
+| Windows application process topology | `FUNCTIONAL` | Default `dev:local` runs persistence startup plus host Vinext/Vite and Fastify; `dev:foundation` is preserved (`LOCAL-VERIFIED`) |
+| Root startup command | `PARTIAL` | `npm run dev` validates the synthetic DSN, waits for PostgreSQL, generates/migrates/seeds, then starts API/web; hosted operations remain absent |
+| Prisma plus reviewed custom SQL | `PARTIAL` | Generation, migration, workspace constraints, deterministic seed, repository, audit immutability, and GET wiring are `LOCAL-VERIFIED`; commands remain later work |
 | Supabase | `CANDIDATE` | Optional PostgreSQL hosting provider only; never a required application dependency |
 | Railway | `PREFERRED-PHASE-2-CANDIDATE` | Candidate host for persistent Fastify API, bounded workers, and PostgreSQL; deployment spike required |
 | Vercel | `CANDIDATE` | Optional protected frontend previews only; not the product API, worker, or database host |
@@ -25,7 +25,7 @@ The approved target is an online-first, locally reproducible, single-workspace C
 
 Implementation rows use the project status vocabulary and `LOCAL-VERIFIED` evidence. Candidate, rejected, research, and optional rows remain architecture decision classifications rather than implementation claims.
 
-Application frameworks, process placement, and cloud infrastructure are different choices. Vinext/Next.js organize the frontend, Fastify provides the HTTP application framework, Docker Desktop/Compose orchestrates local infrastructure, and Railway/Vercel are hosting platforms. The `LOCAL-VERIFIED` Foundation pins Node.js/npm and maps `npm run dev` to `dev:foundation`, starting PostgreSQL plus the host API/web without a cloud account. Units 2A–2B add Prisma generation, migration, deterministic seed, and workspace-scoped renewal persistence; Unit 2C adds the route and persistence-aware startup.
+Application frameworks, process placement, and cloud infrastructure are different choices. Vinext/Next.js organize the frontend, Fastify provides HTTP, Docker Desktop/Compose orchestrates local infrastructure, and Railway/Vercel are hosting platforms. The `LOCAL-VERIFIED` Windows path maps `npm run dev` to `dev:local`, while `dev:foundation` remains available. Units 2A–2C add Prisma generation, migration, deterministic seed, workspace-scoped renewal GET, and persistence-aware startup.
 
 ## Logical topology
 
@@ -43,7 +43,7 @@ Windows host
               |
 Docker Compose
   |-- PostgreSQL (Foundation)
-  |       `-- Prisma/reviewed SQL renewal persistence (Unit 2B); API wiring remains Unit 2C
+  |       `-- Prisma/reviewed SQL renewal persistence and read-only API (Units 2B–2C)
   `-- slice-triggered object storage, mail capture, queues, and provider simulators
               |
 bounded async workers use the selected host/infrastructure boundary for their slice
@@ -51,7 +51,7 @@ bounded async workers use the selected host/infrastructure boundary for their sl
 synthetic audit/events, logs, and health checks
 ```
 
-The `LOCAL-VERIFIED` Foundation runs on one Windows PC: Vinext/Vite and Fastify run directly on the pinned host toolchain, while `dev:foundation` starts the PostgreSQL-only Compose service and both host processes. Unit 2B adds a `LOCAL-VERIFIED` initial migration, deterministic seed, scoped repository, composite ownership constraints, partial uniqueness, and immutable audit trigger. Domain routes, persistence-aware readiness, additional services, and complete Phase 1 workflows remain `MISSING`. Cross-platform host support is owner-deferred.
+The `LOCAL-VERIFIED` runtime runs on one Windows PC: `dev:local` starts PostgreSQL and the pinned host applications after migration/seed, while `dev:foundation` stays generation-independent. Units 2B–2C add the scoped repository, constraints, immutable audit, one renewal GET, and persistence readiness. Mutation routes, additional services, and complete Phase 1 workflows remain `MISSING`. Cross-platform host support is owner-deferred.
 
 A hosted Phase 2 profile deploys the same product/data plane with production security and operations.
 
@@ -130,4 +130,4 @@ Installed native apps, Tauri/native adapters, device SQLite, offline mutations, 
 
 ## Next step
 
-For the active renewal slice, Unit 2 is the next proof: generate Prisma, migrate, replay the deterministic seed, exercise workspace-scoped repositories, and expose the renewal GET. Use the [capability matrix](../02-traceability/capability-matrix.md) and [SDD change intake](../05-sdd/change-intake.md) for later slices.
+For the active renewal slice, Unit 3 is the next proof: atomically complete the task and append one correlated audit event without closing the renewal. Use the [capability matrix](../02-traceability/capability-matrix.md) and [SDD change intake](../05-sdd/change-intake.md) for later slices.
