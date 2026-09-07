@@ -35,6 +35,7 @@ import type { RenewalWorkflowState } from '@/hooks/use-renewal-workflow';
 import { matchRenewalRoute } from '@/lib/crm-route';
 import {
   selectManagedContact,
+  selectManagedPolicy,
   selectManagedPolicies,
 } from '@/lib/renewal-workflow-selectors';
 
@@ -390,6 +391,23 @@ export function LiveParityRouter(props: ParityRouterProps) {
       <ManagedContactScreen
         contactId={renewalRoute.contactId}
         workflow={props.renewalWorkflow}
+      />
+    );
+  }
+  if (renewalRoute?.kind === 'policy') {
+    return (
+      <ManagedPolicyScreen
+        policyId={renewalRoute.policyId}
+        workflow={props.renewalWorkflow}
+        navigate={props.navigate}
+      />
+    );
+  }
+  if (renewalRoute?.kind === 'renewals') {
+    return (
+      <RenewalDashboardScreen
+        workflow={props.renewalWorkflow}
+        navigate={props.navigate}
       />
     );
   }
@@ -1206,12 +1224,14 @@ function ModuleSideNav({
   active,
   className = '',
   headerAction,
+  onSelect,
 }: {
   title: string;
   items: Array<{ label: string; count?: number }>;
   active: string;
   className?: string;
   headerAction?: ReactNode;
+  onSelect?: (label: string) => void;
 }) {
   return (
     <aside className={`lp-module-nav ${className}`}>
@@ -1226,6 +1246,7 @@ function ModuleSideNav({
         <button
           className={item.label === active ? 'active' : ''}
           key={item.label}
+          onClick={() => onSelect?.(item.label)}
         >
           <span>{item.label}</span>
           {item.count !== undefined && <small>{item.count}</small>}
@@ -1262,6 +1283,14 @@ function ContactNotFound() {
   return (
     <div className="lp-page">
       <h2>Contact not found</h2>
+    </div>
+  );
+}
+
+function PolicyNotFound() {
+  return (
+    <div className="lp-page">
+      <h2>Policy not found</h2>
     </div>
   );
 }
@@ -1310,6 +1339,183 @@ function ManagedContactScreen({
   );
 }
 
+function ManagedPolicyScreen({
+  policyId,
+  workflow,
+  navigate,
+}: {
+  policyId: string | null;
+  workflow: ParityRouterProps['renewalWorkflow'];
+  navigate: (path: string) => void;
+}) {
+  if (!policyId) return <PolicyNotFound />;
+  if (workflow.state.status !== 'ready') {
+    if (
+      workflow.state.status === 'not-found' ||
+      workflow.state.status === 'empty'
+    )
+      return <PolicyNotFound />;
+    return (
+      <div className="lp-page">
+        <AuthorityState state={workflow.state} retry={workflow.retry} />
+      </div>
+    );
+  }
+  const item = selectManagedPolicy(workflow.state.graph, policyId);
+  if (!item) return <PolicyNotFound />;
+  const facts = [
+    ['Renewal', item.renewal.displayLabel],
+    ['Renewal date', item.policy.renewalDate],
+    ['Renewal status', item.renewal.status],
+    ['Follow-up task', item.followUpTask?.title ?? 'none'],
+    ['Follow-up status', item.followUpTask?.status ?? 'none'],
+  ];
+  return (
+    <div className="lp-page lp-business-page">
+      <div className="lp-side-layout">
+        <ModuleSideNav
+          title="Policies"
+          active="Policy detail"
+          items={[
+            { label: 'All Policies' },
+            { label: 'Renewal Dashboard' },
+            { label: 'Policy detail' },
+          ]}
+          onSelect={(label) => {
+            if (label === 'All Policies') navigate('/policies');
+            if (label === 'Renewal Dashboard') navigate(item.links.renewals);
+          }}
+        />
+        <section className="lp-side-content">
+          <section className="lp-panel" aria-label="Server-managed policy">
+            <div className="lp-panel-heading">
+              <div>
+                <small>Server-managed renewal policy</small>
+                <h2>{item.policy.displayLabel}</h2>
+              </div>
+            </div>
+            <dl>
+              <div>
+                <dt>Contact</dt>
+                <dd>
+                  <button
+                    className="lp-record-link"
+                    onClick={() => navigate(item.links.contact)}
+                  >
+                    {item.contact.displayName}
+                  </button>
+                </dd>
+              </div>
+              {facts.map(([label, value]) => (
+                <div key={label}>
+                  <dt>{label}</dt>
+                  <dd>{value}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        </section>
+      </div>
+    </div>
+  );
+}
+
+function RenewalDashboardScreen({
+  workflow,
+  navigate,
+}: {
+  workflow: ParityRouterProps['renewalWorkflow'];
+  navigate: (path: string) => void;
+}) {
+  const managed =
+    workflow.state.status === 'ready'
+      ? selectManagedPolicies(workflow.state.graph)
+      : [];
+  const completed = managed.filter(
+    ({ followUpTask }) => followUpTask?.status === 'completed',
+  ).length;
+  const pending = managed.filter(
+    ({ followUpTask }) => followUpTask?.status === 'pending',
+  ).length;
+  return (
+    <div className="lp-page lp-business-page lp-policies-page">
+      <div className="lp-side-layout">
+        <ModuleSideNav
+          title="Policies"
+          active="Renewal Dashboard"
+          items={[
+            { label: 'All Policies' },
+            { label: 'Renewal Dashboard', count: managed.length },
+          ]}
+          onSelect={(label) => {
+            if (label === 'All Policies') navigate('/policies');
+          }}
+        />
+        <section className="lp-side-content">
+          {workflow.state.status === 'ready' ? (
+            <>
+              <MetricCards
+                columns={3}
+                items={[
+                  { label: 'Open renewals', value: String(managed.length) },
+                  { label: 'Pending follow-ups', value: String(pending) },
+                  { label: 'Completed follow-ups', value: String(completed) },
+                ]}
+              />
+              <section className="lp-panel" aria-label="Renewal Dashboard rows">
+                <div className="lp-panel-heading">
+                  <div>
+                    <h2>Server-managed renewals</h2>
+                    <p>Current renewal facts from the workspace API.</p>
+                  </div>
+                </div>
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Contact</th>
+                      <th>Policy</th>
+                      <th>Renewal</th>
+                      <th>Status</th>
+                      <th>Follow-up</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {managed.map((item) => (
+                      <tr key={item.renewal.id}>
+                        <td>
+                          <button
+                            className="lp-record-link"
+                            onClick={() => navigate(item.links.contact)}
+                          >
+                            {item.contact.displayName}
+                          </button>
+                        </td>
+                        <td>
+                          <button
+                            className="lp-record-link"
+                            onClick={() => navigate(item.links.policy)}
+                          >
+                            {item.policy.displayLabel}
+                          </button>
+                        </td>
+                        <td>{item.renewal.displayLabel}</td>
+                        <td>{item.renewal.status}</td>
+                        <td>{item.followUpTask?.status ?? 'none'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
+            </>
+          ) : (
+            <AuthorityState state={workflow.state} retry={workflow.retry} />
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
 function PoliciesScreen({
   data,
   openModal,
@@ -1353,6 +1559,9 @@ function PoliciesScreen({
             { label: 'Book of Business' },
             { label: 'Cross-Sell' },
           ]}
+          onSelect={(label) => {
+            if (label === 'Renewal Dashboard') navigate('/policies/renewals');
+          }}
         />
         <section className="lp-side-content">
           <section className="lp-panel" aria-label="Server-managed renewals">
@@ -1385,7 +1594,14 @@ function PoliciesScreen({
                           {policy.contact.displayName}
                         </button>
                       </td>
-                      <td>{policy.policy.displayLabel}</td>
+                      <td>
+                        <button
+                          className="lp-record-link"
+                          onClick={() => navigate(policy.links.policy)}
+                        >
+                          {policy.policy.displayLabel}
+                        </button>
+                      </td>
                       <td>{policy.renewal.status}</td>
                       <td>{policy.policy.renewalDate}</td>
                     </tr>

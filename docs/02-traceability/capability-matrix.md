@@ -76,11 +76,11 @@ Legend: `LV` = `LIVE-VERIFIED`, `LO` = `LOCAL-VERIFIED`, `PV` = `PRIOR-VERIFIED`
 | Capability ID | Nested capability | Local status | Evidence | Target | Next proof |
 |---|---|---|---|---|---|
 | `CAP-BIZ-101` | Policy list/filter/search/import/export | `PARTIAL` | `LO`,`LV` | Phase 1 functional local jobs; Phase 2 hardening | Complete controls with working synthetic import/export jobs |
-| `CAP-BIZ-102` | Policy detail/edit/ownership/coverage/commission | `MISSING` | `LV` | Phase 1 | Conditional detail sections and relationship tests |
+| `CAP-BIZ-102` | Policy detail/edit/ownership/coverage/commission | `PARTIAL` | `LO`,`LV` | Phase 1 | Managed exact-ID renewal facts are readable; add edit, ownership, coverage, commission, and richer conditional detail proof |
 | `CAP-BIZ-103` | Category-specific policy creation | `PARTIAL` | `LO`,`LV` | Phase 1 | Life/health/annuity/other schemas and validation |
 | `CAP-BIZ-104` | Applications workspace | `MISSING` | `LV` | Phase 1 | Empty/populated/source/status states |
 | `CAP-BIZ-105` | Enrollments workspace | `MISSING` | `LV` | Phase 1 complete provider-neutral simulator; Phase 2 selected real adapter/hardening | Metrics/filter/table and synthetic events |
-| `CAP-BIZ-106` | Renewal dashboard | `MISSING` | `LV` | Phase 1 | Date-driven urgency/progress tests |
+| `CAP-BIZ-106` | Renewal dashboard | `PARTIAL` | `LO`,`LV` | Phase 1 | Current managed rows and derived open/pending/completed counts are proven; add date-driven urgency, progress, and functional filter tests |
 | `CAP-BIZ-107` | Book of Business | `BLOCKED` | `G` | Phase 1 | Safe live recheck; meanwhile preserve gated state |
 | `CAP-BIZ-108` | Cross-sell analysis | `MISSING` | `LV`,`I` | Phase 1 | Explainable synthetic gaps/opportunities |
 | `CAP-BIZ-109` | Commission KPIs/filters/ledger | `PARTIAL` | `LO`,`LV` | Phase 1 | Derived metrics and validation |

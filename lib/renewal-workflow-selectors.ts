@@ -7,3 +7,8 @@ export const selectManagedContact = (
   graph: RenewalWorkflowResponse,
   contactId: string,
 ) => graph.items.find(({ contact }) => contact.id === contactId);
+
+export const selectManagedPolicy = (
+  graph: RenewalWorkflowResponse,
+  policyId: string,
+) => graph.items.find(({ policy }) => policy.id === policyId);

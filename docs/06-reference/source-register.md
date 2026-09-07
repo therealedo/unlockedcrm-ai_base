@@ -24,6 +24,7 @@ Use this register to keep direct observation, local verification, approved plann
 | `UNIT3B-2026-09-07` | Atomic renewal task completion | `LOCAL-VERIFIED` | Strict-TDD contract, isolated PostgreSQL, Fastify injection, and protected development restart proof: exact 400/404/409/503 errors, ignored untrusted identity headers, conditional task version update, open renewal, one immutable audit, and stable replay/concurrency version, timestamp, and event identity; browser authority remains unchanged |
 | `UNIT4A-2026-09-07` | Isolated browser persistence harness | `LOCAL-VERIFIED` | Strict-TDD Windows runner owns isolated Compose PostgreSQL, generate/migrate/seed, test-only Fastify on 4310, Vinext on 4173, readiness, Playwright, and bounded cleanup; seeded renewal GET succeeds through the relative web proxy; development data and UI authority remain unchanged |
 | `UNIT4B-2026-09-07` | Shared renewal reads and storage fence | `LOCAL-VERIFIED` | Validated workspace GET drives policy-list renewal rows and linked contact detail with loading, empty, error, retry, and not-found states; fixed server IDs are fenced from hydration and serialization while unrelated local records/preferences remain |
+| `UNIT4C-2026-09-07` | Managed policy detail and Renewal Dashboard reads | `LOCAL-VERIFIED` | Exact stable-ID policy detail and current-graph dashboard rows/counts reuse the validated GET cache with route-aware empty, not-found, error, retry, and no-legacy-fallback behavior; rich detail, urgency, progress, filters, completion UI, and other projections remain missing |
 
 When a prior decision conflicts with `PLAN-2026-09-02`, the current governance and roadmap documents control. Historical audit observations remain unchanged.
 
@@ -43,11 +44,11 @@ When a prior decision conflicts with `PLAN-2026-09-02`, the current governance a
 | `components/crm-app.tsx:753-1023` | Root/non-root handoff and Home screen |
 | `components/crm-app.tsx:1069-2815` | Unused duplicate legacy screens |
 | `components/crm-app.tsx:2913-3439` | Search and create dialogs |
-| `components/live-parity-pages.tsx:375-465` | Active non-root router and aliases |
-| `components/live-parity-pages.tsx:593-3434` | Active route screens/context sidebars |
+| `components/live-parity-pages.tsx` | Active non-root router, managed policy/contact/dashboard renderers, other route screens, and context sidebars |
+| `lib/{crm-route,renewal-workflow-selectors}.ts`; `hooks/use-renewal-workflow.ts` | Safe route decoding, exact-ID selection, shared validated cache, abort, route-aware projection, and retry invalidation |
 | `lib/crm-data.ts:1-218` | Types, fixtures, and browser storage key |
 | `app/globals.css` | Shell, preference, and responsive system |
-| `tests/crm.spec.ts` | 16 Playwright tests, including a seeded renewal GET through the web proxy |
+| `tests/crm.spec.ts` | 23 Playwright tests, including the seeded renewal GET and managed policy-detail/dashboard state, link, cache, retry, and no-fallback coverage |
 | `playwright.config.ts`; `scripts/api-check.mjs`; `api/test/playwright-server.ts` | Dedicated Chromium base URL plus isolated PostgreSQL/API/web E2E lifecycle, exact test-DSN guard, readiness, and bounded owned-resource cleanup |
 | Repository file inventory (2026-09-02) | No Dockerfile or Compose configuration at decision-recording time |
 | `compose.yaml`; `api/src/{app,config,server}.ts`; `api/test/*`; `scripts/orchestrate.{mjs,test.ts}` | Foundation plus persistence-aware Windows startup, health/read API, canonical launcher/cleanup, and local verification evidence (`LOCAL-VERIFIED`) |

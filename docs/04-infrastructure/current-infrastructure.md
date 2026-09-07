@@ -13,9 +13,9 @@
 | Web runtime requirement | Node 24.18.0 |
 | Toolchain pinning | `.node-version`, `engines.node`, and `packageManager` pin Node 24.18.0/npm 12.0.2 |
 | Routing | Root and catch-all entries render one client `CrmApp`; navigation uses custom `pushState` handling |
-| Persistence | One browser `localStorage` JSON object |
+| Persistence | Browser `localStorage` remains authority for legacy records; four renewal views read a validated PostgreSQL-backed GET without copying its graph into browser storage |
 | Styling | One large global CSS file plus mostly unused generated UI components |
-| Tests | 16 Playwright tests plus focused Vitest Foundation/API contracts; E2E owns isolated PostgreSQL/API/web startup and cleanup |
+| Tests | 23 Playwright tests plus focused Vitest Foundation/API contracts; E2E owns isolated PostgreSQL/API/web startup and cleanup |
 | Hosting integration | Vinext/Vite with OpenAI Sites and Cloudflare plugins |
 | Local infrastructure orchestration | `compose.yaml` defines PostgreSQL only; `npm run dev` validates the development DSN and runs generate/migrate/seed before host API/web; `dev:foundation` remains available |
 | API foundation | Fastify exposes liveness/readiness plus local renewal GET and atomic task-completion POST routes; Foundation mode remains generation-independent and reports `MIGRATIONS_UNAVAILABLE` readiness |
@@ -47,7 +47,7 @@ Keeping Vinext/Vite for the parity UI does not require cloud infrastructure. The
 ## Missing application infrastructure beyond Foundation
 
 - No application containers; Compose currently supplies only the local PostgreSQL service.
-- Browser API authority is limited to policy-list renewal rows and linked contact detail; broader views and mutations remain browser-owned, and the domain API remains limited to renewal GET and task-completion POST routes.
+- Browser API authority is limited to policy list, linked contact detail, policy detail, and Renewal Dashboard reads; broader views and mutations remain browser-owned, and the domain API remains limited to renewal GET and task-completion POST routes.
 - Prisma migration, reviewed SQL constraints, a completion-aware exact-state seed classifier, domain assembly, workspace-scoped repository, and immutable audits feed both routes. The completion command conditionally updates one task and appends one exact audit in a transaction.
 - No secure authentication, MFA, fixed-role enforcement, or centralized request identity.
 - No object storage, scanning boundary, durable worker, scheduler, outbox/inbox, or webhook ingress.

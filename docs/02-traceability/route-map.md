@@ -1,6 +1,6 @@
 # Local route map
 
-The local registry exposes **32 paths and 30 effective screens**. `/underwrite-ai` aliases `/underwriting`; `/imo-fmo` aliases `/org/dashboard`. Local mode exposes renewal GET and task-completion POST routes as `PARTIAL` / `LOCAL-VERIFIED`; `/policies` and linked `/contacts/:contactId` views consume the validated GET without storing its graph.
+The local registry exposes **32 paths and 30 effective screens**. `/underwrite-ai` aliases `/underwriting`; `/imo-fmo` aliases `/org/dashboard`. Local mode exposes renewal GET and task-completion POST routes as `PARTIAL` / `LOCAL-VERIFIED`; four managed views consume the validated GET without storing its graph.
 
 ## Renderer ownership
 
@@ -42,6 +42,16 @@ The local registry exposes **32 paths and 30 effective screens**. `/underwrite-a
 | 30 | `CAP-ADMIN-003` | `/imo-fmo` | `OrganizationScreen` | `MOCK` | Alias of organization screen |
 | 31 | `CAP-ADMIN-004` | `/org/dashboard` | `OrganizationScreen` | `MOCK` | No tenant hierarchy enforcement |
 | 32 | `CAP-ADMIN-005` | `/more` | `MoreScreen` | `PARTIAL` | Navigation overlay works; destinations incomplete |
+
+## Managed dynamic routes
+
+These routes are resolved from validated API links or a fixed navigation path and do not change the 32-path top-level registry count.
+
+| Capability | Path | Active renderer | Local status | Boundary |
+|---|---|---|---|---|
+| `CAP-CRM-104` | `/contacts/:contactId` | `ManagedContactScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Exact stable-ID renewal-linked read; no full contact lifecycle |
+| `CAP-BIZ-102` | `/policies/:policyId` | `ManagedPolicyScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Exact stable-ID GET projection only; rich detail/edit remains missing |
+| `CAP-BIZ-106` | `/policies/renewals` | `RenewalDashboardScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Current graph counts/rows only; urgency, progress, and filters remain missing |
 
 ## Smoke evidence
 

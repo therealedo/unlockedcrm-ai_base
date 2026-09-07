@@ -10,10 +10,10 @@
 - Root uses a separate home screen; active non-root routes use `LiveParityRouter`.
 - Seven create-only flows persist one JSON object in browser `localStorage`.
 - Most external-service and advanced product surfaces are `MOCK`.
-- Fastify exposes health plus workspace-scoped renewal GET and task-completion POST routes. The policy list and linked contact detail now validate and project the GET without legacy fallback or storage; other browser records remain `localStorage`-owned.
+- Fastify exposes health plus workspace-scoped renewal GET and task-completion POST routes. Policy list, linked contact detail, policy detail, and Renewal Dashboard validate and project the GET without legacy fallback or storage; other browser records remain `localStorage`-owned.
 - The current lockfile passes full and production-only npm audits, with the Vinext bundled-parser caveat documented in [Current infrastructure](../04-infrastructure/current-infrastructure.md).
 - All 32 routes rendered at 1707×848 without blank/404/crash, document overflow, or console errors after settled waits.
-- The current Playwright suite contains 19 Chromium tests. Its isolated runner owns test PostgreSQL, API, web, migration/seed, readiness, and bounded cleanup; two managed views consume the validated renewal GET while all unrelated browser records remain locally authoritative.
+- The current Playwright suite contains 23 Chromium tests. Its isolated runner owns test PostgreSQL, API, web, migration/seed, readiness, and bounded cleanup; four managed views consume the validated renewal GET while all unrelated browser records remain locally authoritative.
 
 ## Runtime architecture
 
@@ -81,7 +81,7 @@ Two application-level CRM routes are active in local mode: `GET /api/v1/workspac
 
 ## Tests
 
-`tests/crm.spec.ts` contains 16 Playwright tests. Chromium defaults to 1440×900 on dedicated web port 4173 with screenshot/trace retention on failure. `npm run test:e2e` starts only the isolated PostgreSQL test project on 54330 and a test-only Fastify process on 4310, migrates/seeds before browser execution, rejects the development DSN, and cleans up owned processes and Compose resources. Coverage includes a real seeded GET through the relative web proxy plus the existing shell, contact creation/reload, route landmarks, four responsive widths, rail popovers, global search, and icon-only mode.
+`tests/crm.spec.ts` contains 23 Playwright tests. Chromium defaults to 1440×900 on dedicated web port 4173 with screenshot/trace retention on failure. `npm run test:e2e` starts only the isolated PostgreSQL test project on 54330 and a test-only Fastify process on 4310, migrates/seeds before browser execution, rejects the development DSN, and cleans up owned processes and Compose resources. Coverage includes a real seeded GET through the relative web proxy; policy detail and Renewal Dashboard state, link, cache, retry, and no-fallback coverage; plus the existing shell, contact creation/reload, route landmarks, four responsive widths, rail popovers, global search, and icon-only mode.
 
 Gaps: six other create flows, malformed storage, edit/delete, remaining CRM/domain API tests, accessibility, production authorization/tenancy, cross-browser, small mobile, performance, and visual-diff baselines. Foundation and renewal tests cover launcher, health, domain assembly, GET/completion contracts, concurrency/replay, and PostgreSQL persistence.
 
@@ -93,4 +93,4 @@ Do not use real data until the [Phase 2 gate](../03-roadmap/phase-2-local-produc
 
 ## Planning direction after this audit
 
-The evidence above remains current-state evidence. Phase 1 extends the Node.js 24/Fastify and Compose PostgreSQL foundation into a complete REST product/data plane for one synthetic workspace. Units 2A–3B now cover Prisma generation, migration, deterministic seed, scoped GET, atomic idempotent completion, and persistence-aware startup; later units add browser authority. External-provider edges may use explicit deterministic simulators with complete state machines, owned ports, contract tests, and persisted synthetic events. Phase 2 hosts and secures that product for limited real use and introduces selected lawful real providers.
+The evidence above remains current-state evidence. Phase 1 extends the Node.js 24/Fastify and Compose PostgreSQL foundation into a complete REST product/data plane for one synthetic workspace. Units 2A–4C now cover Prisma generation, migration, deterministic seed, scoped GET, atomic idempotent completion, persistence-aware startup, and four managed browser reads; later units add the remaining browser authority. External-provider edges may use explicit deterministic simulators with complete state machines, owned ports, contract tests, and persisted synthetic events. Phase 2 hosts and secures that product for limited real use and introduces selected lawful real providers.

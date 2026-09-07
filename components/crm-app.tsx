@@ -308,7 +308,7 @@ export default function CrmApp() {
   }
 
   const routeTitle =
-    renewalWorkflow.contactTitle ??
+    renewalWorkflow.routeTitle ??
     routeTitles[route] ??
     route.split('/').filter(Boolean).pop()?.replaceAll('-', ' ') ??
     'Home';
