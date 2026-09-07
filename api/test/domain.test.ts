@@ -1,4 +1,5 @@
 import { expect, it } from 'vitest';
+import { parseTaskCompletionRequest } from '../src/contracts/renewal-workflow.js';
 import {
   classifySyntheticRenewalSeedState,
   SYNTHETIC_RENEWAL_SEED,
@@ -93,6 +94,26 @@ it('rejects a child record from another workspace', () => {
   const input = records();
   input.followUpTask!.workspaceId = '10000000-0000-4000-8000-000000000099';
   expect(() => assembleRenewalGraph(input)).toThrow('workspace scope mismatch');
+});
+
+it.each([
+  undefined,
+  null,
+  {},
+  [],
+  { expectedTaskVersion: 0 },
+  { expectedTaskVersion: -1 },
+  { expectedTaskVersion: 1.5 },
+  { expectedTaskVersion: '1' },
+  { expectedTaskVersion: 1, extra: true },
+])('rejects a non-exact task completion body: %j', (body) => {
+  expect(parseTaskCompletionRequest(body)).toBeNull();
+});
+
+it('accepts only one positive integer task version field', () => {
+  expect(parseTaskCompletionRequest({ expectedTaskVersion: 1 })).toEqual({
+    expectedTaskVersion: 1,
+  });
 });
 
 it('retains an open renewal without a task and still validates relationships', () => {

@@ -17,16 +17,16 @@ Phase 1 ends when every audited owned/core CRM workflow works coherently through
 | Boundary | Phase 1 decision |
 |---|---|
 | UI | `PARTIAL`: retain the current React Vinext/Vite parity UI; broader Phase 1 workflows remain incomplete |
-| API | `PARTIAL` (`LOCAL-VERIFIED`): Fastify health shell exists; modular-monolith domain routes remain incomplete |
+| API | `PARTIAL` (`LOCAL-VERIFIED`): Fastify health, renewal GET, and atomic task-completion POST exist; remaining modular-monolith domain routes are incomplete |
 | Toolchain | `FUNCTIONAL` (`LOCAL-VERIFIED`): Node.js 24.18.0 and npm 12.0.2 are pinned |
 | Transport | `PARTIAL` (`LOCAL-VERIFIED`): REST/JSON health endpoints exist; CRM contracts remain incomplete |
 | Local infrastructure | `FUNCTIONAL` for Foundation (`LOCAL-VERIFIED`): Docker Compose runs PostgreSQL only on Windows |
-| Database | `PARTIAL` (`LOCAL-VERIFIED`): PostgreSQL service, initial migration, reviewed constraints, and a completion-aware seed classifier with empty/pending/completed replay and strict drift tests exist; product routes remain incomplete |
-| Data access | `PARTIAL` (`LOCAL-VERIFIED`): Prisma 7.10.0 generation, connectivity, and scoped renewal reads exist; pending tasks take priority, completed history remains visible, and a missing task is `null`; Unit 2C wires this contract into GET |
+| Database | `PARTIAL` (`LOCAL-VERIFIED`): PostgreSQL service, initial migration, reviewed constraints, completion-aware seed classifier, and atomic idempotent task completion with one immutable audit exist; broader product persistence remains incomplete |
+| Data access | `PARTIAL` (`LOCAL-VERIFIED`): Prisma 7.10.0 generation, connectivity, scoped renewal reads, and conditional task completion exist; replay/concurrency return the stored version, time, and event identity |
 | Async | `MISSING`: modular monolith plus bounded TypeScript workers using durable job/outbox contracts remain later Phase 1 work |
 | Auxiliary Python | `MISSING` and deferred unless a proven specialized library requires one isolated worker; never a second API/data authority |
-| Workspace | `PARTIAL` (`LOCAL-VERIFIED`): one deterministic synthetic workspace and renewal graph enforce composite `workspace_id` links; centralized route context remains Unit 2C |
-| Request policy | `MISSING`: the Foundation defines a synthetic context contract; Unit 2 must derive and enforce it centrally |
+| Workspace | `PARTIAL` (`LOCAL-VERIFIED`): one deterministic synthetic workspace and renewal graph enforce composite `workspace_id` links and undisclosing route scope |
+| Request policy | `PARTIAL` (`LOCAL-VERIFIED`): centralized synthetic context gates renewal reads/completion and ignores untrusted identity headers; roles and production identity remain deferred |
 | Configuration | `PARTIAL` (`LOCAL-VERIFIED`): Foundation API/process configuration is externalized and synthetic-only; later slices add their settings |
 | External providers | `MISSING`: later slices add owned ports with explicit simulated or real adapter status |
 | Process placement | `FUNCTIONAL` for Foundation (`LOCAL-VERIFIED`): Vinext/Vite and Fastify run on the Windows host; Compose runs PostgreSQL |
@@ -34,7 +34,7 @@ Phase 1 ends when every audited owned/core CRM workflow works coherently through
 
 Application frameworks and cloud infrastructure are separate decisions. Vinext/Next.js organize the frontend, Fastify is the selected HTTP framework for the API, and Vite builds the web client. Railway, Vercel, Sites, and Cloudflare are hosting/runtime choices. None replaces the API or PostgreSQL, and none is required for Phase 1 local development.
 
-The `LOCAL-VERIFIED` Windows runtime pins Node.js/npm and maps `npm run dev` to persistence-aware `dev:local`; `dev:foundation` remains the generation-independent health shell. Local startup validates the exact synthetic DSN, starts PostgreSQL, generates, migrates, seeds without drift overwrite, and starts the host API/web. The renewal GET and ready HTTP 200 are locally verified; browser authority remains unchanged. Cross-platform host support is owner-deferred.
+The `LOCAL-VERIFIED` Windows runtime pins Node.js/npm and maps `npm run dev` to persistence-aware `dev:local`; `dev:foundation` remains the generation-independent health shell. Local startup validates the exact synthetic DSN, starts PostgreSQL, generates, migrates, seeds without drift overwrite, and starts the host API/web. Renewal GET, atomic completion POST, completed-state restart, and ready HTTP 200 are locally verified; browser authority remains unchanged. Cross-platform host support is owner-deferred.
 
 ## External-provider acceptance
 
@@ -55,7 +55,7 @@ A hard-coded success card, inert form, or fake counter is not functional. A simu
 
 | Wave | Outcome | Highest-value capabilities |
 |---|---|---|
-| 1. Windows product foundation | `PARTIAL`: pins, host-run API/UI, PostgreSQL-only Compose, `dev:foundation`, persistence-aware default startup, migration, deterministic seed, scoped repository, and renewal GET are `LOCAL-VERIFIED`; mutations/browser authority remain later units | `CAP-PLAT-*` |
+| 1. Windows product foundation | `PARTIAL`: pins, host-run API/UI, PostgreSQL-only Compose, persistence-aware startup, migration, deterministic seed, scoped repository, renewal GET, and atomic completion POST are `LOCAL-VERIFIED`; browser authority and broader mutations remain later units | `CAP-PLAT-*` |
 | 2. Shared record graph | Contacts, households, opportunities, tasks, appointments, policies, renewals, commissions, activities | `CAP-CRM-*`, `CAP-BIZ-001..003` |
 | 3. Deep core workspaces | Record detail, edit/delete, documents, forms, settings, search, analytics/audit | `CAP-CRM-*`, `CAP-BIZ-*`, `CAP-ADMIN-*` |
 | 4. Durable orchestration | Jobs/outbox, automation runs, campaigns/queues, notifications and failure/retry behavior | `CAP-AUTO-*`, `CAP-PLAT-*` |
@@ -90,5 +90,6 @@ Responsive phone/tablet/desktop web UX is required. A network-required installab
 - [ ] Cross-module records, jobs, events, notifications, analytics, and audit agree.
 - [x] Foundation startup is `LOCAL-VERIFIED`: exact Node.js 24.18.0/npm 12.0.2 pins, host-run UI/health API, PostgreSQL-only Compose, and `dev:foundation` with live HTTP 200 and ready HTTP 503 `MIGRATIONS_UNAVAILABLE`.
 - [x] Units 2A–2C add Prisma generation/connectivity, migration, deterministic seed, workspace-scoped GET, and persistence-aware startup; the browser still does not consume the API.
+- [x] Unit 3 adds completion-safe startup plus atomic idempotent task completion and one immutable audit; the open renewal and stored response identity survive restart.
 - [ ] Responsive Windows-local proof passes; any PWA claim is network-required only.
 - [ ] Documentation and source register are current.

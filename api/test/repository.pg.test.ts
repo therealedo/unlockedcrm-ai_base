@@ -172,6 +172,103 @@ it('refuses extra fixed-workspace rows without writing', async () => {
   });
 });
 
+it('completes once and returns the persisted result on replay and concurrency', async () => {
+  await withDatabase(async (client) => {
+    await seedSyntheticRenewalGraph(client);
+    const repository = new PrismaRenewalRepository(client);
+    const command = {
+      workspaceId: SYNTHETIC_RENEWAL.workspaceId,
+      taskId: SYNTHETIC_RENEWAL.taskId,
+      expectedTaskVersion: 1,
+      actorId: SYNTHETIC_RENEWAL.actorId,
+      correlationId: '80000000-0000-4000-8000-000000000002',
+      eventId: '60000000-0000-4000-8000-000000000002',
+      completedAt: new Date('2026-12-15T15:01:00.000Z'),
+    };
+    const [first, concurrent] = await Promise.all([
+      repository.completeTask(command),
+      repository.completeTask({
+        ...command,
+        correlationId: '80000000-0000-4000-8000-000000000003',
+        eventId: '60000000-0000-4000-8000-000000000003',
+        completedAt: new Date('2026-12-15T15:02:00.000Z'),
+      }),
+    ]);
+    expect(first).toEqual(concurrent);
+    expect(await repository.completeTask(command)).toEqual(first);
+    expect(first).toMatchObject({
+      kind: 'completed',
+      value: {
+        task: {
+          id: SYNTHETIC_RENEWAL.taskId,
+          renewalId: SYNTHETIC_RENEWAL.renewalId,
+          status: 'completed',
+          version: 2,
+        },
+        renewal: { id: SYNTHETIC_RENEWAL.renewalId, status: 'open' },
+        completionAuditEvent: { type: 'task.completed' },
+      },
+    });
+    const value = first.kind === 'completed' ? first.value : undefined;
+    expect(value?.task.completedAt).toEqual(
+      value?.completionAuditEvent.occurredAt,
+    );
+    const events = await client.auditEvent.findMany({
+      where: {
+        workspaceId: SYNTHETIC_RENEWAL.workspaceId,
+        recordId: SYNTHETIC_RENEWAL.taskId,
+        eventType: 'task.completed',
+      },
+    });
+    expect(events).toHaveLength(1);
+    expect(events[0]).toMatchObject({
+      actorId: SYNTHETIC_RENEWAL.actorId,
+      provenanceId: SYNTHETIC_RENEWAL.provenanceId,
+      sourceVersion: SYNTHETIC_RENEWAL.sourceVersion,
+      sourceHash: SYNTHETIC_RENEWAL.sourceHash,
+    });
+    expect(events[0].createdAt).toEqual(events[0].occurredAt);
+    expect(events[0].occurredAt).toEqual(value?.task.completedAt);
+  });
+});
+
+it('separates not-found, version-conflict, and invalid stored completion', async () => {
+  await withDatabase(async (client) => {
+    await seedSyntheticRenewalGraph(client);
+    const repository = new PrismaRenewalRepository(client);
+    const command = {
+      workspaceId: SYNTHETIC_RENEWAL.workspaceId,
+      taskId: SYNTHETIC_RENEWAL.taskId,
+      expectedTaskVersion: 2,
+      actorId: SYNTHETIC_RENEWAL.actorId,
+      correlationId: '80000000-0000-4000-8000-000000000002',
+      eventId: '60000000-0000-4000-8000-000000000002',
+      completedAt: new Date('2026-12-15T15:01:00.000Z'),
+    };
+    expect(await repository.completeTask(command)).toEqual({
+      kind: 'version-conflict',
+    });
+    expect(
+      await repository.completeTask({
+        ...command,
+        workspaceId: '10000000-0000-4000-8000-000000000099',
+      }),
+    ).toEqual({ kind: 'not-found' });
+    await client.followUpTask.update({
+      where: { id: SYNTHETIC_RENEWAL.taskId },
+      data: {
+        status: 'completed',
+        version: 2,
+        completedAt: command.completedAt,
+      },
+    });
+    await expect(
+      repository.completeTask({ ...command, expectedTaskVersion: 1 }),
+    ).rejects.toThrow('Stored task completion is invalid');
+    expect(await client.auditEvent.count()).toBe(1);
+  });
+});
+
 it('enforces workspace links, partial uniqueness, and immutable audit events', async () => {
   await withDatabase(async (client) => {
     await seedSyntheticRenewalGraph(client);

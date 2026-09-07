@@ -1,6 +1,6 @@
 # Deployment, backup, restore, and updates
 
-This document separates Phase 1 local development from Phase 2 hosted operations. The current browser prototype includes locally verified persistence startup and one synthetic renewal GET. Browser state remains local, and hosted operations are absent.
+This document separates Phase 1 local development from Phase 2 hosted operations. The current browser prototype includes locally verified persistence startup plus synthetic renewal GET and task-completion POST routes. Browser state remains local, and hosted operations are absent.
 
 ## Phase 1: reproducible Windows development
 
@@ -14,7 +14,7 @@ Required operator path:
 4. use default `npm run dev` for DSN-validated local persistence startup; retain `dev:foundation` for the generation-independent health shell;
 5. add object storage, mail capture, queues, or other services only when the selected functional slice requires them;
 
-`dev:foundation` remains the health-only root command. Unit 2B provides validated manual migration and deterministic seed of exactly one fictional workspace. Unit 3A makes replay completion-aware: only an empty, exact pending, or exact completed fixed graph is accepted; partial, extra, or drifted state refuses before writes. `npm run dev` uses `dev:local` to validate the exact development DSN, wait for PostgreSQL, generate/migrate/seed, then start the API/web. A destructive synthetic-local reset remains separately owner-approved and deferred. Full application containerization remains deferred.
+`dev:foundation` remains the health-only root command. Unit 2B provides validated manual migration and deterministic seed of exactly one fictional workspace. Unit 3 makes replay completion-aware and adds atomic completion: only an empty, exact pending, or exact completed fixed graph is accepted; partial, extra, or drifted state refuses before writes. `npm run dev` uses `dev:local` to validate the exact development DSN, wait for PostgreSQL, generate/migrate/seed, then start the API/web; restart preserves the stored completion/event identity. A destructive synthetic-local reset remains separately owner-approved and deferred. Full application containerization remains deferred.
 
 Cloud hosting, production credentials, real customer destinations, and real PII/PHI are forbidden prerequisites. An optional PWA shell remains network-required; service-worker caches must not imply offline CRM behavior.
 

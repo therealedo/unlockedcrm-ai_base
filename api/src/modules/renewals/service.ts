@@ -1,4 +1,8 @@
-import type { RenewalWorkflowResponse } from '../../contracts/renewal-workflow.js';
+import { randomUUID } from 'node:crypto';
+import type {
+  RenewalWorkflowResponse,
+  TaskCompletionResponse,
+} from '../../contracts/renewal-workflow.js';
 import type { RequestContext } from '../../context/request-context.js';
 import type { RenewalGraph } from './domain.js';
 import type { RenewalRepository } from './repository.js';
@@ -77,5 +81,42 @@ export async function readRenewalWorkflow(
     correlationId: context.correlationId,
     workspaceId,
     items: graphs.map(projectGraph),
+  };
+}
+
+export type CompletionServiceResult =
+  | { kind: 'completed'; value: TaskCompletionResponse }
+  | { kind: 'not-found' }
+  | { kind: 'version-conflict' };
+
+export async function completeRenewalTask(
+  repository: RenewalRepository,
+  context: RequestContext,
+  workspaceId: string,
+  taskId: string,
+  expectedTaskVersion: number,
+): Promise<CompletionServiceResult> {
+  if (context.workspaceId !== workspaceId) return { kind: 'not-found' };
+  const result = await repository.completeTask({
+    workspaceId,
+    taskId,
+    expectedTaskVersion,
+    actorId: context.actorId,
+    correlationId: context.correlationId,
+    eventId: randomUUID(),
+    completedAt: new Date(),
+  });
+  if (result.kind !== 'completed') return result;
+  const { task, renewal, completionAuditEvent } = result.value;
+  return {
+    kind: 'completed',
+    value: {
+      task: { ...task, completedAt: iso(task.completedAt) },
+      renewal,
+      completionAuditEvent: {
+        id: completionAuditEvent.id,
+        type: completionAuditEvent.type,
+      },
+    },
   };
 }

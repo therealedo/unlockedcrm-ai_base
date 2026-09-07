@@ -7,7 +7,7 @@ The approved target is an online-first, locally reproducible, single-workspace C
 | Decision | State | Boundary |
 |---|---|---|
 | Keep Vinext/Vite React UI for Phase 1 | `FUNCTIONAL` | Existing parity UI retained (`LOCAL-VERIFIED`); no migration to official Next.js now |
-| Fastify HTTP API on Node.js 24 LTS and TypeScript | `PARTIAL` | Health plus one workspace-scoped renewal GET are `LOCAL-VERIFIED`; mutations and remaining domains are incomplete |
+| Fastify HTTP API on Node.js 24 LTS and TypeScript | `PARTIAL` | Health plus workspace-scoped renewal GET and task-completion POST are `LOCAL-VERIFIED`; remaining domains are incomplete |
 | Exact Node.js 24 LTS and npm pins | `FUNCTIONAL` | Node 24.18.0 and npm 12.0.2 are pinned in repository metadata (`LOCAL-VERIFIED`) |
 | Modular monolith plus bounded async workers | `MISSING` | Domain modules and durable asynchronous workers remain target work |
 | REST/JSON transport | `PARTIAL` | Health endpoints are `LOCAL-VERIFIED`; browser-facing CRM APIs remain incomplete |
@@ -15,7 +15,7 @@ The approved target is an online-first, locally reproducible, single-workspace C
 | Docker Desktop + Docker Compose | `FUNCTIONAL` | PostgreSQL-only Foundation profile is `LOCAL-VERIFIED`; add services only when a slice requires them |
 | Windows application process topology | `FUNCTIONAL` | Default `dev:local` runs persistence startup plus host Vinext/Vite and Fastify; `dev:foundation` is preserved (`LOCAL-VERIFIED`) |
 | Root startup command | `PARTIAL` | `npm run dev` validates the synthetic DSN, waits for PostgreSQL, generates/migrates/seeds, then starts API/web; hosted operations remain absent |
-| Prisma plus reviewed custom SQL | `PARTIAL` | Generation, migration, workspace constraints, deterministic seed, repository, audit immutability, and GET wiring are `LOCAL-VERIFIED`; commands remain later work |
+| Prisma plus reviewed custom SQL | `PARTIAL` | Generation, migration, workspace constraints, deterministic seed, repository, audit immutability, renewal GET, and conditional completion SQL are `LOCAL-VERIFIED`; broader commands remain later work |
 | Supabase | `CANDIDATE` | Optional PostgreSQL hosting provider only; never a required application dependency |
 | Railway | `PREFERRED-PHASE-2-CANDIDATE` | Candidate host for persistent Fastify API, bounded workers, and PostgreSQL; deployment spike required |
 | Vercel | `CANDIDATE` | Optional protected frontend previews only; not the product API, worker, or database host |
@@ -36,7 +36,7 @@ Windows host
   |     HTTPS REST/JSON
   |          |
   |-- Fastify on pinned Node.js 24 LTS and npm
-      |-- Prisma/reviewed SQL renewal persistence and read-only API (Units 2B–2C)
+      |-- Prisma/reviewed SQL renewal persistence and GET/completion API (Units 2B–3B)
       |-- centralized request identity and authorization context
       |-- CRM, sales, insurance, communications, business, AI modules
       |-- application commands, queries, policies, and stable provider ports
@@ -51,7 +51,7 @@ bounded async workers use the selected host/infrastructure boundary for their sl
 synthetic audit/events, logs, and health checks
 ```
 
-The `LOCAL-VERIFIED` runtime runs on one Windows PC: `dev:local` starts PostgreSQL and the pinned host applications after migration/seed, while `dev:foundation` stays generation-independent. Units 2B–2C add the scoped repository, constraints, immutable audit, one renewal GET, and persistence readiness. Mutation routes, additional services, and complete Phase 1 workflows remain `MISSING`. Cross-platform host support is owner-deferred.
+The `LOCAL-VERIFIED` runtime runs on one Windows PC: `dev:local` starts PostgreSQL and the pinned host applications after migration/seed, while `dev:foundation` stays generation-independent. Units 2B–3B add the scoped repository, constraints, immutable audits, renewal GET, atomic completion POST, and persistence readiness. Additional mutation routes, services, and complete Phase 1 workflows remain `MISSING`. Cross-platform host support is owner-deferred.
 
 A hosted Phase 2 profile deploys the same product/data plane with production security and operations.
 
@@ -130,4 +130,4 @@ Installed native apps, Tauri/native adapters, device SQLite, offline mutations, 
 
 ## Next step
 
-For the active renewal slice, Unit 3 is the next proof: atomically complete the task and append one correlated audit event without closing the renewal. Use the [capability matrix](../02-traceability/capability-matrix.md) and [SDD change intake](../05-sdd/change-intake.md) for later slices.
+For the active renewal slice, Unit 3 locally proves atomic task completion, one correlated audit event, an open renewal, idempotent replay/concurrency, and completed-state restart. Units 4–5 must move browser authority and prove six-surface consistency. Use the [capability matrix](../02-traceability/capability-matrix.md) and [SDD change intake](../05-sdd/change-intake.md) for later slices.

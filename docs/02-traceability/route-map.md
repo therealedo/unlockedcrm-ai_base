@@ -1,6 +1,6 @@
 # Local route map
 
-The local registry exposes **32 paths and 30 effective screens**. `/underwrite-ai` aliases `/underwriting`; `/imo-fmo` aliases `/org/dashboard`. Separately, local mode exposes `GET /api/v1/workspaces/:workspaceId/renewals` as `PARTIAL` / `LOCAL-VERIFIED`; the browser does not consume it yet.
+The local registry exposes **32 paths and 30 effective screens**. `/underwrite-ai` aliases `/underwriting`; `/imo-fmo` aliases `/org/dashboard`. Separately, local mode exposes renewal GET and task-completion POST routes as `PARTIAL` / `LOCAL-VERIFIED`; the browser does not consume them yet.
 
 ## Renderer ownership
 

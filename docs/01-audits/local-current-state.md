@@ -1,6 +1,6 @@
 # Local current state
 
-> **The current local build is a fictional-data browser prototype plus one local synthetic renewal GET, not safe for real PII/PHI or SaaS.**
+> **The current local build is a fictional-data browser prototype plus local synthetic renewal GET and task-completion POST routes, not safe for real PII/PHI or SaaS.**
 
 **Evidence:** `LOCAL-VERIFIED`. Source: Engram #647, current repository inspection, 32-route runtime smoke audit, and Foundation checks.
 
@@ -10,7 +10,7 @@
 - Root uses a separate home screen; active non-root routes use `LiveParityRouter`.
 - Seven create-only flows persist one JSON object in browser `localStorage`.
 - Most external-service and advanced product surfaces are `MOCK`.
-- Fastify now exposes health endpoints and one workspace-scoped renewal GET backed by the tested PostgreSQL migration, completion-aware deterministic seed classifier, scoped repository, and immutable audit. Startup accepts only an empty, exact pending, or exact completed fixed graph; browser `localStorage` remains the visible product authority.
+- Fastify now exposes health endpoints plus workspace-scoped renewal GET and task-completion POST routes backed by the tested PostgreSQL migration, completion-aware deterministic seed classifier, scoped repository, and immutable audit. Startup accepts only an empty, exact pending, or exact completed fixed graph; browser `localStorage` remains the visible product authority.
 - The current lockfile passes full and production-only npm audits, with the Vinext bundled-parser caveat documented in [Current infrastructure](../04-infrastructure/current-infrastructure.md).
 - All 32 routes rendered at 1707×848 without blank/404/crash, document overflow, or console errors after settled waits.
 - The current Playwright suite contains 15 Chromium tests; it was not rerun during the documentation audit.
@@ -68,7 +68,7 @@ See [Route map](../02-traceability/route-map.md) for all paths and [Capability m
 
 ## External-service reality
 
-One application-level CRM fetch is active in local mode: `GET /api/v1/workspaces/:workspaceId/renewals`. No CRM mutation, WebSocket, EventSource, job queue, worker, event bus, or tenant service is active. Phone/SMS/email/calendar, carrier quoting/enrollment, AI/voice, campaigns/forms, documents, commissions, webhooks, and integrations are absent or simulated.
+Two application-level CRM routes are active in local mode: `GET /api/v1/workspaces/:workspaceId/renewals` and `POST /api/v1/workspaces/:workspaceId/tasks/:taskId/completion`. No other CRM mutation, WebSocket, EventSource, job queue, worker, event bus, or tenant service is active. Phone/SMS/email/calendar, carrier quoting/enrollment, AI/voice, campaigns/forms, documents, commissions, webhooks, and integrations are absent or simulated.
 
 ## Current infrastructure
 
@@ -77,13 +77,13 @@ One application-level CRM fetch is active in local mode: `GET /api/v1/workspaces
 - `npm run dev` runs the persistence-aware PostgreSQL preflight and starts host-run Fastify plus Vinext/Vite on Windows; `dev:foundation` retains the health-only path.
 - `.openai/hosting.json` declares no D1 or R2 bindings.
 - Generated Wrangler configuration has no database, bucket, queue, service, or secret binding.
-- Missing: CRM mutations and browser API authority, CI, production deployment, environment example, backup/restore, rollback, and incident procedures. The renewal GET and local startup do not yet make PostgreSQL the browser product authority.
+- Missing: broader CRM mutations and browser API authority, CI, production deployment, environment example, backup/restore, rollback, and incident procedures. The renewal routes and local startup do not yet make PostgreSQL the browser product authority.
 
 ## Tests
 
 `tests/crm.spec.ts:8-587` contains 15 Playwright tests. Chromium defaults to 1440×900 on port 3000 with screenshot/trace retention on failure. Coverage includes shell, contact creation/reload, route landmarks, four responsive widths, rail popovers, global search, and icon-only mode.
 
-Gaps: six other create flows, malformed storage, edit/delete, mutation and remaining CRM/domain API tests, accessibility, authorization/tenancy, cross-browser, small mobile, performance, and visual-diff baselines. Foundation and renewal tests cover launcher, health, domain assembly, GET contracts, and PostgreSQL persistence.
+Gaps: six other create flows, malformed storage, edit/delete, remaining CRM/domain API tests, accessibility, production authorization/tenancy, cross-browser, small mobile, performance, and visual-diff baselines. Foundation and renewal tests cover launcher, health, domain assembly, GET/completion contracts, concurrency/replay, and PostgreSQL persistence.
 
 ## Production blockers
 
@@ -93,4 +93,4 @@ Do not use real data until the [Phase 2 gate](../03-roadmap/phase-2-local-produc
 
 ## Planning direction after this audit
 
-The evidence above remains current-state evidence. Phase 1 extends the Node.js 24/Fastify and Compose PostgreSQL foundation into a complete REST product/data plane for one synthetic workspace. Units 2A–2C now cover Prisma generation, migration, deterministic seed, scoped GET, and persistence-aware startup; later units add the command and browser authority. External-provider edges may use explicit deterministic simulators with complete state machines, owned ports, contract tests, and persisted synthetic events. Phase 2 hosts and secures that product for limited real use and introduces selected lawful real providers.
+The evidence above remains current-state evidence. Phase 1 extends the Node.js 24/Fastify and Compose PostgreSQL foundation into a complete REST product/data plane for one synthetic workspace. Units 2A–3B now cover Prisma generation, migration, deterministic seed, scoped GET, atomic idempotent completion, and persistence-aware startup; later units add browser authority. External-provider edges may use explicit deterministic simulators with complete state machines, owned ports, contract tests, and persisted synthetic events. Phase 2 hosts and secures that product for limited real use and introduces selected lawful real providers.

@@ -8,6 +8,10 @@ import { createSyntheticRequestContext } from '../src/context/request-context.js
 import { TEST_DATABASE_URL } from './postgres-test-database.js';
 const renewalPath = (workspaceId: string = SYNTHETIC_RENEWAL.workspaceId) =>
   `/api/v1/workspaces/${workspaceId}/renewals`;
+const completionPath = (
+  workspaceId: string = SYNTHETIC_RENEWAL.workspaceId,
+  taskId: string = SYNTHETIC_RENEWAL.taskId,
+) => `/api/v1/workspaces/${workspaceId}/tasks/${taskId}/completion`;
 
 beforeEach(async () => {
   const client = createPrismaClient(TEST_DATABASE_URL);
@@ -242,6 +246,194 @@ it('maps a real persistence failure to a retryable 503', async () => {
     expect(response.json().error).toMatchObject({
       code: 'PERSISTENCE_UNAVAILABLE',
     });
+    const completion = await app.inject({
+      method: 'POST',
+      path: completionPath(),
+      payload: { expectedTaskVersion: 1 },
+    });
+    expect(completion.statusCode).toBe(503);
+    expect(completion.json().error.code).toBe('PERSISTENCE_UNAVAILABLE');
+  } finally {
+    await app.close();
+  }
+});
+
+it.each([
+  [
+    completionPath('not-a-uuid'),
+    { expectedTaskVersion: 1 },
+    'INVALID_WORKSPACE_ID',
+  ],
+  [
+    completionPath(SYNTHETIC_RENEWAL.workspaceId, 'not-a-uuid'),
+    { expectedTaskVersion: 1 },
+    'INVALID_TASK_COMPLETION',
+  ],
+  [completionPath(), undefined, 'INVALID_TASK_COMPLETION'],
+  [completionPath(), {}, 'INVALID_TASK_COMPLETION'],
+  [completionPath(), { expectedTaskVersion: 0 }, 'INVALID_TASK_COMPLETION'],
+  [completionPath(), { expectedTaskVersion: -1 }, 'INVALID_TASK_COMPLETION'],
+  [completionPath(), { expectedTaskVersion: 1.5 }, 'INVALID_TASK_COMPLETION'],
+  [completionPath(), { expectedTaskVersion: '1' }, 'INVALID_TASK_COMPLETION'],
+  [
+    completionPath(),
+    { expectedTaskVersion: 1, extra: true },
+    'INVALID_TASK_COMPLETION',
+  ],
+])(
+  'rejects malformed completion input without writes',
+  async (path, body, code) => {
+    const client = createPrismaClient(TEST_DATABASE_URL);
+    await seedSyntheticRenewalGraph(client);
+    const app = await buildApp({
+      renewals: {
+        repository: new PrismaRenewalRepository(client),
+        contextFactory: createSyntheticRequestContext,
+        close: () => client.$disconnect(),
+      },
+    });
+    try {
+      const response = await app.inject({
+        method: 'POST',
+        path,
+        payload: body,
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error.code).toBe(code);
+      expect(
+        await client.followUpTask.findUniqueOrThrow({
+          where: { id: SYNTHETIC_RENEWAL.taskId },
+        }),
+      ).toMatchObject({ status: 'pending', version: 1, completedAt: null });
+      expect(await client.auditEvent.count()).toBe(1);
+    } finally {
+      await app.close();
+    }
+  },
+);
+
+it('completes with exact response and returns stable persisted replay', async () => {
+  const client = createPrismaClient(TEST_DATABASE_URL);
+  await seedSyntheticRenewalGraph(client);
+  const app = await buildApp({
+    renewals: {
+      repository: new PrismaRenewalRepository(client),
+      contextFactory: createSyntheticRequestContext,
+      close: () => client.$disconnect(),
+    },
+  });
+  try {
+    const request = {
+      method: 'POST' as const,
+      path: completionPath(),
+      payload: { expectedTaskVersion: 1 },
+      headers: {
+        'x-workspace-id': '10000000-0000-4000-8000-000000000099',
+        'x-actor-id': '70000000-0000-4000-8000-000000000099',
+      },
+    };
+    const first = await app.inject(request);
+    const replay = await app.inject(request);
+    expect(first.statusCode).toBe(200);
+    expect(replay.statusCode).toBe(200);
+    expect(replay.json()).toEqual(first.json());
+    expect(first.json()).toEqual({
+      task: {
+        id: SYNTHETIC_RENEWAL.taskId,
+        renewalId: SYNTHETIC_RENEWAL.renewalId,
+        status: 'completed',
+        version: 2,
+        completedAt: expect.any(String),
+      },
+      renewal: { id: SYNTHETIC_RENEWAL.renewalId, status: 'open' },
+      completionAuditEvent: { id: expect.any(String), type: 'task.completed' },
+    });
+    const stored = await client.auditEvent.findMany({
+      where: { eventType: 'task.completed' },
+    });
+    expect(stored).toHaveLength(1);
+    expect(stored[0]).toMatchObject({
+      actorId: SYNTHETIC_RENEWAL.actorId,
+      provenanceId: SYNTHETIC_RENEWAL.provenanceId,
+      sourceVersion: SYNTHETIC_RENEWAL.sourceVersion,
+      sourceHash: SYNTHETIC_RENEWAL.sourceHash,
+    });
+    expect(stored[0].createdAt).toEqual(stored[0].occurredAt);
+    expect(stored[0].occurredAt.toISOString()).toBe(
+      first.json().task.completedAt,
+    );
+  } finally {
+    await app.close();
+  }
+});
+
+it('keeps completion errors undisclosing and distinguishes conflict from persistence failure', async () => {
+  const client = createPrismaClient(TEST_DATABASE_URL);
+  await seedSyntheticRenewalGraph(client);
+  const app = await buildApp({
+    renewals: {
+      repository: new PrismaRenewalRepository(client),
+      contextFactory: createSyntheticRequestContext,
+      close: () => client.$disconnect(),
+    },
+  });
+  try {
+    const mismatch = await app.inject({
+      method: 'POST',
+      path: completionPath('10000000-0000-4000-8000-000000000099'),
+      payload: { expectedTaskVersion: 1 },
+      headers: { 'x-workspace-id': SYNTHETIC_RENEWAL.workspaceId },
+    });
+    expect(mismatch.statusCode).toBe(404);
+    expect(mismatch.json().error.code).toBe('TASK_NOT_FOUND');
+    const unknown = await app.inject({
+      method: 'POST',
+      path: completionPath(
+        SYNTHETIC_RENEWAL.workspaceId,
+        '50000000-0000-4000-8000-000000000099',
+      ),
+      payload: { expectedTaskVersion: 1 },
+    });
+    expect(unknown.statusCode).toBe(404);
+    expect(unknown.json().error.code).toBe('TASK_NOT_FOUND');
+    const conflict = await app.inject({
+      method: 'POST',
+      path: completionPath(),
+      payload: { expectedTaskVersion: 2 },
+    });
+    expect(conflict.statusCode).toBe(409);
+    expect(conflict.json().error.code).toBe('TASK_VERSION_CONFLICT');
+    await client.renewal.update({
+      where: { id: SYNTHETIC_RENEWAL.renewalId },
+      data: { status: 'closed' },
+    });
+    const closedRenewal = await app.inject({
+      method: 'POST',
+      path: completionPath(),
+      payload: { expectedTaskVersion: 1 },
+    });
+    expect(closedRenewal.statusCode).toBe(503);
+    expect(closedRenewal.json().error.code).toBe('PERSISTENCE_UNAVAILABLE');
+    await client.renewal.update({
+      where: { id: SYNTHETIC_RENEWAL.renewalId },
+      data: { status: 'open' },
+    });
+    await client.followUpTask.update({
+      where: { id: SYNTHETIC_RENEWAL.taskId },
+      data: {
+        status: 'completed',
+        version: 2,
+        completedAt: new Date('2026-12-15T15:01:00.000Z'),
+      },
+    });
+    const partial = await app.inject({
+      method: 'POST',
+      path: completionPath(),
+      payload: { expectedTaskVersion: 1 },
+    });
+    expect(partial.statusCode).toBe(503);
+    expect(partial.json().error.code).toBe('PERSISTENCE_UNAVAILABLE');
+    expect(await client.auditEvent.count()).toBe(1);
   } finally {
     await app.close();
   }

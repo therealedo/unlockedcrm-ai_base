@@ -1,6 +1,6 @@
 # Repository operating guide
 
-> **The current local build is a fictional-data browser prototype plus one local synthetic renewal GET, not safe for real PII/PHI, hosted production use, or SaaS.**
+> **The current local build is a fictional-data browser prototype plus one local synthetic renewal GET and task-completion POST, not safe for real PII/PHI, hosted production use, or SaaS.**
 
 This repository studies observable CRM behavior and builds an original, synthetic-data implementation. Current behavior, planned architecture, and deferred work must remain visibly distinct.
 
@@ -31,12 +31,12 @@ See [Working agreements](docs/00-governance/working-agreements.md) and [Legal an
 | Boundary | Current implementation | Approved target |
 |---|---|---|
 | Web UI | React on Vinext 1.0 beta/Vite 8; Next-compatible source conventions | Retain for Phase 1; do not migrate to official Next.js without a demonstrated blocker |
-| Application API | Fastify health endpoints plus one workspace-scoped renewal GET in local mode; no mutation routes | Fastify on Node.js 24 LTS and TypeScript; modular monolith; REST/JSON |
-| Persistence | Browser `localStorage` remains UI authority; a synthetic renewal graph is migrated, seeded, and readable from local PostgreSQL | Local PostgreSQL, accessed only through workspace-scoped repositories |
+| Application API | Fastify health endpoints plus workspace-scoped renewal GET and task-completion POST routes in local mode | Fastify on Node.js 24 LTS and TypeScript; modular monolith; REST/JSON |
+| Persistence | Browser `localStorage` remains UI authority; a synthetic renewal graph is migrated, seeded, readable, and atomically completable in local PostgreSQL | Local PostgreSQL, accessed only through workspace-scoped repositories |
 | Local development infrastructure | PostgreSQL-only Compose service | Docker Desktop + Docker Compose on Windows; add services only for a functional slice |
 | Local process topology | `npm run dev` validates the synthetic development DSN, starts Compose PostgreSQL, generates/migrates/seeds, then starts host-run Fastify and Vinext/Vite; `dev:foundation` remains available | Extend the same topology with the Phase 1 product/data plane |
 | Toolchain versions | Node.js 24.18.0 and npm 12.0.2 are pinned | Revisit exact pins through controlled updates |
-| Data access | Prisma 7.10 plus reviewed constraints, a workspace-scoped repository, and one read-only renewal route | Prisma plus reviewed, isolated custom SQL escape hatches |
+| Data access | Prisma 7.10 plus reviewed constraints, a workspace-scoped repository, and renewal read/completion routes | Prisma plus reviewed, isolated custom SQL escape hatches |
 | Async work | Absent | Bounded workers behind durable job/outbox contracts |
 | Deployment | `npm run dev` is the Windows-local persistence startup; hosted deployment remains absent | Railway remains an unvalidated Phase 2 candidate and Vercel preview-only |
 | Auxiliary Python | Absent | Not part of the core API; permitted later only in an isolated worker for a proven specialized library, never as a second API/data authority |
@@ -44,7 +44,7 @@ See [Working agreements](docs/00-governance/working-agreements.md) and [Legal an
 
 Vinext/Next.js are frontend application frameworks, and Fastify is the selected backend HTTP framework. Vite is build tooling. Railway, Vercel, OpenAI Sites, Cloudflare, and Wrangler are hosting/runtime choices. A framework is not hosting, and none of these hosting services is required for Phase 1 local development.
 
-Docker Desktop and Docker Compose are implemented Phase 1 dependencies. `npm run dev` performs the bounded persistence startup and starts the host API/web; `dev:foundation` preserves the generation-independent health shell. The current API exposes one synthetic, workspace-scoped renewal GET while browser authority remains unchanged. Object storage, mail capture, queues, and other services join only when a functional slice needs them; full application containerization remains deferred unless measured environment-parity problems justify it.
+Docker Desktop and Docker Compose are implemented Phase 1 dependencies. `npm run dev` performs the bounded persistence startup and starts the host API/web; `dev:foundation` preserves the generation-independent health shell. The current API exposes a synthetic, workspace-scoped renewal GET and task-completion POST while browser `localStorage` remains UI authority. Object storage, mail capture, queues, and other services join only when a functional slice needs them; full application containerization remains deferred unless measured environment-parity problems justify it.
 
 ## Architecture seams required in Phase 1
 
