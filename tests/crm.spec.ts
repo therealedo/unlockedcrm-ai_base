@@ -1,8 +1,126 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Route } from '@playwright/test';
+
+const workspaceId = '10000000-0000-4000-8000-000000000001';
+const contactId = '20000000-0000-4000-8000-000000000001';
+const managedIds = Array.from(
+  { length: 9 },
+  (_, index) => `${index + 1}0000000-0000-4000-8000-000000000001`,
+);
+
+function renewalBody(items: unknown[]) {
+  return {
+    schemaVersion: 'renewal-workflow.v1',
+    asOf: items.length ? '2026-09-07T08:56:12.175Z' : null,
+    correlationId: '80000000-0000-4000-8000-000000000001',
+    workspaceId,
+    items,
+  };
+}
 
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
+});
+
+test('projects the seeded policy into its server-authoritative contact detail', async ({
+  page,
+}) => {
+  await page.goto('/policies');
+  await page.getByRole('button', { name: 'Avery Harbor', exact: true }).click();
+  await expect(page).toHaveURL(`/contacts/${contactId}`);
+  await expect(page.locator('h1')).toHaveText('Avery Harbor');
+  await expect(
+    page.getByText('Synthetic Term Policy', { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText(/^(pending|completed)$/)).toBeVisible();
+  await expect(page.getByText('QA-MA-ACTIVE-001', { exact: true })).toHaveCount(
+    0,
+  );
+});
+
+test('shows loading, empty, authority error, retry, and unknown-contact states without fallback', async ({
+  page,
+}) => {
+  let attempt = 0;
+  const pattern = `**/api/v1/workspaces/${workspaceId}/renewals`;
+  const failTwice = async (route: Route) => {
+    attempt += 1;
+    if (attempt === 1)
+      return route.fulfill({ status: 404, json: { error: {} } });
+    if (attempt > 2) return route.fallback();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    await route.fulfill({ status: 503, json: { error: {} } });
+  };
+  await page.route(pattern, failTwice);
+  await page.goto('/policies');
+  await expect(page.getByRole('alert')).toContainText('could not be loaded');
+  await expect(page.getByText('QA-MA-ACTIVE-001')).toBeVisible();
+  await expect(page.getByText('Contact not found')).toHaveCount(0);
+  await page.reload();
+  await expect(
+    page.getByText('Loading server-managed renewals…'),
+  ).toBeVisible();
+  await expect(page.getByRole('alert')).toContainText('could not be loaded');
+  await expect(page.getByText('Synthetic Term Policy')).toHaveCount(0);
+  await page
+    .getByRole('button', { name: 'Retry server-managed renewals' })
+    .click();
+  await expect(page.getByText('Synthetic Term Policy')).toBeVisible();
+
+  await page.unroute(pattern, failTwice);
+  await page.route(pattern, (route) =>
+    route.fulfill({ status: 200, json: renewalBody([]) }),
+  );
+  await page.reload();
+  await expect(page.getByText('No server-managed renewals')).toBeVisible();
+  await page.goto('/contacts/unknown-contact');
+  await expect(
+    page.getByRole('heading', { name: 'Contact not found' }),
+  ).toBeVisible();
+  await expect(page.getByText('Mara Testwell')).toHaveCount(0);
+  await page.evaluate(() => {
+    history.pushState({}, '', '/contacts/%E0%A4%A');
+    dispatchEvent(new PopStateEvent('popstate'));
+  });
+  await expect(
+    page.getByRole('heading', { level: 1, name: 'Contact' }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Contact not found' }),
+  ).toBeVisible();
+  await expect(page.getByText('Mara Testwell')).toHaveCount(0);
+});
+
+test('preserves local records and preferences while fixed server IDs never persist', async ({
+  page,
+}) => {
+  await page.waitForFunction(() =>
+    localStorage.getItem('unlockedcrm-live-parity-state-v1'),
+  );
+  await page.evaluate(
+    ({ ids }) => {
+      const stored = JSON.parse(
+        localStorage.getItem('unlockedcrm-live-parity-state-v1') || '{}',
+      );
+      stored.contacts.push({ id: ids[1] });
+      stored.policies.push({ id: ids[2] });
+      localStorage.setItem(
+        'unlockedcrm-live-parity-state-v1',
+        JSON.stringify(stored),
+      );
+      localStorage.setItem('unlockedcrm-nav-collapsed', 'true');
+    },
+    { ids: managedIds },
+  );
+  await page.goto('/contacts');
+  await expect(page.getByText('Mara Testwell', { exact: true })).toBeVisible();
+  const persisted = await page.evaluate(() => ({
+    data: localStorage.getItem('unlockedcrm-live-parity-state-v1'),
+    collapsed: localStorage.getItem('unlockedcrm-nav-collapsed'),
+  }));
+  expect(persisted.collapsed).toBe('true');
+  expect(persisted.data).toContain('contact-mara-testwell');
+  for (const id of managedIds) expect(persisted.data).not.toContain(id);
 });
 
 test('reads the seeded renewal graph through the web proxy', async ({
@@ -199,7 +317,10 @@ test('matches Policies, Commissions, Booking Links, and Documents records', asyn
     page.getByRole('button', { name: 'QA-MA-ACTIVE-001', exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole('columnheader', { name: 'Renewal Date' }),
+    page
+      .locator('.lp-grid-shell')
+      .filter({ hasText: 'QA-MA-ACTIVE-001' })
+      .getByRole('columnheader', { name: 'Renewal Date' }),
   ).toBeVisible();
   await expect(page.getByRole('columnheader', { name: 'Premium' })).toHaveCount(
     0,

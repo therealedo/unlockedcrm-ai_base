@@ -47,7 +47,7 @@ Keeping Vinext/Vite for the parity UI does not require cloud infrastructure. The
 ## Missing application infrastructure beyond Foundation
 
 - No application containers; Compose currently supplies only the local PostgreSQL service.
-- No browser API authority or broader server-side CRM mutations; the current domain API is limited to renewal GET and task-completion POST routes.
+- Browser API authority is limited to policy-list renewal rows and linked contact detail; broader views and mutations remain browser-owned, and the domain API remains limited to renewal GET and task-completion POST routes.
 - Prisma migration, reviewed SQL constraints, a completion-aware exact-state seed classifier, domain assembly, workspace-scoped repository, and immutable audits feed both routes. The completion command conditionally updates one task and appends one exact audit in a transaction.
 - No secure authentication, MFA, fixed-role enforcement, or centralized request identity.
 - No object storage, scanning boundary, durable worker, scheduler, outbox/inbox, or webhook ingress.

@@ -31,10 +31,20 @@ import {
 import { type CSSProperties, type ReactNode, useState } from 'react';
 
 import { type CrmData, PIPELINE_STAGES, currency } from '@/lib/crm-data';
+import type { RenewalWorkflowState } from '@/hooks/use-renewal-workflow';
+import { matchRenewalRoute } from '@/lib/crm-route';
+import {
+  selectManagedContact,
+  selectManagedPolicies,
+} from '@/lib/renewal-workflow-selectors';
 
 type ParityRouterProps = {
   route: string;
   data: CrmData;
+  renewalWorkflow: {
+    state: RenewalWorkflowState;
+    retry: () => void;
+  };
   navigate: (path: string) => void;
   pipelineView: string;
   taskView: string;
@@ -374,6 +384,15 @@ export function LiveParityHeaderExtras({
 
 export function LiveParityRouter(props: ParityRouterProps) {
   const { route } = props;
+  const renewalRoute = matchRenewalRoute(route);
+  if (renewalRoute?.kind === 'contact') {
+    return (
+      <ManagedContactScreen
+        contactId={renewalRoute.contactId}
+        workflow={props.renewalWorkflow}
+      />
+    );
+  }
   switch (route) {
     case '/dashboard':
       return <DashboardScreen navigate={props.navigate} />;
@@ -405,7 +424,14 @@ export function LiveParityRouter(props: ParityRouterProps) {
     case '/inbox':
       return <InboxScreen />;
     case '/policies':
-      return <PoliciesScreen data={props.data} openModal={props.openPolicy} />;
+      return (
+        <PoliciesScreen
+          data={props.data}
+          openModal={props.openPolicy}
+          navigate={props.navigate}
+          workflow={props.renewalWorkflow}
+        />
+      );
     case '/commissions':
       return (
         <CommissionsScreen data={props.data} openModal={props.openCommission} />
@@ -1209,13 +1235,96 @@ function ModuleSideNav({
   );
 }
 
+function AuthorityState({
+  state,
+  retry,
+}: {
+  state: RenewalWorkflowState;
+  retry: () => void;
+}) {
+  if (state.status === 'loading' || state.status === 'idle')
+    return <p>Loading server-managed renewals…</p>;
+  if (state.status === 'empty') return <p>No server-managed renewals</p>;
+  if (state.status === 'not-found') return <h2>Contact not found</h2>;
+  if (state.status === 'error')
+    return (
+      <div role="alert">
+        <p>Server-managed renewals could not be loaded.</p>
+        <ActionButton onClick={retry}>
+          Retry server-managed renewals
+        </ActionButton>
+      </div>
+    );
+  return null;
+}
+
+function ContactNotFound() {
+  return (
+    <div className="lp-page">
+      <h2>Contact not found</h2>
+    </div>
+  );
+}
+
+function ManagedContactScreen({
+  contactId,
+  workflow,
+}: {
+  contactId: string | null;
+  workflow: ParityRouterProps['renewalWorkflow'];
+}) {
+  if (!contactId) return <ContactNotFound />;
+  if (workflow.state.status !== 'ready') {
+    return (
+      <div className="lp-page">
+        <AuthorityState state={workflow.state} retry={workflow.retry} />
+      </div>
+    );
+  }
+  const contact = selectManagedContact(workflow.state.graph, contactId);
+  if (!contact) return <ContactNotFound />;
+  const facts = [
+    ['Policy', contact.policy.displayLabel],
+    ['Renewal', contact.renewal.displayLabel],
+    ['Renewal date', contact.policy.renewalDate],
+    ['Renewal status', contact.renewal.status],
+    ['Follow-up status', contact.followUpTask?.status ?? 'none'],
+  ];
+  return (
+    <div className="lp-page lp-business-page">
+      <section className="lp-panel" aria-label="Server-managed contact">
+        <div className="lp-panel-heading">
+          <small>Server-managed renewal contact</small>
+          <h2>{contact.contact.displayName}</h2>
+        </div>
+        <dl>
+          {facts.map(([label, value]) => (
+            <div key={label}>
+              <dt>{label}</dt>
+              <dd>{value}</dd>
+            </div>
+          ))}
+        </dl>
+      </section>
+    </div>
+  );
+}
+
 function PoliciesScreen({
   data,
   openModal,
+  navigate,
+  workflow,
 }: {
   data: CrmData;
   openModal: () => void;
+  navigate: (path: string) => void;
+  workflow: ParityRouterProps['renewalWorkflow'];
 }) {
+  const managed =
+    workflow.state.status === 'ready'
+      ? selectManagedPolicies(workflow.state.graph)
+      : [];
   return (
     <div className="lp-page lp-business-page lp-policies-page">
       <div className="lp-toolbar lp-business-actions">
@@ -1246,6 +1355,46 @@ function PoliciesScreen({
           ]}
         />
         <section className="lp-side-content">
+          <section className="lp-panel" aria-label="Server-managed renewals">
+            <div className="lp-panel-heading">
+              <div>
+                <h2>Server-managed renewals</h2>
+                <p>Renewal facts loaded from the workspace API.</p>
+              </div>
+            </div>
+            {workflow.state.status !== 'ready' ? (
+              <AuthorityState state={workflow.state} retry={workflow.retry} />
+            ) : (
+              <table>
+                <thead>
+                  <tr>
+                    <th>Contact</th>
+                    <th>Policy</th>
+                    <th>Status</th>
+                    <th>Renewal Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {managed.map((policy) => (
+                    <tr key={policy.policy.id}>
+                      <td>
+                        <button
+                          className="lp-record-link"
+                          onClick={() => navigate(policy.links.contact)}
+                        >
+                          {policy.contact.displayName}
+                        </button>
+                      </td>
+                      <td>{policy.policy.displayLabel}</td>
+                      <td>{policy.renewal.status}</td>
+                      <td>{policy.policy.renewalDate}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </section>
+          <h2>Local prototype policies</h2>
           <div className="lp-toolbar lp-filter-toolbar">
             <SelectField label="Agent filter" value="All Agents">
               <option>All Agents</option>
