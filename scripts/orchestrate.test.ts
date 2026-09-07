@@ -2,15 +2,20 @@ import { spawn, spawnSync } from 'node:child_process';
 import { EventEmitter, once } from 'node:events';
 import * as fs from 'node:fs';
 import { tmpdir } from 'node:os';
+import { createServer } from 'node:net';
 import * as path from 'node:path';
 import { afterAll, expect, it, vi } from 'vitest';
 import pw from '../playwright.config';
 import { apiProxyTarget as proxy } from '../vite.config';
 import {
+  assertPortsAvailable,
   buildApiCheckPlan,
   DEVELOPMENT_DATABASE_URL,
+  parsePlaywrightArgs,
   runApiCheck,
+  runApiCheckCli,
   TEST_DATABASE_URL,
+  waitForHttp,
 } from './api-check.mjs';
 import {
   buildProcessPlan as build,
@@ -112,6 +117,8 @@ it('keeps Foundation boundaries closed', async () => {
     'db:migrate': 'node scripts/api-check.mjs --migrate',
     'db:seed': 'node scripts/api-check.mjs --seed',
     'test:api': 'node scripts/api-check.mjs --test',
+    'test:e2e': 'node scripts/api-check.mjs --e2e',
+    'test:headed': 'node scripts/api-check.mjs --e2e --headed',
     'typecheck:api': 'node scripts/api-check.mjs --typecheck',
   });
   const inactive = { ...pkg.scripts, ...pkg.devDependencies };
@@ -158,7 +165,8 @@ it('keeps Foundation boundaries closed', async () => {
   expect(proxy({ API_HOST: '::1' })).toBe('http://[::1]:3100');
   expect(proxy({})).toBe('http://127.0.0.1:3100');
   expect(() => proxy({ API_PORT: '0' })).toThrow('API_PORT');
-  expect(pw.webServer).toMatchObject({ command: 'npm run dev:web' });
+  expect(pw.webServer).toBeUndefined();
+  expect(pw.use?.baseURL).toBe('http://127.0.0.1:4173');
   if (process.platform !== 'win32') return;
   const apiPlan = buildApiCheckPlan({ operation: 'test' });
   expect(apiPlan.steps.map(({ name }) => name)).toEqual([
@@ -195,10 +203,13 @@ it('keeps Foundation boundaries closed', async () => {
     'postgresql://unlockedcrm:synthetic-local-only@127.0.0.1:54330/unlockedcrm_dev?schema=public',
   ]) {
     const execute = vi.fn();
-    await expect(
-      runApiCheck({ operation: 'test', databaseUrl, execute }),
-    ).rejects.toThrow('test database URL');
+    const start = vi.fn();
+    for (const operation of ['test', 'e2e'])
+      await expect(
+        runApiCheck({ operation, databaseUrl, execute, start }),
+      ).rejects.toThrow('test database URL');
     expect(execute).not.toHaveBeenCalled();
+    expect(start).not.toHaveBeenCalled();
   }
   for (const operation of ['migrate', 'seed']) {
     const execute = vi.fn();
@@ -372,4 +383,257 @@ it('keeps Foundation boundaries closed', async () => {
     if (kind === 'timeout') expect(up.kill).toHaveBeenCalledOnce();
     if (kind === 'stop-timeout') expect(stop.kill).toHaveBeenCalledOnce();
   }
+});
+
+it('plans and cleans up an isolated real-database browser run', async () => {
+  if (process.platform !== 'win32') return;
+  const e2e = buildApiCheckPlan({ operation: 'e2e' });
+  if (!e2e.servers || !e2e.readiness || !e2e.browser)
+    throw new Error('Expected an E2E plan');
+  expect(e2e.steps.map(({ name }) => name)).toEqual([
+    'test-postgres-up',
+    'prisma-generate',
+    'prisma-migrate',
+    'prisma-seed',
+  ]);
+  expect(e2e.servers.map(({ name }) => name)).toEqual([
+    'playwright-api',
+    'playwright-web',
+  ]);
+  expect(e2e.readiness).toEqual([
+    'http://127.0.0.1:4310/health/ready',
+    'http://127.0.0.1:4173',
+  ]);
+  expect(e2e.browser.name).toBe('playwright-tests');
+  expect(e2e.cleanup.executable).toBe(e2e.steps[0].executable);
+  expect(e2e.cleanup.args).not.toContain('--volumes');
+  expect(path.basename(e2e.servers[1].args[0])).toBe('playwright-web.mjs');
+  for (const spec of [...e2e.steps, ...e2e.servers, e2e.browser]) {
+    expect(spec.executable.toLowerCase()).not.toMatch(/(?:cmd|npm)\.exe$/);
+    expect(spec.options).toMatchObject({
+      cwd: process.cwd(),
+      shell: false,
+      windowsHide: true,
+    });
+    expect(spec.options.env).toMatchObject({
+      DATABASE_URL: TEST_DATABASE_URL,
+      API_PORT: '4310',
+    });
+  }
+
+  const events: string[] = [];
+  const execute = vi.fn(async ({ name }: { name: string }) => {
+    events.push(`execute:${name}`);
+    if (name === 'playwright-tests') throw new Error('browser failed');
+  });
+  const start = vi.fn(({ name }: { name: string }) => ({
+    ready: Promise.resolve(),
+    done: new Promise<never>(() => {}),
+    stop: async () => void events.push(`stop:${name}`),
+  }));
+  const waitForReady = vi.fn(async (url: string) => {
+    events.push(`ready:${url}`);
+  });
+  const failure = await rejected(
+    runApiCheck({
+      operation: 'e2e',
+      execute,
+      start: start as never,
+      waitForReady: waitForReady as never,
+    }),
+  );
+  expect(String(failure)).toContain('browser failed');
+  expect(events).toEqual([
+    'execute:test-postgres-up',
+    'execute:prisma-generate',
+    'execute:prisma-migrate',
+    'execute:prisma-seed',
+    'ready:http://127.0.0.1:4310/health/ready',
+    'ready:http://127.0.0.1:4173',
+    'execute:playwright-tests',
+    'stop:playwright-web',
+    'stop:playwright-api',
+    'execute:test-postgres-down',
+  ]);
+  expect(start.mock.calls.map(([spec]) => spec.name)).toEqual([
+    'playwright-api',
+    'playwright-web',
+  ]);
+
+  await expect(
+    waitForHttp('http://127.0.0.1:1', {
+      fetcher: vi.fn(async () => {
+        throw new Error('closed');
+      }),
+      timeoutMs: 5,
+      intervalMs: 1,
+    }),
+  ).rejects.toThrow('readiness timed out');
+});
+
+it('configures the test web server for one strict IPv4 endpoint', async () => {
+  const close = vi.fn();
+  const server = { listen: vi.fn(), printUrls: vi.fn(), close };
+  const create = vi.fn(async () => server);
+  const moduleUrl = new URL('./playwright-web.mjs', import.meta.url).href;
+  const { startTestWebServer } = await import(moduleUrl);
+  const stop = await startTestWebServer({ create });
+  expect(create).toHaveBeenCalledWith(
+    expect.objectContaining({
+      server: { host: '127.0.0.1', port: 4173, strictPort: true },
+    }),
+  );
+  expect(server.listen).toHaveBeenCalledOnce();
+  await stop();
+  expect(close).toHaveBeenCalledOnce();
+  server.listen.mockRejectedValueOnce(new Error('port occupied'));
+  await expect(startTestWebServer({ create })).rejects.toThrow('port occupied');
+  expect(close).toHaveBeenCalledTimes(2);
+});
+
+it('fails closed on occupied ports and an exited readiness owner', async () => {
+  const foreign = createServer();
+  await new Promise<void>((resolve, reject) => {
+    foreign.once('error', reject);
+    foreign.listen(0, '127.0.0.1', resolve);
+  });
+  try {
+    const address = foreign.address();
+    if (!address || typeof address === 'string') throw new Error('No port');
+    await expect(
+      assertPortsAvailable([{ host: '127.0.0.1', port: address.port }]),
+    ).rejects.toThrow('already in use');
+    expect(foreign.listening).toBe(true);
+  } finally {
+    await new Promise<void>((resolve) => foreign.close(() => resolve()));
+  }
+
+  await expect(
+    waitForHttp('http://localhost:4173', {
+      fetcher: vi.fn(async () => ({ ok: true })) as never,
+      serverDone: Promise.reject(new Error('owned server exited')),
+      timeoutMs: 50,
+    } as never),
+  ).rejects.toThrow('owned server exited');
+
+  const execute = vi.fn();
+  const start = vi.fn();
+  const checkPorts = vi.fn(async () => {
+    throw new Error('E2E test port 4173 is already in use');
+  });
+  await expect(
+    runApiCheck({ operation: 'e2e', execute, start, checkPorts }),
+  ).rejects.toThrow('already in use');
+  expect(execute).not.toHaveBeenCalled();
+  expect(start).not.toHaveBeenCalled();
+});
+
+it('bounds stalled readiness and cleans up cancellation', async () => {
+  let aborted = false;
+  const stalled = vi.fn(
+    (_url: string, { signal }: { signal: AbortSignal }) =>
+      new Promise((_resolve, reject) =>
+        signal.addEventListener('abort', () => {
+          aborted = true;
+          reject(signal.reason);
+        }),
+      ),
+  );
+  const startedAt = Date.now();
+  await expect(
+    waitForHttp('http://localhost:4173', {
+      fetcher: stalled as never,
+      timeoutMs: 15,
+      intervalMs: 1,
+    }),
+  ).rejects.toThrow('readiness timed out');
+  expect(aborted).toBe(true);
+  expect(Date.now() - startedAt).toBeLessThan(250);
+
+  if (process.platform !== 'win32') return;
+  for (const cancelAt of ['test-postgres-up', 'playwright-tests']) {
+    const controller = new AbortController();
+    const events: string[] = [];
+    const execute = vi.fn(async ({ name }, { signal } = {}) => {
+      events.push(`execute:${name}`);
+      if (name !== cancelAt) return;
+      queueMicrotask(() => controller.abort());
+      await new Promise((_resolve, reject) =>
+        signal.addEventListener('abort', () =>
+          setTimeout(() => {
+            events.push(`terminated:${name}`);
+            reject(new Error('API check cancelled'));
+          }, 10),
+        ),
+      );
+    });
+    const start = vi.fn(({ name }) => ({
+      ready: Promise.resolve(),
+      done: new Promise<never>(() => {}),
+      stop: async () => void events.push(`stop:${name}`),
+    }));
+    await expect(
+      runApiCheck({
+        operation: 'e2e',
+        execute,
+        start,
+        waitForReady: vi.fn(async () => {}),
+        checkPorts: vi.fn(async () => {}),
+        signal: controller.signal,
+      } as never),
+    ).rejects.toThrow('cancelled');
+    await new Promise((resolve) => setTimeout(resolve, 20));
+    expect(events.indexOf(`terminated:${cancelAt}`)).toBeLessThan(
+      events.findIndex((event) =>
+        /^(?:stop:|execute:test-postgres-down)/.test(event),
+      ),
+    );
+  }
+});
+
+it('preserves supported Playwright CLI arguments and normalizes E2E mode', async () => {
+  expect(
+    parsePlaywrightArgs(['--headed', '--grep', 'seeded GET', '--list']),
+  ).toEqual(['--headed', '--grep', 'seeded GET', '--list']);
+  expect(parsePlaywrightArgs(['--grep=renewal'])).toEqual(['--grep=renewal']);
+  for (const args of [['--config', 'other.ts'], ['--grep']])
+    expect(() => parsePlaywrightArgs(args)).toThrow('Playwright argument');
+
+  if (process.platform === 'win32') {
+    const plan = buildApiCheckPlan({
+      operation: 'e2e',
+      environment: { ...process.env, APP_MODE: 'local' },
+      playwrightArgs: ['--list'] as never,
+    });
+    expect(plan.browser?.args.slice(-2)).toEqual(['test', '--list']);
+    for (const spec of [
+      ...(plan.steps ?? []),
+      ...(plan.servers ?? []),
+      plan.browser,
+      plan.cleanup,
+    ])
+      expect(spec?.options.env.APP_MODE).toBe('foundation');
+  }
+
+  const signals = new EventEmitter();
+  const run = vi.fn(async ({ signal, playwrightArgs }) => {
+    expect(playwrightArgs).toEqual(['--grep', 'seeded', '--list']);
+    signals.emit('SIGINT');
+    signals.emit('SIGTERM');
+    expect(signal.aborted).toBe(true);
+  });
+  await runApiCheckCli(
+    ['node', 'api-check.mjs', '--e2e', '--grep', 'seeded', '--list'],
+    { processLike: signals as never, run: run as never },
+  );
+  expect(signals.listenerCount('SIGINT')).toBe(0);
+  expect(signals.listenerCount('SIGTERM')).toBe(0);
+
+  const nonE2eSignals = new EventEmitter();
+  const nonE2eRun = vi.fn(async ({ signal }) => expect(signal).toBeUndefined());
+  await runApiCheckCli(['node', 'api-check.mjs', '--seed'], {
+    processLike: nonE2eSignals as never,
+    run: nonE2eRun as never,
+  });
+  expect(nonE2eSignals.listenerCount('SIGINT')).toBe(0);
 });

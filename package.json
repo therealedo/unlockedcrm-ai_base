@@ -26,12 +26,12 @@
     "format:check": "oxfmt --check .",
     "test:unit": "vitest run --project unit",
     "test:api": "node scripts/api-check.mjs --test",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/api-check.mjs --e2e",
     "test": "npm run test:unit && npm run test:api && npm run test:e2e",
     "typecheck:web": "tsc -p tsconfig.json --noEmit --incremental false",
     "typecheck:api": "node scripts/api-check.mjs --typecheck",
     "typecheck": "npm run typecheck:web && npm run typecheck:api",
-    "test:headed": "playwright test --headed"
+    "test:headed": "node scripts/api-check.mjs --e2e --headed"
   },
   "dependencies": {
     "@base-ui/react": "1.7.0",

@@ -5,6 +5,54 @@ test.beforeEach(async ({ page }) => {
   await page.evaluate(() => localStorage.clear());
 });
 
+test('reads the seeded renewal graph through the web proxy', async ({
+  page,
+}) => {
+  const result = await page.evaluate(async () => {
+    const response = await fetch(
+      '/api/v1/workspaces/10000000-0000-4000-8000-000000000001/renewals',
+    );
+    return { status: response.status, body: await response.json() };
+  });
+  expect(result.status).toBe(200);
+  expect(result.body).toMatchObject({
+    schemaVersion: 'renewal-workflow.v1',
+    workspaceId: '10000000-0000-4000-8000-000000000001',
+    items: [
+      {
+        contact: {
+          id: '20000000-0000-4000-8000-000000000001',
+          displayName: 'Avery Harbor',
+        },
+        policy: {
+          id: '30000000-0000-4000-8000-000000000001',
+          contactId: '20000000-0000-4000-8000-000000000001',
+          displayLabel: 'Synthetic Term Policy',
+        },
+        renewal: {
+          id: '40000000-0000-4000-8000-000000000001',
+          policyId: '30000000-0000-4000-8000-000000000001',
+          status: 'open',
+        },
+        followUpTask: {
+          id: '50000000-0000-4000-8000-000000000001',
+          renewalId: '40000000-0000-4000-8000-000000000001',
+          status: 'pending',
+          version: 1,
+          completedAt: null,
+        },
+        auditEvents: [
+          {
+            id: '60000000-0000-4000-8000-000000000001',
+            type: 'renewal.created',
+            recordId: '40000000-0000-4000-8000-000000000001',
+          },
+        ],
+      },
+    ],
+  });
+});
+
 test('renders the compact CRM workspace shell and dashboard actions', async ({
   page,
 }) => {
