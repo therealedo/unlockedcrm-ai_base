@@ -3,10 +3,13 @@ import { expect, test, type Route } from '@playwright/test';
 const workspaceId = '10000000-0000-4000-8000-000000000001';
 const contactId = '20000000-0000-4000-8000-000000000001';
 const policyId = '30000000-0000-4000-8000-000000000001';
-const managedIds = Array.from(
-  { length: 9 },
-  (_, index) => `${index + 1}0000000-0000-4000-8000-000000000001`,
-);
+const managedId = (prefix: number, suffix: number) =>
+  `${prefix}0000000-0000-4000-8000-${String(suffix).padStart(12, '0')}`;
+const managedIds = [
+  ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((prefix) => managedId(prefix, 1)),
+  ...[2, 3, 4, 5, 6].map((prefix) => managedId(prefix, 2)),
+  ...[2, 3, 4, 6].map((prefix) => managedId(prefix, 3)),
+];
 
 function renewalBody(items: unknown[]) {
   return {
@@ -70,6 +73,19 @@ function managedRenewalItem({
         correlationId: '80000000-0000-4000-8000-000000000001',
         provenanceId: '90000000-0000-4000-8000-000000000001',
       },
+      ...(taskStatus === 'completed'
+        ? [
+            {
+              id: id(7),
+              type: 'task.completed',
+              occurredAt: '2026-09-07T08:56:12.175Z',
+              actorId: '70000000-0000-4000-8000-000000000001',
+              recordId: id(5),
+              correlationId: '80000000-0000-4000-8000-000000000001',
+              provenanceId: '90000000-0000-4000-8000-000000000001',
+            },
+          ]
+        : []),
     ],
     links: {
       home: '/',
@@ -85,6 +101,194 @@ function managedRenewalItem({
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
+});
+
+test('Unit 4D keeps six renewal surfaces linked to one cached projection', async ({
+  page,
+}) => {
+  let requests = 0;
+  const pattern = `**/api/v1/workspaces/${workspaceId}/renewals`;
+  await page.route(pattern, async (route) => {
+    requests += 1;
+    await route.fulfill({
+      status: 200,
+      json: renewalBody([
+        managedRenewalItem(),
+        managedRenewalItem({
+          suffix: 2,
+          taskStatus: 'pending',
+          displayLabel: 'Synthetic Indexed Policy',
+        }),
+        managedRenewalItem({
+          suffix: 3,
+          taskStatus: null,
+          displayLabel: 'Synthetic Universal Policy',
+        }),
+      ]),
+    });
+  });
+
+  await page.reload();
+  await expect(
+    page.getByRole('region', { name: 'Server-managed renewal summary' }),
+  ).toBeVisible();
+  for (const [label, value] of [
+    ['Open renewals', '3'],
+    ['Server-managed follow-ups', '2'],
+    ['Pending follow-ups', '1'],
+    ['Completed follow-ups', '1'],
+    ['Renewal audit events', '4'],
+  ]) {
+    await expect(
+      page.locator('article', { hasText: label }).locator('b'),
+    ).toHaveText(value);
+  }
+  await expect(
+    page.getByText("Today's Activity", { exact: true }),
+  ).toBeVisible();
+
+  await page
+    .getByLabel('Managed renewal links')
+    .getByRole('button', { name: 'Contact detail' })
+    .click();
+  await expect(page).toHaveURL(`/contacts/${contactId}`);
+  await page
+    .getByLabel('Managed renewal links')
+    .getByRole('button', { name: 'Policy detail' })
+    .click();
+  await expect(page).toHaveURL(`/policies/${policyId}`);
+  await page
+    .getByLabel('Managed renewal links')
+    .getByRole('button', { name: 'Renewal Dashboard' })
+    .click();
+  await expect(page).toHaveURL('/policies/renewals');
+  await expect(page.locator('.lp-side-content .lp-metrics article')).toHaveText(
+    ['Open renewals3', 'Pending follow-ups1', 'Completed follow-ups1'],
+  );
+  await page
+    .getByLabel('Managed renewal links')
+    .getByRole('button', { name: 'Tasks' })
+    .click();
+  await expect(page).toHaveURL('/tasks');
+  await expect(
+    page.getByRole('region', { name: 'Server-managed renewal follow-ups' }),
+  ).toContainText('Review synthetic renewal');
+  await expect(
+    page
+      .getByRole('region', { name: 'Server-managed renewal follow-ups' })
+      .locator('.lp-metrics article'),
+  ).toHaveText([
+    'Server-managed follow-ups2',
+    'Pending follow-ups1',
+    'Completed follow-ups1',
+  ]);
+  await expect(
+    page.getByText('New Task', { exact: true }).first(),
+  ).toBeVisible();
+  await page
+    .getByLabel('Managed renewal links')
+    .getByRole('button', { name: 'Analytics Audit' })
+    .click();
+  await expect(page).toHaveURL('/analytics/audit');
+  await expect(
+    page.getByRole('region', { name: 'Server-managed renewal audit' }),
+  ).toContainText('renewal.created');
+  await expect(
+    page
+      .getByRole('region', { name: 'Server-managed renewal audit' })
+      .locator('.lp-metrics article'),
+  ).toHaveText(['Renewal audit events4']);
+  await page
+    .getByLabel('Managed renewal links')
+    .getByRole('button', { name: 'Home' })
+    .click();
+  await expect(page).toHaveURL('/');
+  expect(requests).toBe(1);
+
+  const persisted = await page.evaluate(() =>
+    localStorage.getItem('unlockedcrm-live-parity-state-v1'),
+  );
+  expect(persisted).toContain('contact-mara-testwell');
+  for (const id of managedIds) expect(persisted).not.toContain(id);
+  await page.reload();
+  await expect(
+    page.locator('article', { hasText: 'Renewal audit events' }).locator('b'),
+  ).toHaveText('4');
+  expect(requests).toBe(2);
+});
+
+test('Unit 4D exposes honest loading, empty, error, and retry states on each new read', async ({
+  page,
+}) => {
+  const pattern = `**/api/v1/workspaces/${workspaceId}/renewals`;
+  let release!: () => void;
+  let signalRequestArrival!: () => void;
+  let loading = true;
+  let retryAttempt = 0;
+  let requests = 0;
+  await page.route(pattern, async (route) => {
+    requests += 1;
+    if (loading) {
+      await new Promise<void>((resolve) => {
+        release = resolve;
+        signalRequestArrival();
+      });
+      await route.fulfill({ status: 200, json: renewalBody([]) });
+      return;
+    }
+    retryAttempt += 1;
+    await route.fulfill(
+      retryAttempt === 1
+        ? { status: 503, json: { error: {} } }
+        : { status: 200, json: renewalBody([managedRenewalItem()]) },
+    );
+  });
+
+  for (const [path, readyText] of [
+    ['/', 'Open renewals'],
+    ['/tasks', 'Review synthetic renewal'],
+    ['/analytics/audit', 'renewal.created'],
+  ]) {
+    loading = true;
+    const requestArrived = new Promise<void>(
+      (resolve) => (signalRequestArrival = resolve),
+    );
+    const navigation = page.goto(path);
+    await expect(
+      page.getByText('Loading server-managed renewals…'),
+    ).toBeVisible();
+    await requestArrived;
+    release();
+    await navigation;
+    await expect(page.getByText('No server-managed renewals')).toBeVisible();
+    await expect(page.getByText('Synthetic Term Policy')).toHaveCount(0);
+
+    loading = false;
+    retryAttempt = 0;
+    await page.reload();
+    await expect(page.getByRole('alert')).toContainText('could not be loaded');
+    await expect(page.getByText('Synthetic Term Policy')).toHaveCount(0);
+    await page
+      .getByRole('button', { name: 'Retry server-managed renewals' })
+      .click();
+    await expect(
+      page.getByText(readyText, { exact: true }).first(),
+    ).toBeVisible();
+  }
+
+  loading = false;
+  retryAttempt = 1;
+  for (const [path, readyText] of [
+    ['/tasks', 'Review synthetic renewal'],
+    ['/analytics/audit', 'renewal.created'],
+  ]) {
+    requests = 0;
+    await page.goto(path);
+    await expect(
+      page.getByText(readyText, { exact: true }).first(),
+    ).toBeVisible();
+    expect(requests).toBe(1);
+  }
 });
 
 test('Unit 4C projects policy detail and Renewal Dashboard from one cached graph', async ({
@@ -125,7 +329,10 @@ test('Unit 4C projects policy detail and Renewal Dashboard from one cached graph
   await expect(
     page.getByText('Review synthetic renewal', { exact: true }),
   ).toBeVisible();
-  await page.getByRole('button', { name: 'Renewal Dashboard' }).click();
+  await page
+    .getByLabel('Managed renewal links')
+    .getByRole('button', { name: 'Renewal Dashboard' })
+    .click();
 
   await expect(page).toHaveURL('/policies/renewals');
   await expect(page.locator('h1')).toHaveText('Renewal Dashboard');

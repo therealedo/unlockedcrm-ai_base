@@ -33,10 +33,14 @@ import { type CSSProperties, type ReactNode, useState } from 'react';
 import { type CrmData, PIPELINE_STAGES, currency } from '@/lib/crm-data';
 import type { RenewalWorkflowState } from '@/hooks/use-renewal-workflow';
 import { matchRenewalRoute } from '@/lib/crm-route';
+import type { RenewalWorkflowItem } from '@/lib/renewal-workflow-client';
 import {
+  selectManagedAuditEvents,
   selectManagedContact,
+  selectManagedFollowUps,
   selectManagedPolicy,
   selectManagedPolicies,
+  selectRenewalCounts,
 } from '@/lib/renewal-workflow-selectors';
 
 type ParityRouterProps = {
@@ -391,6 +395,7 @@ export function LiveParityRouter(props: ParityRouterProps) {
       <ManagedContactScreen
         contactId={renewalRoute.contactId}
         workflow={props.renewalWorkflow}
+        navigate={props.navigate}
       />
     );
   }
@@ -406,6 +411,25 @@ export function LiveParityRouter(props: ParityRouterProps) {
   if (renewalRoute?.kind === 'renewals') {
     return (
       <RenewalDashboardScreen
+        workflow={props.renewalWorkflow}
+        navigate={props.navigate}
+      />
+    );
+  }
+  if (renewalRoute?.kind === 'tasks') {
+    return (
+      <TasksScreen
+        data={props.data}
+        openModal={props.openTask}
+        view={props.taskView}
+        workflow={props.renewalWorkflow}
+        navigate={props.navigate}
+      />
+    );
+  }
+  if (renewalRoute?.kind === 'audit') {
+    return (
+      <RenewalAuditScreen
         workflow={props.renewalWorkflow}
         navigate={props.navigate}
       />
@@ -430,6 +454,8 @@ export function LiveParityRouter(props: ParityRouterProps) {
           data={props.data}
           openModal={props.openTask}
           view={props.taskView}
+          workflow={props.renewalWorkflow}
+          navigate={props.navigate}
         />
       );
     case '/calendar':
@@ -461,7 +487,7 @@ export function LiveParityRouter(props: ParityRouterProps) {
     case '/documents':
       return <DocumentsScreen />;
     case '/analytics':
-      return <AnalyticsScreen data={props.data} />;
+      return <AnalyticsScreen data={props.data} navigate={props.navigate} />;
     case '/automations':
       return <AutomationsScreen data={props.data} />;
     case '/unlocked-ai':
@@ -989,10 +1015,14 @@ function TasksScreen({
   data,
   openModal,
   view,
+  workflow,
+  navigate,
 }: {
   data: CrmData;
   openModal: () => void;
   view: string;
+  workflow: ParityRouterProps['renewalWorkflow'];
+  navigate: (path: string) => void;
 }) {
   const emptyCopy: Record<string, [string, string]> = {
     'To-Do': ['No tasks to start', 'Click to add your first task'],
@@ -1001,6 +1031,14 @@ function TasksScreen({
     Done: ['No completed tasks', 'Completed tasks will appear here'],
   };
   const stages = ['To-Do', 'In Progress', 'Due', 'Done'];
+  const managedFollowUps =
+    workflow.state.status === 'ready'
+      ? selectManagedFollowUps(workflow.state.graph)
+      : [];
+  const managedCounts =
+    workflow.state.status === 'ready'
+      ? selectRenewalCounts(workflow.state.graph)
+      : null;
   return (
     <div className="lp-page lp-flush">
       <div className="lp-toolbar lp-filter-toolbar">
@@ -1014,6 +1052,70 @@ function TasksScreen({
         <ActionButton primary onClick={openModal}>
           <Plus size={14} /> Add Task
         </ActionButton>
+      </div>
+      <section
+        className="lp-panel"
+        aria-label="Server-managed renewal follow-ups"
+      >
+        <div className="lp-panel-heading">
+          <div>
+            <h2>Server-managed renewal follow-ups</h2>
+            <p>Renewal-only tasks loaded from the workspace API.</p>
+          </div>
+        </div>
+        {workflow.state.status === 'ready' ? (
+          <>
+            <MetricCards
+              columns={3}
+              items={[
+                {
+                  label: 'Server-managed follow-ups',
+                  value: String(managedCounts!.serverManagedFollowUps),
+                },
+                {
+                  label: 'Pending follow-ups',
+                  value: String(managedCounts!.pendingFollowUps),
+                },
+                {
+                  label: 'Completed follow-ups',
+                  value: String(managedCounts!.completedFollowUps),
+                },
+              ]}
+            />
+            <table>
+              <thead>
+                <tr>
+                  <th>Follow-up</th>
+                  <th>Status</th>
+                  <th>Renewal</th>
+                  <th>Due</th>
+                </tr>
+              </thead>
+              <tbody>
+                {managedFollowUps.map((item) => (
+                  <tr key={item.followUpTask.id}>
+                    <td>{item.followUpTask.title}</td>
+                    <td>{item.followUpTask.status}</td>
+                    <td>{item.renewal.displayLabel}</td>
+                    <td>{item.followUpTask.dueAt}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <ManagedRenewalLinks
+              links={workflow.state.graph.items[0].links}
+              navigate={navigate}
+            />
+          </>
+        ) : (
+          <AuthorityState state={workflow.state} retry={workflow.retry} />
+        )}
+      </section>
+      <div className="lp-panel-heading">
+        <div>
+          <h2>Local prototype tasks</h2>
+          <p>Browser-owned task records and controls</p>
+        </div>
       </div>
       {view === 'Board' ? (
         <div className="lp-task-board">
@@ -1279,6 +1381,32 @@ function AuthorityState({
   return null;
 }
 
+export function ManagedRenewalLinks({
+  links,
+  navigate,
+}: {
+  links: RenewalWorkflowItem['links'];
+  navigate: (path: string) => void;
+}) {
+  const destinations: Array<[string, string]> = [
+    ['Home', links.home],
+    ['Contact detail', links.contact],
+    ['Policy detail', links.policy],
+    ['Renewal Dashboard', links.renewals],
+    ['Tasks', links.tasks],
+    ['Analytics Audit', links.audit],
+  ];
+  return (
+    <nav aria-label="Managed renewal links">
+      {destinations.map(([label, path]) => (
+        <ActionButton key={label} onClick={() => navigate(path)}>
+          {label}
+        </ActionButton>
+      ))}
+    </nav>
+  );
+}
+
 function ContactNotFound() {
   return (
     <div className="lp-page">
@@ -1298,9 +1426,11 @@ function PolicyNotFound() {
 function ManagedContactScreen({
   contactId,
   workflow,
+  navigate,
 }: {
   contactId: string | null;
   workflow: ParityRouterProps['renewalWorkflow'];
+  navigate: (path: string) => void;
 }) {
   if (!contactId) return <ContactNotFound />;
   if (workflow.state.status !== 'ready') {
@@ -1334,6 +1464,7 @@ function ManagedContactScreen({
             </div>
           ))}
         </dl>
+        <ManagedRenewalLinks links={contact.links} navigate={navigate} />
       </section>
     </div>
   );
@@ -1413,6 +1544,7 @@ function ManagedPolicyScreen({
                 </div>
               ))}
             </dl>
+            <ManagedRenewalLinks links={item.links} navigate={navigate} />
           </section>
         </section>
       </div>
@@ -1431,12 +1563,10 @@ function RenewalDashboardScreen({
     workflow.state.status === 'ready'
       ? selectManagedPolicies(workflow.state.graph)
       : [];
-  const completed = managed.filter(
-    ({ followUpTask }) => followUpTask?.status === 'completed',
-  ).length;
-  const pending = managed.filter(
-    ({ followUpTask }) => followUpTask?.status === 'pending',
-  ).length;
+  const counts =
+    workflow.state.status === 'ready'
+      ? selectRenewalCounts(workflow.state.graph)
+      : null;
   return (
     <div className="lp-page lp-business-page lp-policies-page">
       <div className="lp-side-layout">
@@ -1457,9 +1587,18 @@ function RenewalDashboardScreen({
               <MetricCards
                 columns={3}
                 items={[
-                  { label: 'Open renewals', value: String(managed.length) },
-                  { label: 'Pending follow-ups', value: String(pending) },
-                  { label: 'Completed follow-ups', value: String(completed) },
+                  {
+                    label: 'Open renewals',
+                    value: String(counts!.openRenewals),
+                  },
+                  {
+                    label: 'Pending follow-ups',
+                    value: String(counts!.pendingFollowUps),
+                  },
+                  {
+                    label: 'Completed follow-ups',
+                    value: String(counts!.completedFollowUps),
+                  },
                 ]}
               />
               <section className="lp-panel" aria-label="Renewal Dashboard rows">
@@ -1506,6 +1645,10 @@ function RenewalDashboardScreen({
                   </tbody>
                 </table>
               </section>
+              <ManagedRenewalLinks
+                links={workflow.state.graph.items[0].links}
+                navigate={navigate}
+              />
             </>
           ) : (
             <AuthorityState state={workflow.state} retry={workflow.retry} />
@@ -2002,25 +2145,114 @@ function DocumentsScreen() {
   );
 }
 
-function AnalyticsScreen({ data }: { data: CrmData }) {
+const analyticsNavItems = [
+  { label: 'Overview' },
+  { label: 'Calls', count: 0 },
+  { label: 'Dispositions' },
+  { label: 'Email', count: 0 },
+  { label: 'SMS', count: 0 },
+  { label: 'Appts', count: 0 },
+  { label: 'Agents', count: 1 },
+  { label: 'Marketing', count: 0 },
+  { label: 'Sources' },
+  { label: 'Audit', count: 0 },
+  { label: 'Report Builder' },
+];
+
+function RenewalAuditScreen({
+  workflow,
+  navigate,
+}: {
+  workflow: ParityRouterProps['renewalWorkflow'];
+  navigate: (path: string) => void;
+}) {
+  const events =
+    workflow.state.status === 'ready'
+      ? selectManagedAuditEvents(workflow.state.graph)
+      : [];
+  return (
+    <div className="lp-page lp-side-layout lp-analytics-page">
+      <ModuleSideNav
+        title="Reports"
+        active="Audit"
+        items={analyticsNavItems.map((item) =>
+          item.label === 'Audit' ? { ...item, count: events.length } : item,
+        )}
+        onSelect={(label) => {
+          if (label === 'Overview') navigate('/analytics');
+        }}
+      />
+      <section className="lp-side-content">
+        <section className="lp-panel" aria-label="Server-managed renewal audit">
+          <div className="lp-panel-heading">
+            <div>
+              <h2>Server-managed renewal audit</h2>
+              <p>Renewal-only events loaded from the workspace API.</p>
+            </div>
+          </div>
+          {workflow.state.status === 'ready' ? (
+            <>
+              <MetricCards
+                items={[
+                  {
+                    label: 'Renewal audit events',
+                    value: String(
+                      selectRenewalCounts(workflow.state.graph)
+                        .renewalAuditEvents,
+                    ),
+                  },
+                ]}
+              />
+              <table>
+                <thead>
+                  <tr>
+                    <th>Event</th>
+                    <th>Renewal</th>
+                    <th>Occurred</th>
+                    <th>Record ID</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {events.map(({ auditEvent, renewal }) => (
+                    <tr key={auditEvent.id}>
+                      <td>{auditEvent.type}</td>
+                      <td>{renewal.displayLabel}</td>
+                      <td>{auditEvent.occurredAt}</td>
+                      <td>{auditEvent.recordId}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <ManagedRenewalLinks
+                links={workflow.state.graph.items[0].links}
+                navigate={navigate}
+              />
+            </>
+          ) : (
+            <AuthorityState state={workflow.state} retry={workflow.retry} />
+          )}
+        </section>
+      </section>
+    </div>
+  );
+}
+
+function AnalyticsScreen({
+  data,
+  navigate,
+}: {
+  data: CrmData;
+  navigate: (path: string) => void;
+}) {
   return (
     <div className="lp-page lp-side-layout lp-analytics-page">
       <ModuleSideNav
         title="Reports"
         active="Overview"
-        items={[
-          { label: 'Overview' },
-          { label: 'Calls', count: 0 },
-          { label: 'Dispositions' },
-          { label: 'Email', count: 0 },
-          { label: 'SMS', count: 0 },
-          { label: 'Appts', count: 0 },
-          { label: 'Agents', count: 1 },
-          { label: 'Marketing', count: 0 },
-          { label: 'Sources' },
-          { label: 'Audit', count: 0 },
-          { label: 'Report Builder' },
-        ]}
+        items={analyticsNavItems}
+        onSelect={(label) => {
+          if (label === 'Audit') navigate('/analytics/audit');
+        }}
       />
       <section className="lp-side-content">
         <div className="lp-toolbar lp-filter-toolbar">

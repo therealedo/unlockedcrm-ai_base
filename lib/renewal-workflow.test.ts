@@ -12,9 +12,12 @@ import {
   type RenewalWorkflowResponse,
 } from './renewal-workflow-client';
 import {
+  selectManagedAuditEvents,
   selectManagedContact,
+  selectManagedFollowUps,
   selectManagedPolicy,
   selectManagedPolicies,
+  selectRenewalCounts,
 } from './renewal-workflow-selectors';
 
 const ids = {
@@ -86,6 +89,10 @@ function graph(): RenewalWorkflowResponse {
 
 describe('renewal routes', () => {
   it('matches managed collection and detail routes in safe order', () => {
+    expect(matchRenewalRoute('/')).toEqual({ kind: 'home' });
+    expect(matchRenewalRoute('/tasks')).toEqual({ kind: 'tasks' });
+    expect(matchRenewalRoute('/analytics/audit')).toEqual({ kind: 'audit' });
+    expect(matchRenewalRoute('/analytics')).toBeNull();
     expect(matchRenewalRoute('/policies')).toEqual({ kind: 'policies' });
     expect(matchRenewalRoute('/policies/renewals')).toEqual({
       kind: 'renewals',
@@ -203,6 +210,90 @@ describe('renewal selectors', () => {
     expect(selectManagedPolicies(empty)).toEqual([]);
     expect(selectManagedContact(empty, ids.contact)).toBeUndefined();
     expect(selectManagedPolicy(empty, ids.policy)).toBeUndefined();
+    expect(selectManagedFollowUps(empty)).toEqual([]);
+    expect(selectManagedAuditEvents(empty)).toEqual([]);
+    expect(selectRenewalCounts(empty)).toEqual({
+      openRenewals: 0,
+      serverManagedFollowUps: 0,
+      pendingFollowUps: 0,
+      completedFollowUps: 0,
+      renewalAuditEvents: 0,
+    });
+  });
+
+  it('derives discriminating renewal-only counts and stable linked rows', () => {
+    const projected = graph();
+    projected.items[0].auditEvents.push({
+      ...projected.items[0].auditEvents[0],
+      id: crypto.randomUUID(),
+      type: 'task.completed',
+    });
+    projected.items.push(
+      {
+        ...structuredClone(projected.items[0]),
+        followUpTask: {
+          ...projected.items[0].followUpTask!,
+          id: crypto.randomUUID(),
+          status: 'pending',
+          version: 1,
+          completedAt: null,
+        },
+        auditEvents: [structuredClone(projected.items[0].auditEvents[0])],
+      },
+      {
+        ...structuredClone(projected.items[0]),
+        followUpTask: null,
+        auditEvents: [structuredClone(projected.items[0].auditEvents[0])],
+      },
+    );
+    projected.items
+      .slice(1)
+      .forEach((item, index) =>
+        Object.assign(
+          item,
+          JSON.parse(
+            JSON.stringify(item).replaceAll(
+              '000000000001',
+              `00000000000${index + 2}`,
+            ),
+          ),
+        ),
+      );
+
+    expect(selectRenewalCounts(projected)).toEqual({
+      openRenewals: 3,
+      serverManagedFollowUps: 2,
+      pendingFollowUps: 1,
+      completedFollowUps: 1,
+      renewalAuditEvents: 4,
+    });
+    expect(selectManagedFollowUps(projected)).toHaveLength(2);
+    expect(selectManagedFollowUps(projected)[0].links.tasks).toBe('/tasks');
+    expect(selectManagedAuditEvents(projected)).toHaveLength(4);
+    expect(selectManagedAuditEvents(projected)[0].links.audit).toBe(
+      '/analytics/audit',
+    );
+  });
+
+  it('deduplicates projection rows by stable identity, keeping the first', () => {
+    const projected = graph();
+    const duplicate = structuredClone(projected.items[0]);
+    duplicate.followUpTask!.status = 'pending';
+    duplicate.followUpTask!.completedAt = null;
+    projected.items.push(duplicate);
+
+    expect([
+      selectManagedPolicies(projected).length,
+      selectManagedFollowUps(projected).length,
+      selectManagedAuditEvents(projected).length,
+    ]).toEqual([1, 1, 1]);
+    expect(selectRenewalCounts(projected)).toEqual({
+      openRenewals: 1,
+      serverManagedFollowUps: 1,
+      pendingFollowUps: 0,
+      completedFollowUps: 1,
+      renewalAuditEvents: 1,
+    });
   });
 });
 

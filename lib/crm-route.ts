@@ -1,4 +1,7 @@
 export type RenewalRoute =
+  | { kind: 'home' }
+  | { kind: 'tasks' }
+  | { kind: 'audit' }
   | { kind: 'policies' }
   | { kind: 'renewals' }
   | { kind: 'contact'; contactId: string | null }
@@ -13,6 +16,9 @@ function decodedSegment(value: string) {
 }
 
 export function matchRenewalRoute(path: string): RenewalRoute | null {
+  if (path === '/') return { kind: 'home' };
+  if (path === '/tasks') return { kind: 'tasks' };
+  if (path === '/analytics/audit') return { kind: 'audit' };
   if (path === '/policies') return { kind: 'policies' };
   if (path === '/policies/renewals') return { kind: 'renewals' };
   const contact = /^\/contacts\/([^/]+)$/.exec(path);

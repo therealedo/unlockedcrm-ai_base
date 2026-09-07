@@ -18,7 +18,7 @@ export type RenewalWorkflowState =
   | { status: 'idle' | 'loading' | 'empty' | 'not-found' | 'error' }
   | { status: 'ready'; graph: RenewalWorkflowResponse };
 
-export function useRenewalWorkflow(route: string) {
+export function useRenewalWorkflow(route: string, enabled = true) {
   const [state, setState] = useState<RenewalWorkflowState>({ status: 'idle' });
   const [attempt, setAttempt] = useState(0);
   const cache = useRef<RenewalWorkflowResponse | null>(null);
@@ -26,6 +26,7 @@ export function useRenewalWorkflow(route: string) {
 
   useEffect(() => {
     if (
+      !enabled ||
       !target ||
       (target.kind === 'contact' && !target.contactId) ||
       (target.kind === 'policy' && !target.policyId)
@@ -70,22 +71,28 @@ export function useRenewalWorkflow(route: string) {
         );
       });
     return () => controller.abort();
-  }, [route, attempt]);
+  }, [route, attempt, enabled]);
 
   const routeTitle =
-    target?.kind === 'contact'
-      ? target.contactId && state.status === 'ready'
-        ? (selectManagedContact(state.graph, target.contactId)?.contact
-            .displayName ?? 'Contact')
-        : 'Contact'
-      : target?.kind === 'policy'
-        ? target.policyId && state.status === 'ready'
-          ? (selectManagedPolicy(state.graph, target.policyId)?.policy
-              .displayLabel ?? 'Policy')
-          : 'Policy'
-        : target?.kind === 'renewals'
-          ? 'Renewal Dashboard'
-          : null;
+    target?.kind === 'home'
+      ? 'Home'
+      : target?.kind === 'tasks'
+        ? 'Tasks'
+        : target?.kind === 'audit'
+          ? 'Analytics Audit'
+          : target?.kind === 'contact'
+            ? target.contactId && state.status === 'ready'
+              ? (selectManagedContact(state.graph, target.contactId)?.contact
+                  .displayName ?? 'Contact')
+              : 'Contact'
+            : target?.kind === 'policy'
+              ? target.policyId && state.status === 'ready'
+                ? (selectManagedPolicy(state.graph, target.policyId)?.policy
+                    .displayLabel ?? 'Policy')
+                : 'Policy'
+              : target?.kind === 'renewals'
+                ? 'Renewal Dashboard'
+                : null;
   return {
     state,
     routeTitle,
