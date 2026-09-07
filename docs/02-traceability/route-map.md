@@ -1,6 +1,6 @@
 # Local route map
 
-The local registry exposes **32 paths and 30 effective screens**. `/underwrite-ai` aliases `/underwriting`; `/imo-fmo` aliases `/org/dashboard`. Local mode exposes renewal GET and task-completion POST routes as `PARTIAL` / `LOCAL-VERIFIED`; four managed views consume the validated GET without storing its graph.
+The top-level local registry remains **32 paths and 30 effective screens**. `/underwrite-ai` aliases `/underwriting`; `/imo-fmo` aliases `/org/dashboard`. Seven GET-consuming views reuse one validated graph across six canonical linked surfaces; policy list is auxiliary and `/analytics/audit` is a managed child route.
 
 ## Renderer ownership
 
@@ -10,7 +10,7 @@ The local registry exposes **32 paths and 30 effective screens**. `/underwrite-a
 
 | # | Capability ID | Path | Active renderer | Local status | Evidence/notes |
 |---:|---|---|---|---|---|
-| 1 | `CAP-CRM-001` | `/` | `HomeScreen` | `PARTIAL` | Local counts/quick actions; separate from dashboard |
+| 1 | `CAP-CRM-001` | `/` | `HomeScreen` | `PARTIAL` | Renewal-only managed summary plus separate local activity/widgets |
 | 2 | `CAP-CRM-002` | `/dashboard` | `DashboardScreen` | `PARTIAL` | Local and hard-coded summaries |
 | 3 | `CAP-AI-001` | `/unlocked-ai` | `UnlockedAiScreen` | `MOCK` | No model/history/permissions backend |
 | 4 | `CAP-CRM-003` | `/inbox` | `InboxScreen` | `MOCK` | No mailbox or delivery service |
@@ -26,7 +26,7 @@ The local registry exposes **32 paths and 30 effective screens**. `/underwrite-a
 | 14 | `CAP-AUTO-003` | `/forms` | `FormsScreen` | `MOCK` | No hosted forms or response store |
 | 15 | `CAP-BIZ-001` | `/policies` | `PoliciesScreen` | `PARTIAL` | Table/create/local persistence; no detail/carrier integration |
 | 16 | `CAP-BIZ-002` | `/commissions` | `CommissionsScreen` | `PARTIAL` | Table/create/local persistence; no ingestion/reconciliation |
-| 17 | `CAP-CRM-007` | `/tasks` | `TasksScreen` | `PARTIAL` | Board/list/create; no detail/edit/delete/assignment backend |
+| 17 | `CAP-CRM-007` | `/tasks` | `TasksScreen` | `PARTIAL` | Managed renewal follow-ups plus separate local board/list/create; no managed completion UI |
 | 18 | `CAP-BIZ-003` | `/booking-links` | `BookingLinksScreen` | `PARTIAL` | Local create/list; no public endpoint/calendar sync |
 | 19 | `CAP-BIZ-004` | `/analytics` | `AnalyticsScreen` | `PARTIAL` | Local/hard-coded metrics; no event/query layer |
 | 20 | `CAP-BIZ-005` | `/documents` | `DocumentsScreen` | `MOCK` | No file storage/lifecycle |
@@ -52,6 +52,7 @@ These routes are resolved from validated API links or a fixed navigation path an
 | `CAP-CRM-104` | `/contacts/:contactId` | `ManagedContactScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Exact stable-ID renewal-linked read; no full contact lifecycle |
 | `CAP-BIZ-102` | `/policies/:policyId` | `ManagedPolicyScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Exact stable-ID GET projection only; rich detail/edit remains missing |
 | `CAP-BIZ-106` | `/policies/renewals` | `RenewalDashboardScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Current graph counts/rows only; urgency, progress, and filters remain missing |
+| `CAP-BIZ-116` | `/analytics/audit` | `RenewalAuditScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Renewal-only audit events; general analytics/audit store remains missing |
 
 ## Smoke evidence
 

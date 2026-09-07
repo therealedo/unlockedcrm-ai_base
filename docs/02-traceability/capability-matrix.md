@@ -8,7 +8,7 @@ Legend: `LV` = `LIVE-VERIFIED`, `LO` = `LOCAL-VERIFIED`, `PV` = `PRIOR-VERIFIED`
 
 | Capability ID | Route/effective screen | Local status | Evidence | Target phase | Next proof |
 |---|---|---|---|---|---|
-| `CAP-CRM-001` | `/` Home | `PARTIAL` | `LO` | Phase 1 | Derive every widget from shared synthetic records |
+| `CAP-CRM-001` | `/` Home | `PARTIAL` | `LO` | Phase 1 | Renewal-only managed summary is proven; derive remaining widgets from shared records |
 | `CAP-CRM-002` | `/dashboard` Dashboard | `PARTIAL` | `LO`,`LV` | Phase 1 | Match live widget hierarchy and cross-record metrics |
 | `CAP-AI-001` | `/unlocked-ai` | `MOCK` | `LO`,`LV` | Phase 1 complete simulated workflow; Phase 2 selected real provider/hardening | Nested shell/history/insights/permissions tests |
 | `CAP-CRM-003` | `/inbox` | `MOCK` | `LO`,`LV` | Phase 1 functional threads with simulated channels; Phase 2 selected real providers/hardening | Thread/dialog/channel synthetic interaction suite |
@@ -24,7 +24,7 @@ Legend: `LV` = `LIVE-VERIFIED`, `LO` = `LOCAL-VERIFIED`, `PV` = `PRIOR-VERIFIED`
 | `CAP-AUTO-003` | `/forms` | `MOCK` | `LO`,`LV` | Phase 1 functional local hosting; Phase 2 hardening | Builder/settings/submission state and schema tests |
 | `CAP-BIZ-001` | `/policies` | `PARTIAL` | `LO`,`LV`,`G` | Phase 1 | Detail/category forms/six workspaces |
 | `CAP-BIZ-002` | `/commissions` | `PARTIAL` | `LO`,`LV`,`PV` | Phase 1 functional local ledger/import; Phase 2 hardening | Validation, statements, matching, splits, reconciliation |
-| `CAP-CRM-007` | `/tasks` | `PARTIAL` | `LO`,`LV` | Phase 1 | Detail/edit/delete/comments/files/activity |
+| `CAP-CRM-007` | `/tasks` | `PARTIAL` | `LO`,`LV` | Phase 1 | Managed renewal follow-ups are proven; add completion UI and full task lifecycle |
 | `CAP-BIZ-003` | `/booking-links` | `PARTIAL` | `LO`,`LV` | Phase 1 functional local booking + simulated calendar; Phase 2 selected real provider/hardening | Round-robin, submissions and calendar-backed booking |
 | `CAP-BIZ-004` | `/analytics` | `PARTIAL` | `LO`,`LV` | Phase 1 functional; Phase 2 hardening | Eleven event-derived views and report state |
 | `CAP-BIZ-005` | `/documents` | `MOCK` | `LO`,`LV` | Phase 1 functional local object storage; Phase 2 hardening | Folder/file/E&O states then secure storage/OCR |
@@ -57,7 +57,7 @@ Legend: `LV` = `LIVE-VERIFIED`, `LO` = `LOCAL-VERIFIED`, `PV` = `PRIOR-VERIFIED`
 
 | Capability ID | Nested capability | Local status | Evidence | Target | Next proof |
 |---|---|---|---|---|---|
-| `CAP-CRM-101` | Dashboard composer/suggestions/activity/meetings/tasks | `PARTIAL` | `LO`,`LV` | Phase 1 | Shared-record projection tests |
+| `CAP-CRM-101` | Dashboard composer/suggestions/activity/meetings/tasks | `PARTIAL` | `LO`,`LV` | Phase 1 | Renewal summary is API-derived; migrate remaining independent widgets |
 | `CAP-CRM-102` | Inbox list tabs/search/filter/sort | `MOCK` | `LO`,`LV` | Phase 1 | Deterministic empty/populated list states |
 | `CAP-CRM-103` | Inbox selected thread and new-conversation dialog | `MOCK` | `LO`,`LV` | Phase 1 | Contact search, channel composer and draft states |
 | `CAP-CRM-104` | Contact list/subviews/filter/columns/pagination | `PARTIAL` | `LO`,`LV` | Phase 1 | All controls and responsive table tests |
@@ -68,7 +68,7 @@ Legend: `LV` = `LIVE-VERIFIED`, `LO` = `LOCAL-VERIFIED`, `PV` = `PRIOR-VERIFIED`
 | `CAP-CRM-109` | Opportunity create/detail | `PARTIAL` | `LO`,`LV`,`G` | Phase 1 | Existing-detail recheck plus edit/validation tests |
 | `CAP-CRM-110` | Calendar grid/table | `PARTIAL` | `LO`,`LV` | Phase 1 | Week navigation, timezone and populated state |
 | `CAP-CRM-111` | Appointment creation/connection gate | `PARTIAL` | `LO`,`LV`,`G` | Phase 1 functional; Phase 2 hardening | Disabled/configured/error state contract |
-| `CAP-CRM-112` | Tasks board/list/create | `PARTIAL` | `LO`,`LV` | Phase 1 | Status/priority/assignee and persistence tests |
+| `CAP-CRM-112` | Tasks board/list/create | `PARTIAL` | `LO`,`LV` | Phase 1 | Renewal follow-up reads are separate from local tasks; add managed completion and full persistence |
 | `CAP-CRM-113` | Task detail/files/comments/activity | `MISSING` | `LV` | Phase 1 functional local files; Phase 2 hardening | Full detail behavior with synthetic audit trail |
 
 ## Business-record nested capabilities
@@ -90,7 +90,7 @@ Legend: `LV` = `LIVE-VERIFIED`, `LO` = `LOCAL-VERIFIED`, `PV` = `PRIOR-VERIFIED`
 | `CAP-BIZ-113` | Analytics Overview | `PARTIAL` | `LO`,`LV` | Phase 1 | Event-derived cross-record metrics |
 | `CAP-BIZ-114` | Calls/Dispositions/Email/SMS/Appts analytics | `MISSING` | `LV` | Phase 1 functional local events; Phase 2 hardening | Five synthetic channel projections |
 | `CAP-BIZ-115` | Agents/Marketing/Sources analytics | `MISSING` | `LV` | Phase 1 | Synthetic attribution and performance fixtures |
-| `CAP-BIZ-116` | Analytics Audit/Report Builder | `MISSING` | `LV` | Phase 1 functional local event store; Phase 2 hardening | Searchable events and saved report fixtures |
+| `CAP-BIZ-116` | Analytics Audit/Report Builder | `PARTIAL` | `LO`,`LV` | Phase 1 functional local event store; Phase 2 hardening | Renewal-only audit reads are proven; add general searchable events and saved reports |
 | `CAP-BIZ-117` | Document folders/table/filter | `MOCK` | `LO`,`LV` | Phase 1 | Full local synthetic file/object lifecycle and filter states |
 | `CAP-BIZ-118` | Upload/download/version/relationships | `MISSING` | `LV`,`I` | Phase 1 functional local object service; Phase 2 hardening | Object lifecycle/scanning first, then production authorization/audit/recovery |
 | `CAP-BIZ-119` | E&O upload/extraction | `MOCK` | `LO`,`LV` | Phase 1 functional local objects + extraction simulator; Phase 2 selected real OCR/hardening | Deterministic extraction with provenance, review and retention proof |
@@ -272,12 +272,12 @@ These statuses describe provider connectivity, not the surrounding owned workflo
 |---|---|---|---|---|---|
 | `CAP-PLAT-001` | Request identity, authentication/session/MFA/recovery | `MISSING` | `LO`,`I` | Phase 1 centralized synthetic request identity; Phase 2 production auth/MFA | Request-context tests first, then threat model and secure auth tests |
 | `CAP-PLAT-002` | Authorization context, fixed roles and record ownership | `PARTIAL` | Server-controlled synthetic workspace/actor context gates renewal GET and completion POST (`LOCAL-VERIFIED`); untrusted headers are ignored, while roles and production identity are absent | Phase 1 centralized synthetic policy context; Phase 2 fixed-role enforcement | Extend ownership scope, then prove production negative authorization |
-| `CAP-PLAT-003` | PostgreSQL durable data/migrations | `PARTIAL` | Initial migration, deterministic renewal seed, immutable audit and repository tests are `LOCAL-VERIFIED`; policy-list renewal rows and linked contact detail now consume the validated GET while remaining CRM views retain browser authority | Phase 1 development-grade persistence; Phase 2 hardening | Complete all browser projections, then add backup and restore tests |
+| `CAP-PLAT-003` | PostgreSQL durable data/migrations | `PARTIAL` | Initial migration, deterministic renewal seed, immutable audit and repository tests are `LOCAL-VERIFIED`; the validated graph now drives seven GET views across six canonical surfaces while unrelated records and mutations retain browser authority | Phase 1 development-grade persistence; Phase 2 hardening | Complete managed mutation/refetch, then add backup and restore tests |
 | `CAP-PLAT-004` | Workspace ownership seam / tenant isolation | `PARTIAL` | Composite constraints, scoped repository negatives, and undisclosing route mismatch/unknown behavior are `LOCAL-VERIFIED`; this is not tenant isolation | Phase 1 one-workspace `workspace_id` scope; Phase 3 tenant isolation | Extend the seam to later records; cross-tenant proof only in clean-room SaaS |
 | `CAP-PLAT-005` | Durable jobs/workflows | `MISSING` | `LO`,`I` | Phase 1 functional local runtime; Phase 2 hardening | Idempotency/retry/dead-letter/replay proof |
 | `CAP-PLAT-006` | Secrets/configuration | `PARTIAL` | `LO`,`I` | Phase 1 externalized development config; Phase 2 secure secret rotation/hardening | Extend the defaulted Foundation host plus validated mode/port and Docker-path config to checked slice config; then add vault, rotation, and redaction proof |
 | `CAP-PLAT-007` | S3-compatible secure objects | `MISSING` | `LO`,`I` | Phase 1 development-grade local objects; Phase 2 hardening | MinIO local + production adapter and access tests |
-| `CAP-PLAT-008` | Audit/analytics event store | `PARTIAL` | Fixed renewal creation audit, atomic task-completion audit, database immutability, and GET projection with persisted actor/record/correlation/provenance metadata are `LOCAL-VERIFIED`; general query and retention remain missing | Phase 1 functional local events; Phase 2 hardening | Broader query and retention proof |
+| `CAP-PLAT-008` | Audit/analytics event store | `PARTIAL` | Immutable renewal events and the renewal-only Analytics Audit projection are `LOCAL-VERIFIED`; general query, filtering, and retention remain missing | Phase 1 functional local events; Phase 2 hardening | Broader query and retention proof |
 | `CAP-PLAT-009` | Observability and incident response | `MISSING` | `LO`,`I` | Phase 2 | Redacted telemetry, alerts and runbook exercise |
 | `CAP-PLAT-010` | Backup/restore/export/recovery | `MISSING` | `LO`,`I` | Phase 2 | Encrypted backup and timed restore drill |
 | `CAP-PLAT-011` | Signed data-first update system | `MISSING` | `LO`,`I`; point-in-time dependency audit `LOCAL-VERIFIED` | Phase 2 | Recurring dependency checks plus manifest/artifact/migration/health/rollback tests |

@@ -61,6 +61,7 @@ import {
 } from '@/lib/crm-data';
 import {
   LiveContextSidebar,
+  ManagedRenewalLinks,
   LiveParityHeaderExtras,
   LiveParityRouter,
   type RailPopoverName,
@@ -72,6 +73,7 @@ import {
   hydrateLegacyCrmData,
   serializeLegacyCrmData,
 } from '@/lib/legacy-crm-storage';
+import { selectRenewalCounts } from '@/lib/renewal-workflow-selectors';
 
 type ModalName =
   | 'contact'
@@ -241,7 +243,7 @@ export default function CrmApp() {
   );
   const [toast, setToast] = useState('');
   const [railPopover, setRailPopover] = useState<RailPopoverName | null>(null);
-  const renewalWorkflow = useRenewalWorkflow(route);
+  const renewalWorkflow = useRenewalWorkflow(route, hydrated);
 
   useEffect(() => {
     const syncRoute = () => setRoute(window.location.pathname || '/');
@@ -657,7 +659,12 @@ export default function CrmApp() {
                   </h2>
                   {group.items.map(([Icon, label, path]) => (
                     <button
-                      className={route === path ? 'selected' : ''}
+                      className={
+                        route === path ||
+                        (path === '/analytics' && route === '/analytics/audit')
+                          ? 'selected'
+                          : ''
+                      }
                       key={label}
                       onClick={() => navigate(path)}
                     >
@@ -763,6 +770,8 @@ export default function CrmApp() {
               density={density}
               openTask={() => setModal('task')}
               openAppointment={() => setModal('appointment')}
+              navigate={navigate}
+              renewalWorkflow={renewalWorkflow}
             />
           )}
           {route !== '/' && (
@@ -857,16 +866,24 @@ function HomeScreen({
   density,
   openTask,
   openAppointment,
+  navigate,
+  renewalWorkflow,
 }: {
   data: CrmData;
   density: string;
   openTask: () => void;
   openAppointment: () => void;
+  navigate: (path: string) => void;
+  renewalWorkflow: ReturnType<typeof useRenewalWorkflow>;
 }) {
   const pipelineValue = data.opportunities.reduce(
     (sum, item) => sum + item.value,
     0,
   );
+  const managedCounts =
+    renewalWorkflow.state.status === 'ready'
+      ? selectRenewalCounts(renewalWorkflow.state.graph)
+      : null;
   return (
     <div className={`home-content ${density}`}>
       <div className="system-alert">
@@ -928,6 +945,51 @@ function HomeScreen({
             <Sparkles size={16} />
             Prep for next meeting
           </button>
+        </section>
+        <section
+          className="dashboard-card"
+          aria-label="Server-managed renewal summary"
+        >
+          <header>
+            <div>
+              <h2>Server-managed renewal summary</h2>
+              <p>Renewal-only facts from the workspace API</p>
+            </div>
+          </header>
+          {renewalWorkflow.state.status === 'ready' ? (
+            <>
+              <div className="lp-metrics">
+                {Object.entries({
+                  'Open renewals': managedCounts!.openRenewals,
+                  'Server-managed follow-ups':
+                    managedCounts!.serverManagedFollowUps,
+                  'Pending follow-ups': managedCounts!.pendingFollowUps,
+                  'Completed follow-ups': managedCounts!.completedFollowUps,
+                  'Renewal audit events': managedCounts!.renewalAuditEvents,
+                }).map(([label, value]) => (
+                  <article key={label}>
+                    <span>{label}</span>
+                    <b>{value}</b>
+                  </article>
+                ))}
+              </div>
+              <ManagedRenewalLinks
+                links={renewalWorkflow.state.graph.items[0].links}
+                navigate={navigate}
+              />
+            </>
+          ) : renewalWorkflow.state.status === 'empty' ? (
+            <p>No server-managed renewals</p>
+          ) : renewalWorkflow.state.status === 'error' ? (
+            <div role="alert">
+              <p>Server-managed renewals could not be loaded.</p>
+              <button onClick={renewalWorkflow.retry}>
+                Retry server-managed renewals
+              </button>
+            </div>
+          ) : (
+            <p>Loading server-managed renewals…</p>
+          )}
         </section>
         <section className="dashboard-card activity-card">
           <header>

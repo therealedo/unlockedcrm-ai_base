@@ -2,7 +2,7 @@
 
 > The current build is a fictional-data browser prototype plus local synthetic renewal GET and task-completion POST routes. It is not safe for real PII/PHI, limited production use, or SaaS.
 
-**Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, renewal-foundation checks, `DEP-AUDIT-2026-09-04`, `UNIT2A-2026-09-06`, `UNIT2B-2026-09-07`, `UNIT2C-2026-09-07`, and `UNIT4A-2026-09-07`. Other views and mutations remain browser-authoritative.
+**Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, renewal-foundation checks, `DEP-AUDIT-2026-09-04`, `UNIT2A-2026-09-06`, `UNIT2B-2026-09-07`, `UNIT2C-2026-09-07`, and `UNIT4A-2026-09-07` through `UNIT4D-2026-09-07`. Unrelated records and mutations remain browser-authoritative.
 
 ## Verified current stack
 
@@ -13,9 +13,9 @@
 | Web runtime requirement | Node 24.18.0 |
 | Toolchain pinning | `.node-version`, `engines.node`, and `packageManager` pin Node 24.18.0/npm 12.0.2 |
 | Routing | Root and catch-all entries render one client `CrmApp`; navigation uses custom `pushState` handling |
-| Persistence | Browser `localStorage` remains authority for legacy records; four renewal views read a validated PostgreSQL-backed GET without copying its graph into browser storage |
+| Persistence | Browser `localStorage` remains authority for legacy records; seven GET views cover six canonical renewal surfaces without copying the PostgreSQL graph into browser storage |
 | Styling | One large global CSS file plus mostly unused generated UI components |
-| Tests | 23 Playwright tests plus focused Vitest Foundation/API contracts; E2E owns isolated PostgreSQL/API/web startup and cleanup |
+| Tests | 25 Playwright tests plus focused Vitest Foundation/API contracts; E2E owns isolated PostgreSQL/API/web startup and cleanup |
 | Hosting integration | Vinext/Vite with OpenAI Sites and Cloudflare plugins |
 | Local infrastructure orchestration | `compose.yaml` defines PostgreSQL only; `npm run dev` validates the development DSN and runs generate/migrate/seed before host API/web; `dev:foundation` remains available |
 | API foundation | Fastify exposes liveness/readiness plus local renewal GET and atomic task-completion POST routes; Foundation mode remains generation-independent and reports `MIGRATIONS_UNAVAILABLE` readiness |
@@ -47,7 +47,7 @@ Keeping Vinext/Vite for the parity UI does not require cloud infrastructure. The
 ## Missing application infrastructure beyond Foundation
 
 - No application containers; Compose currently supplies only the local PostgreSQL service.
-- Browser API authority is limited to policy list, linked contact detail, policy detail, and Renewal Dashboard reads; broader views and mutations remain browser-owned, and the domain API remains limited to renewal GET and task-completion POST routes.
+- Browser API authority covers Home, linked contact detail, policy detail, Renewal Dashboard, Tasks, and Analytics Audit reads, plus the auxiliary policy list; unrelated views and mutations remain browser-owned, and the domain API remains limited to renewal GET and task-completion POST routes.
 - Prisma migration, reviewed SQL constraints, a completion-aware exact-state seed classifier, domain assembly, workspace-scoped repository, and immutable audits feed both routes. The completion command conditionally updates one task and appends one exact audit in a transaction.
 - No secure authentication, MFA, fixed-role enforcement, or centralized request identity.
 - No object storage, scanning boundary, durable worker, scheduler, outbox/inbox, or webhook ingress.
@@ -81,4 +81,4 @@ Protect parity with behavior tests before consolidating the active renderer and 
 
 ## Next proof
 
-Follow the [target architecture](target-architecture.md) and [Phase 1 roadmap](../03-roadmap/phase-1-replica.md). Units 4–5 next move browser authority and prove cross-surface consistency. Add services only with slice evidence.
+Follow the [target architecture](target-architecture.md) and [Phase 1 roadmap](../03-roadmap/phase-1-replica.md). Unit 5 next closes managed completion/refetch behavior; broader browser authority remains phased. Add services only with slice evidence.
