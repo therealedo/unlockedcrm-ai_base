@@ -14,7 +14,7 @@ Required operator path:
 4. use `npm run dev` for the current Foundation; Unit 2 adds PostgreSQL migration and deterministic seed before persistent readiness;
 5. add object storage, mail capture, queues, or other services only when the selected functional slice requires them;
 
-`npm run dev` is the Foundation root command. Unit 2 extends startup with persistence preflight, migration, deterministic seed of exactly one fictional workspace and provider scenarios, safe reset/reseed, and readiness rather than exposing a premature local mode. Full application containerization is deferred unless measured environment-parity problems justify it; Docker Compose owns infrastructure by default, not the UI or API processes.
+`npm run dev` is the Foundation root command. Unit 2 extends startup with persistence preflight, migration, deterministic seed of exactly one fictional workspace, safe reset/reseed, and readiness rather than exposing a premature local mode. Unit 2A already provides generate-first API checks and an isolated test database lifecycle; it does not activate persistent startup. Full application containerization is deferred unless measured environment-parity problems justify it; Docker Compose owns infrastructure by default, not the UI or API processes.
 
 Cloud hosting, production credentials, real customer destinations, and real PII/PHI are forbidden prerequisites. An optional PWA shell remains network-required; service-worker caches must not imply offline CRM behavior.
 

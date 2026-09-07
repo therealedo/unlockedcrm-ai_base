@@ -1,0 +1,16 @@
+name: unlockedcrm-renewal-test
+
+services:
+  postgres:
+    image: postgres:17.6-alpine
+    ports: ['127.0.0.1:54330:5432']
+    environment:
+      POSTGRES_DB: unlockedcrm_test
+      POSTGRES_USER: unlockedcrm
+      POSTGRES_PASSWORD: synthetic-local-only
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U unlockedcrm -d unlockedcrm_test']
+      interval: 1s
+      timeout: 3s
+      retries: 30
+    tmpfs: ['/var/lib/postgresql/data']
