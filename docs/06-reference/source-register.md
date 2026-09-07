@@ -19,6 +19,7 @@ Use this register to keep direct observation, local verification, approved plann
 | `UNIT2A-2026-09-06` | Prisma generation and isolated PostgreSQL test harness | `LOCAL-VERIFIED` | Pinned Prisma/client/adapter 7.10.0 and pg 8.23.0; generate-first API checks; exact 54330 test DSN; adapter query; bounded Compose cleanup without volume deletion; no migration, seed, repository, or CRM route |
 | `UNIT2B-2026-09-07` | Deterministic renewal persistence | `LOCAL-VERIFIED` | Initial migration, fixed seed replay/drift refusal, composite workspace constraints, partial uniqueness, immutable audit trigger, scoped repository, exact migration/seed commands, and bounded isolated PostgreSQL cleanup; no CRM route or browser authority change |
 | `UNIT2B-FIX-2026-09-07` | Open-renewal read regression | `LOCAL-VERIFIED` | Tests-first isolated PostgreSQL/API proof: completed/absent tasks retain the open renewal, pending tasks take priority over completed history, and task-history audits remain scoped; nullable task assembly preserves relationship checks; no GET, completion command, or UI wiring |
+| `UNIT2C-2026-09-07` | Renewal GET and local persistence startup | `LOCAL-VERIFIED` | Strict-TDD isolated PostgreSQL proof for GET 200/empty/400/404/503, persisted audit metadata, latest-event/null `asOf`, server-controlled identity, DSN-first startup, migrate/seed order, readiness, restart/no-op, and bounded cleanup; no POST or browser authority |
 
 When a prior decision conflicts with `PLAN-2026-09-02`, the current governance and roadmap documents control. Historical audit observations remain unchanged.
 
@@ -26,7 +27,7 @@ When a prior decision conflicts with `PLAN-2026-09-02`, the current governance a
 
 | Source | Supports |
 |---|---|
-| `package.json` and `package-lock.json` | React 19.2.8, Vinext 1.0.0-beta.9, Vite 8.0.16, Cloudflare Vite plugin 1.51.1, Wrangler 4.120.0, and Workers Types 5.20260801.1 are locked; full and `--omit=dev` npm audits returned zero findings on pinned Node.js 24.18.0/npm 12.0.2; `npm run dev` maps to the Foundation launcher |
+| `package.json` and `package-lock.json` | React 19.2.8, Vinext 1.0.0-beta.9, Vite 8.0.16, Cloudflare Vite plugin 1.51.1, Wrangler 4.120.0, and Workers Types 5.20260801.1 are locked; full and `--omit=dev` npm audits returned zero findings on pinned Node.js 24.18.0/npm 12.0.2; `npm run dev` maps to `dev:local` for persistence startup; `dev:foundation` retains the explicit health-only path |
 | Installed Vinext 1.0.0-beta.9 package inspection | The published bundle still contains and invokes `image-size` 2.0.2 for build-time image metadata even though npm no longer exposes the dependency edge; current use is limited to trusted build inputs and does not prove production safety |
 | `vite.config.ts` | Vinext, OpenAI Sites, and Cloudflare Vite plugins |
 | `.openai/hosting.json` | No D1 or R2 application-data binding |
@@ -45,10 +46,10 @@ When a prior decision conflicts with `PLAN-2026-09-02`, the current governance a
 | `tests/crm.spec.ts:8-587` | 15 Playwright tests |
 | `playwright.config.ts:1-21` | Chromium/viewport/server/artifact settings |
 | Repository file inventory (2026-09-02) | No Dockerfile or Compose configuration at decision-recording time |
-| `compose.yaml`; `api/src/{app,config,server}.ts`; `api/test/*`; `scripts/orchestrate.{mjs,test.ts}` | Foundation PostgreSQL Compose, health-only Fastify API, canonical Windows launcher/cleanup, and their local verification evidence (`LOCAL-VERIFIED`) |
+| `compose.yaml`; `api/src/{app,config,server}.ts`; `api/test/*`; `scripts/orchestrate.{mjs,test.ts}` | Foundation plus persistence-aware Windows startup, health/read API, canonical launcher/cleanup, and local verification evidence (`LOCAL-VERIFIED`) |
 | `api/prisma/{schema.prisma,seed.ts,migrations/*}`; `api/src/modules/renewals/*`; `api/test/{domain,repository.pg}.test.ts` | Unit 2B synthetic renewal migration, deterministic seed, workspace-scoped repository, invariants, and immutable audit evidence (`LOCAL-VERIFIED`) |
 
-These paths prove current implementation only. The root `deepmerge-ts` and `mysql2` overrides remain provisional; Unit 2B migration and repository tests pass, but deployment compatibility is unproven. Exact pins, PostgreSQL-only Compose, health-only Fastify, Prisma generation/migration, deterministic renewal seed, and scoped repository are `LOCAL-VERIFIED`; CRM routes, browser PostgreSQL authority, workers, Railway/Vercel deployment, real adapters, and PWA remain planned or missing.
+These paths prove current implementation only. The root `deepmerge-ts` and `mysql2` overrides remain provisional, and deployment compatibility is unproven. Exact pins, PostgreSQL-only Compose, Prisma generation/migration, deterministic seed, scoped repository, local startup, and one renewal GET are `LOCAL-VERIFIED`; mutations, browser PostgreSQL authority, workers, hosted deployment, real adapters, and PWA remain planned or missing.
 
 ## Official external references
 

@@ -1,6 +1,6 @@
 # Deployment, backup, restore, and updates
 
-This document separates Phase 1 local development from Phase 2 hosted operations. The current browser prototype includes a locally verified Foundation plus validated manual migration/seed commands for one synthetic renewal graph. The Fastify API remains health-only, browser state remains local, and hosted operations are absent.
+This document separates Phase 1 local development from Phase 2 hosted operations. The current browser prototype includes locally verified persistence startup and one synthetic renewal GET. Browser state remains local, and hosted operations are absent.
 
 ## Phase 1: reproducible Windows development
 
@@ -11,10 +11,10 @@ Required operator path:
 1. verify Docker Desktop/Compose prerequisites and the repository-pinned Node.js 24 LTS/npm versions;
 2. install locked application dependencies with the pinned package manager;
 3. configure checked, non-secret development values;
-4. use `npm run db:migrate` and `npm run db:seed` only with an approved synthetic-local DSN; `npm run dev` remains the Foundation command until Unit 2C adds persistent readiness;
+4. use default `npm run dev` for DSN-validated local persistence startup; retain `dev:foundation` for the generation-independent health shell;
 5. add object storage, mail capture, queues, or other services only when the selected functional slice requires them;
 
-`npm run dev` is the Foundation root command. Unit 2B provides validated manual migration and deterministic seed of exactly one fictional workspace; replay is a no-op and drift refuses rather than resetting or overwriting data. Unit 2C extends startup with persistence preflight and readiness. A destructive synthetic-local reset remains separately owner-approved and deferred. Full application containerization is deferred unless measured environment-parity problems justify it; Docker Compose owns infrastructure by default, not the UI or API processes.
+`dev:foundation` remains the health-only root command. Unit 2B provides validated manual migration and deterministic seed of exactly one fictional workspace; replay is a no-op and drift refuses rather than resetting or overwriting data. `npm run dev` now uses `dev:local` to validate the exact development DSN, wait for PostgreSQL, generate/migrate/seed, then start the API/web. A destructive synthetic-local reset remains separately owner-approved and deferred. Full application containerization remains deferred.
 
 Cloud hosting, production credentials, real customer destinations, and real PII/PHI are forbidden prerequisites. An optional PWA shell remains network-required; service-worker caches must not imply offline CRM behavior.
 

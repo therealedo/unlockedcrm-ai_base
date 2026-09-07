@@ -5,6 +5,16 @@ import type { RenewalRepository } from './repository.js';
 export class PrismaRenewalRepository implements RenewalRepository {
   constructor(private readonly client: PrismaClient) {}
 
+  async workspaceExists(workspaceId: string): Promise<boolean> {
+    if (!workspaceId) throw new Error('workspaceId is required');
+    return Boolean(
+      await this.client.workspace.findUnique({
+        where: { id: workspaceId },
+        select: { id: true },
+      }),
+    );
+  }
+
   async findOpenByWorkspace(workspaceId: string): Promise<RenewalGraph[]> {
     if (!workspaceId) throw new Error('workspaceId is required');
     const renewals = await this.client.renewal.findMany({

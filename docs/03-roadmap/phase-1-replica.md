@@ -30,11 +30,11 @@ Phase 1 ends when every audited owned/core CRM workflow works coherently through
 | Configuration | `PARTIAL` (`LOCAL-VERIFIED`): Foundation API/process configuration is externalized and synthetic-only; later slices add their settings |
 | External providers | `MISSING`: later slices add owned ports with explicit simulated or real adapter status |
 | Process placement | `FUNCTIONAL` for Foundation (`LOCAL-VERIFIED`): Vinext/Vite and Fastify run on the Windows host; Compose runs PostgreSQL |
-| Development | `PARTIAL` (`LOCAL-VERIFIED`): `npm run dev` starts the Foundation; Unit 2 adds persistence-aware startup and readiness |
+| Development | `PARTIAL` (`LOCAL-VERIFIED`): `npm run dev` performs DSN-validated persistence startup and readiness; `dev:foundation` remains available |
 
 Application frameworks and cloud infrastructure are separate decisions. Vinext/Next.js organize the frontend, Fastify is the selected HTTP framework for the API, and Vite builds the web client. Railway, Vercel, Sites, and Cloudflare are hosting/runtime choices. None replaces the API or PostgreSQL, and none is required for Phase 1 local development.
 
-The `LOCAL-VERIFIED` Foundation pins Node.js/npm and maps `npm run dev` to `dev:foundation`, which starts the PostgreSQL-only Compose service plus the host Fastify and Vinext/Vite processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Units 2A–2B add Prisma generation/connectivity, the initial migration, deterministic renewal seed, reviewed constraints, and a scoped repository. Unit 2C still owns renewal GET behavior and persistence-aware startup. Cross-platform host support is owner-deferred; current process proof is Windows-only.
+The `LOCAL-VERIFIED` Windows runtime pins Node.js/npm and maps `npm run dev` to persistence-aware `dev:local`; `dev:foundation` remains the generation-independent health shell. Local startup validates the exact synthetic DSN, starts PostgreSQL, generates, migrates, seeds without drift overwrite, and starts the host API/web. The renewal GET and ready HTTP 200 are locally verified; browser authority remains unchanged. Cross-platform host support is owner-deferred.
 
 ## External-provider acceptance
 
@@ -55,7 +55,7 @@ A hard-coded success card, inert form, or fake counter is not functional. A simu
 
 | Wave | Outcome | Highest-value capabilities |
 |---|---|---|
-| 1. Windows product foundation | `PARTIAL`: pins, host-run health API/UI, PostgreSQL-only Compose, root `dev:foundation`, migration, deterministic renewal seed, constraints, and scoped repository are `LOCAL-VERIFIED`; renewal GET and durable request behavior remain Unit 2C | `CAP-PLAT-*` |
+| 1. Windows product foundation | `PARTIAL`: pins, host-run API/UI, PostgreSQL-only Compose, `dev:foundation`, persistence-aware default startup, migration, deterministic seed, scoped repository, and renewal GET are `LOCAL-VERIFIED`; mutations/browser authority remain later units | `CAP-PLAT-*` |
 | 2. Shared record graph | Contacts, households, opportunities, tasks, appointments, policies, renewals, commissions, activities | `CAP-CRM-*`, `CAP-BIZ-001..003` |
 | 3. Deep core workspaces | Record detail, edit/delete, documents, forms, settings, search, analytics/audit | `CAP-CRM-*`, `CAP-BIZ-*`, `CAP-ADMIN-*` |
 | 4. Durable orchestration | Jobs/outbox, automation runs, campaigns/queues, notifications and failure/retry behavior | `CAP-AUTO-*`, `CAP-PLAT-*` |
@@ -78,7 +78,7 @@ Responsive phone/tablet/desktop web UX is required. A network-required installab
 - Provider-port contract tests and explicit simulator assertions.
 - Worker/outbox idempotency and retry tests where applicable.
 - Route/state landmarks, keyboard/focus/accessibility, and responsive checks.
-- Foundation Windows startup is `LOCAL-VERIFIED`: pinned Node/npm runs the host UI/API, Docker Compose runs PostgreSQL, and `dev:foundation` starts both layers without a cloud account; live returns HTTP 200 and ready returns HTTP 503 `MIGRATIONS_UNAVAILABLE`.
+- Windows startup is `LOCAL-VERIFIED`: default `dev:local` migrates/seeds before the host UI/API and returns live/ready HTTP 200; `dev:foundation` intentionally retains ready HTTP 503 `MIGRATIONS_UNAVAILABLE`.
 - No real PII/PHI, production credentials, customer destinations, or uncontrolled side effects.
 
 ## Exit checklist
@@ -89,6 +89,6 @@ Responsive phone/tablet/desktop web UX is required. A network-required installab
 - [ ] Every external workflow has complete simulator/adapter status and contract evidence.
 - [ ] Cross-module records, jobs, events, notifications, analytics, and audit agree.
 - [x] Foundation startup is `LOCAL-VERIFIED`: exact Node.js 24.18.0/npm 12.0.2 pins, host-run UI/health API, PostgreSQL-only Compose, and `dev:foundation` with live HTTP 200 and ready HTTP 503 `MIGRATIONS_UNAVAILABLE`.
-- [ ] Units 2A–2B have added Prisma generation/connectivity, migration, deterministic seed, and workspace-scoped repositories; Unit 2C adds renewal GET behavior and persistence-aware startup.
+- [x] Units 2A–2C add Prisma generation/connectivity, migration, deterministic seed, workspace-scoped GET, and persistence-aware startup; the browser still does not consume the API.
 - [ ] Responsive Windows-local proof passes; any PWA claim is network-required only.
 - [ ] Documentation and source register are current.
