@@ -123,6 +123,26 @@ it('enforces workspace links, partial uniqueness, and immutable audit events', a
     await client.auditEvent.create({
       data: { id: '60000000-0000-4000-8000-000000000002', ...completion },
     });
+    const completed = await client.followUpTask.update({
+      where: { id: SYNTHETIC_RENEWAL.taskId },
+      data: { status: 'completed', completedAt: completion.occurredAt },
+    });
+    await client.followUpTask.create({
+      data: {
+        ...completed,
+        id: '50000000-0000-4000-8000-000000000002',
+        status: 'pending',
+        completedAt: null,
+      },
+    });
+    const [graph] = await new PrismaRenewalRepository(
+      client,
+    ).findOpenByWorkspace(SYNTHETIC_RENEWAL.workspaceId);
+    expect(graph.followUpTask).toMatchObject({ status: 'pending' });
+    expect(graph.auditEvents.map(({ eventType }) => eventType)).toEqual([
+      'renewal.created',
+      'task.completed',
+    ]);
     await expect(
       client.auditEvent.create({
         data: { id: '60000000-0000-4000-8000-000000000003', ...completion },
@@ -142,26 +162,39 @@ it('enforces workspace links, partial uniqueness, and immutable audit events', a
   });
 });
 
-it('returns no details outside the required workspace scope', async () => {
-  await withDatabase(async (client) => {
-    await seedSyntheticRenewalGraph(client);
-    const repository = new PrismaRenewalRepository(client);
-    const graph = await repository.findOpenByWorkspace(
-      SYNTHETIC_RENEWAL.workspaceId,
-    );
-    expect(graph).toHaveLength(1);
-    expect(graph[0]).toMatchObject({
-      contact: { id: SYNTHETIC_RENEWAL.contactId },
-      renewal: { id: SYNTHETIC_RENEWAL.renewalId, status: 'open' },
-      followUpTask: { id: SYNTHETIC_RENEWAL.taskId, status: 'pending' },
+it.each(['pending', 'completed', 'missing'])(
+  'retains open renewals with %s tasks within workspace scope',
+  async (status) => {
+    await withDatabase(async (client) => {
+      await seedSyntheticRenewalGraph(client);
+      const where = { id: SYNTHETIC_RENEWAL.taskId };
+      if (status === 'missing') await client.followUpTask.delete({ where });
+      if (status === 'completed')
+        await client.followUpTask.update({
+          where,
+          data: { status, completedAt: new Date('2026-12-15T15:01:00.000Z') },
+        });
+      const repository = new PrismaRenewalRepository(client);
+      const graph = await repository.findOpenByWorkspace(
+        SYNTHETIC_RENEWAL.workspaceId,
+      );
+      expect(graph).toHaveLength(1);
+      expect(graph[0]).toMatchObject({
+        contact: { id: SYNTHETIC_RENEWAL.contactId },
+        renewal: { id: SYNTHETIC_RENEWAL.renewalId, status: 'open' },
+        followUpTask:
+          status === 'missing'
+            ? null
+            : { id: SYNTHETIC_RENEWAL.taskId, status },
+      });
+      expect(
+        await repository.findOpenByWorkspace(
+          '10000000-0000-4000-8000-000000000099',
+        ),
+      ).toEqual([]);
+      await expect(repository.findOpenByWorkspace('')).rejects.toThrow(
+        'workspaceId is required',
+      );
     });
-    expect(
-      await repository.findOpenByWorkspace(
-        '10000000-0000-4000-8000-000000000099',
-      ),
-    ).toEqual([]);
-    await expect(repository.findOpenByWorkspace('')).rejects.toThrow(
-      'workspaceId is required',
-    );
-  });
-});
+  },
+);

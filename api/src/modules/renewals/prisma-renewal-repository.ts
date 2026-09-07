@@ -12,7 +12,7 @@ export class PrismaRenewalRepository implements RenewalRepository {
       include: {
         workspace: true,
         policy: { include: { contact: true } },
-        tasks: { where: { status: 'pending' }, orderBy: { id: 'asc' } },
+        tasks: { orderBy: { id: 'asc' } },
       },
       orderBy: { id: 'asc' },
     });
@@ -26,21 +26,22 @@ export class PrismaRenewalRepository implements RenewalRepository {
           orderBy: [{ occurredAt: 'asc' }, { id: 'asc' }],
         })
       : [];
-    return renewals.flatMap((renewal) => {
-      const followUpTask = renewal.tasks[0];
-      if (!followUpTask) return [];
-      return [
-        assembleRenewalGraph({
-          workspace: renewal.workspace,
-          contact: renewal.policy.contact,
-          policy: renewal.policy,
-          renewal,
-          followUpTask,
-          auditEvents: auditEvents.filter(({ recordId }) =>
-            [renewal.id, followUpTask.id].includes(recordId),
-          ),
-        }),
-      ];
-    });
+    return renewals.map((renewal) =>
+      assembleRenewalGraph({
+        workspace: renewal.workspace,
+        contact: renewal.policy.contact,
+        policy: renewal.policy,
+        renewal,
+        followUpTask:
+          renewal.tasks.find((task) => task.status === 'pending') ??
+          renewal.tasks[0] ??
+          null,
+        auditEvents: auditEvents.filter(
+          ({ recordId }) =>
+            recordId === renewal.id ||
+            renewal.tasks.some(({ id }) => id === recordId),
+        ),
+      }),
+    );
   }
 }

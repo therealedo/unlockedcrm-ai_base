@@ -6,7 +6,10 @@ import {
 } from '../src/modules/renewals/domain.js';
 
 const records = (): RenewalGraphInput => ({
-  workspace: { id: SYNTHETIC_RENEWAL.workspaceId, name: 'Harbor Demo Agency' },
+  workspace: {
+    id: SYNTHETIC_RENEWAL.workspaceId,
+    name: 'Harbor Demo Agency',
+  },
   contact: {
     id: SYNTHETIC_RENEWAL.contactId,
     workspaceId: SYNTHETIC_RENEWAL.workspaceId,
@@ -64,6 +67,13 @@ it('assembles one stable workspace-scoped renewal graph', () => {
 
 it('rejects a child record from another workspace', () => {
   const input = records();
-  input.followUpTask.workspaceId = '10000000-0000-4000-8000-000000000099';
+  input.followUpTask!.workspaceId = '10000000-0000-4000-8000-000000000099';
   expect(() => assembleRenewalGraph(input)).toThrow('workspace scope mismatch');
+});
+
+it('retains an open renewal without a task and still validates relationships', () => {
+  const input = { ...records(), followUpTask: null };
+  expect(assembleRenewalGraph(input).followUpTask).toBeNull();
+  input.policy.contactId = '20000000-0000-4000-8000-000000000099';
+  expect(() => assembleRenewalGraph(input)).toThrow('relationship mismatch');
 });

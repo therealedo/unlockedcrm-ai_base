@@ -22,7 +22,7 @@ Phase 1 ends when every audited owned/core CRM workflow works coherently through
 | Transport | `PARTIAL` (`LOCAL-VERIFIED`): REST/JSON health endpoints exist; CRM contracts remain incomplete |
 | Local infrastructure | `FUNCTIONAL` for Foundation (`LOCAL-VERIFIED`): Docker Compose runs PostgreSQL only on Windows |
 | Database | `PARTIAL` (`LOCAL-VERIFIED`): PostgreSQL service, initial migration, reviewed constraints, deterministic renewal seed, and replay/drift tests exist; product routes remain incomplete |
-| Data access | `PARTIAL` (`LOCAL-VERIFIED`): Prisma 7.10.0 generation, adapter connectivity, and a workspace-scoped renewal repository exist; Unit 2C wires the GET boundary |
+| Data access | `PARTIAL` (`LOCAL-VERIFIED`): Prisma 7.10.0 generation, connectivity, and scoped renewal reads exist; pending tasks take priority, completed history remains visible, and a missing task is `null`; Unit 2C wires this contract into GET |
 | Async | `MISSING`: modular monolith plus bounded TypeScript workers using durable job/outbox contracts remain later Phase 1 work |
 | Auxiliary Python | `MISSING` and deferred unless a proven specialized library requires one isolated worker; never a second API/data authority |
 | Workspace | `PARTIAL` (`LOCAL-VERIFIED`): one deterministic synthetic workspace and renewal graph enforce composite `workspace_id` links; centralized route context remains Unit 2C |

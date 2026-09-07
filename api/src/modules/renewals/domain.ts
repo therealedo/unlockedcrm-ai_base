@@ -28,14 +28,16 @@ export interface RenewalGraphInput {
     renewalDate: Date;
   };
   renewal: Scoped & { policyId: string; displayLabel: string; status: string };
-  followUpTask: Scoped & {
-    renewalId: string;
-    title: string;
-    status: string;
-    version: number;
-    dueAt: Date;
-    completedAt: Date | null;
-  };
+  followUpTask:
+    | (Scoped & {
+        renewalId: string;
+        title: string;
+        status: string;
+        version: number;
+        dueAt: Date;
+        completedAt: Date | null;
+      })
+    | null;
   auditEvents: Array<Scoped & { eventType: string; occurredAt: Date }>;
 }
 
@@ -49,7 +51,7 @@ export function assembleRenewalGraph(input: RenewalGraphInput): RenewalGraph {
     input.contact,
     input.policy,
     input.renewal,
-    input.followUpTask,
+    ...(input.followUpTask ? [input.followUpTask] : []),
     ...input.auditEvents,
   ];
   if (scoped.some((record) => record.workspaceId !== workspaceId))
@@ -57,7 +59,7 @@ export function assembleRenewalGraph(input: RenewalGraphInput): RenewalGraph {
   if (
     input.policy.contactId !== input.contact.id ||
     input.renewal.policyId !== input.policy.id ||
-    input.followUpTask.renewalId !== input.renewal.id
+    (input.followUpTask && input.followUpTask.renewalId !== input.renewal.id)
   )
     throw new Error('Renewal graph relationship mismatch');
   return {
