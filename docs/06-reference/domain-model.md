@@ -15,7 +15,7 @@ This model describes owned concepts inferred from repository/live evidence and a
 
 Every Phase 1 business record, job, file, event, search row, export, and audit record carries `workspace_id` where applicable. This is a forward-compatible ownership seam, not proof of multi-tenant security.
 
-Units 2B–2C implement the synthetic Workspace → Contact → Policy → Renewal → Follow-up Task graph, its creation Audit Event, and a workspace-scoped read API. Composite constraints, repository/route scope, and persisted audit metadata are locally verified; mutation and the rest of this model remain planned.
+Units 2B–3B implement the synthetic Workspace → Contact → Policy → Renewal → Follow-up Task graph, creation/completion Audit Events, and workspace-scoped read/completion APIs. Composite constraints, repository/route scope, persisted audit metadata, optimistic versioning, replay/concurrency convergence, and completed-state restart are locally verified; browser authority and the rest of this model remain planned.
 
 ## CRM and sales
 

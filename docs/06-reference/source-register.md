@@ -21,6 +21,7 @@ Use this register to keep direct observation, local verification, approved plann
 | `UNIT2B-FIX-2026-09-07` | Open-renewal read regression | `LOCAL-VERIFIED` | Tests-first isolated PostgreSQL/API proof: completed/absent tasks retain the open renewal, pending tasks take priority over completed history, and task-history audits remain scoped; nullable task assembly preserves relationship checks; no GET, completion command, or UI wiring |
 | `UNIT2C-2026-09-07` | Renewal GET and local persistence startup | `LOCAL-VERIFIED` | Strict-TDD isolated PostgreSQL proof for GET 200/empty/400/404/503, persisted audit metadata, latest-event/null `asOf`, server-controlled identity, DSN-first startup, migrate/seed order, readiness, restart/no-op, and bounded cleanup; no POST or browser authority |
 | `UNIT3A-2026-09-07` | Completion-aware seed classifier | `LOCAL-VERIFIED` | Strict-TDD pure and isolated PostgreSQL proof accepts only all-six-identities-absent initialization, exact pending replay, or exact completed replay with one valid completion event and shared timestamp; partial, extra, invalid-identity, timestamp, relationship, source, label, date, or audit drift refuses before writes; no POST or browser authority |
+| `UNIT3B-2026-09-07` | Atomic renewal task completion | `LOCAL-VERIFIED` | Strict-TDD contract, isolated PostgreSQL, Fastify injection, and protected development restart proof: exact 400/404/409/503 errors, ignored untrusted identity headers, conditional task version update, open renewal, one immutable audit, and stable replay/concurrency version, timestamp, and event identity; browser authority remains unchanged |
 
 When a prior decision conflicts with `PLAN-2026-09-02`, the current governance and roadmap documents control. Historical audit observations remain unchanged.
 
@@ -50,7 +51,7 @@ When a prior decision conflicts with `PLAN-2026-09-02`, the current governance a
 | `compose.yaml`; `api/src/{app,config,server}.ts`; `api/test/*`; `scripts/orchestrate.{mjs,test.ts}` | Foundation plus persistence-aware Windows startup, health/read API, canonical launcher/cleanup, and local verification evidence (`LOCAL-VERIFIED`) |
 | `api/prisma/{schema.prisma,seed.ts,migrations/*}`; `api/src/modules/renewals/*`; `api/test/{domain,repository.pg}.test.ts` | Unit 2B synthetic renewal migration, deterministic seed, workspace-scoped repository, invariants, and immutable audit evidence (`LOCAL-VERIFIED`) |
 
-These paths prove current implementation only. The root `deepmerge-ts` and `mysql2` overrides remain provisional, and deployment compatibility is unproven. Exact pins, PostgreSQL-only Compose, Prisma generation/migration, deterministic seed, scoped repository, local startup, and one renewal GET are `LOCAL-VERIFIED`; mutations, browser PostgreSQL authority, workers, hosted deployment, real adapters, and PWA remain planned or missing.
+These paths prove current implementation only. The root `deepmerge-ts` and `mysql2` overrides remain provisional, and deployment compatibility is unproven. Exact pins, PostgreSQL-only Compose, Prisma generation/migration, deterministic seed, scoped repository, local startup, renewal GET, and task-completion POST are `LOCAL-VERIFIED`; broader mutations, browser PostgreSQL authority, workers, hosted deployment, real adapters, and PWA remain planned or missing.
 
 ## Official external references
 

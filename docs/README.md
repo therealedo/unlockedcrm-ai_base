@@ -34,10 +34,10 @@ The approved direction is an online-first, locally reproducible, single-workspac
 
 - React currently runs through Vinext/Vite using Next-compatible source conventions; the official Next.js package is not the runtime.
 - Root and catch-all pages render one client CRM shell with custom browser routing.
-- Seven create-only flows persist one `localStorage` object; beyond the PostgreSQL-backed renewal GET, edit/delete, mutation and broader CRM APIs, browser PostgreSQL authority, jobs, auth, real providers, and PWA support remain absent.
+- Seven create-only flows persist one `localStorage` object; beyond the PostgreSQL-backed renewal GET and task-completion POST, other edits/deletes and broader CRM APIs, browser PostgreSQL authority, jobs, auth, real providers, and PWA support remain absent.
 - OpenAI Sites/Cloudflare tooling is configured for the web build, but no D1/R2 or other application data bindings exist.
 - `npm run dev` is the locally verified Windows persistence startup: it validates the synthetic DSN, starts Compose PostgreSQL, generates/migrates/seeds, and starts host-run Fastify plus Vinext/Vite; `dev:foundation` remains available.
-- One workspace-scoped renewal GET now reads PostgreSQL with explicit 200/empty/400/404/503 behavior; browser `localStorage` remains UI authority until later Phase 1 work.
+- Workspace-scoped renewal GET and atomic task-completion POST routes now use PostgreSQL with exact validation, non-disclosure, conflict, replay, and persistence-error behavior; browser `localStorage` remains UI authority until later Phase 1 work.
 - Phase 1 makes every audited owned/core workflow functional in one seeded workspace. External-provider boundaries may remain explicit deterministic simulators with complete workflows and contract tests.
 - Railway is the preferred but unvalidated Phase 2 hosting candidate for the persistent Fastify API, bounded workers, and PostgreSQL topology; Vercel is optional for frontend previews only.
 - Phase 2 securely hosts that single workspace and enables selected real integrations before limited real-data use.
