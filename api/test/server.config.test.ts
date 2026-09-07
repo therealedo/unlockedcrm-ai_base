@@ -48,11 +48,19 @@ it('accepts only the isolated Playwright database and API port', () => {
     {
       DATABASE_URL:
         'postgresql://unlockedcrm:synthetic-local-only@127.0.0.1:54329/unlockedcrm_dev?schema=public',
+      API_HOST: '127.0.0.1',
       API_PORT: '4310',
     },
     {
       DATABASE_URL:
         'postgresql://unlockedcrm:synthetic-local-only@127.0.0.1:54330/unlockedcrm_test?schema=public',
+      API_HOST: 'localhost',
+      API_PORT: '4310',
+    },
+    {
+      DATABASE_URL:
+        'postgresql://unlockedcrm:synthetic-local-only@127.0.0.1:54330/unlockedcrm_test?schema=public',
+      API_HOST: '127.0.0.1',
       API_PORT: '3100',
     },
   ])
