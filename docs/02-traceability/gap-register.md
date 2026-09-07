@@ -96,7 +96,7 @@ This register assigns missing work to a phase without changing current implement
 
 | Gap ID | Priority | Capability | Current status/evidence | Target ownership | Exit proof |
 |---|---|---|---|---|---|
-| `GAP-OPS-001` | `P0` | Reproducible Windows development | `PARTIAL`, `LOCAL-VERIFIED`; pinned Foundation plus DSN-validated persistence startup, readiness, migration, deterministic seed, API and web exist | Phase 1 | Add broader clean-machine and recovery proof without a cloud account |
+| `GAP-OPS-001` | `P0` | Reproducible Windows development | `PARTIAL`, `LOCAL-VERIFIED`; pinned Foundation plus DSN-validated persistence startup, readiness, migration, deterministic seed, API and web exist; `npm run test:e2e` owns a separate test database/API/web lifecycle with bounded cleanup | Phase 1 | Add broader clean-machine and recovery proof without a cloud account |
 | `GAP-OPS-002` | `P0` | Hosted deployment and one-command operations | `MISSING` | Phase 2 | Railway spike first, then reproducible provision/start/stop/status/log/support workflow if promoted; Vercel remains preview-only |
 | `GAP-OPS-003` | `P0` | Backups/restore/export | `MISSING` | Phase 2 | Encrypted automated backups and timed clean-host restore/export drills |
 | `GAP-OPS-004` | `P0` | Signed upgrade pipeline | `MISSING` | Phase 2 | Signed artifact/manifest, semantic version, preflight, backup, migration journal, health, atomic activation and rollback proof |

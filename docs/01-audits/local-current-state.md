@@ -13,7 +13,7 @@
 - Fastify now exposes health endpoints plus workspace-scoped renewal GET and task-completion POST routes backed by the tested PostgreSQL migration, completion-aware deterministic seed classifier, scoped repository, and immutable audit. Startup accepts only an empty, exact pending, or exact completed fixed graph; browser `localStorage` remains the visible product authority.
 - The current lockfile passes full and production-only npm audits, with the Vinext bundled-parser caveat documented in [Current infrastructure](../04-infrastructure/current-infrastructure.md).
 - All 32 routes rendered at 1707×848 without blank/404/crash, document overflow, or console errors after settled waits.
-- The current Playwright suite contains 15 Chromium tests; it was not rerun during the documentation audit.
+- The current Playwright suite contains 16 Chromium tests. Its isolated runner owns test PostgreSQL, API, web, migration/seed, readiness, and bounded cleanup; one test reads the seeded renewal GET through the web proxy without making the UI server-authoritative.
 
 ## Runtime architecture
 
@@ -81,7 +81,7 @@ Two application-level CRM routes are active in local mode: `GET /api/v1/workspac
 
 ## Tests
 
-`tests/crm.spec.ts:8-587` contains 15 Playwright tests. Chromium defaults to 1440×900 on port 3000 with screenshot/trace retention on failure. Coverage includes shell, contact creation/reload, route landmarks, four responsive widths, rail popovers, global search, and icon-only mode.
+`tests/crm.spec.ts` contains 16 Playwright tests. Chromium defaults to 1440×900 on dedicated web port 4173 with screenshot/trace retention on failure. `npm run test:e2e` starts only the isolated PostgreSQL test project on 54330 and a test-only Fastify process on 4310, migrates/seeds before browser execution, rejects the development DSN, and cleans up owned processes and Compose resources. Coverage includes a real seeded GET through the relative web proxy plus the existing shell, contact creation/reload, route landmarks, four responsive widths, rail popovers, global search, and icon-only mode.
 
 Gaps: six other create flows, malformed storage, edit/delete, remaining CRM/domain API tests, accessibility, production authorization/tenancy, cross-browser, small mobile, performance, and visual-diff baselines. Foundation and renewal tests cover launcher, health, domain assembly, GET/completion contracts, concurrency/replay, and PostgreSQL persistence.
 

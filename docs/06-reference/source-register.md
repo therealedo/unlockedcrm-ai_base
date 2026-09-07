@@ -22,6 +22,7 @@ Use this register to keep direct observation, local verification, approved plann
 | `UNIT2C-2026-09-07` | Renewal GET and local persistence startup | `LOCAL-VERIFIED` | Strict-TDD isolated PostgreSQL proof for GET 200/empty/400/404/503, persisted audit metadata, latest-event/null `asOf`, server-controlled identity, DSN-first startup, migrate/seed order, readiness, restart/no-op, and bounded cleanup; no POST or browser authority |
 | `UNIT3A-2026-09-07` | Completion-aware seed classifier | `LOCAL-VERIFIED` | Strict-TDD pure and isolated PostgreSQL proof accepts only all-six-identities-absent initialization, exact pending replay, or exact completed replay with one valid completion event and shared timestamp; partial, extra, invalid-identity, timestamp, relationship, source, label, date, or audit drift refuses before writes; no POST or browser authority |
 | `UNIT3B-2026-09-07` | Atomic renewal task completion | `LOCAL-VERIFIED` | Strict-TDD contract, isolated PostgreSQL, Fastify injection, and protected development restart proof: exact 400/404/409/503 errors, ignored untrusted identity headers, conditional task version update, open renewal, one immutable audit, and stable replay/concurrency version, timestamp, and event identity; browser authority remains unchanged |
+| `UNIT4A-2026-09-07` | Isolated browser persistence harness | `LOCAL-VERIFIED` | Strict-TDD Windows runner owns isolated Compose PostgreSQL, generate/migrate/seed, test-only Fastify on 4310, Vinext on 4173, readiness, Playwright, and bounded cleanup; seeded renewal GET succeeds through the relative web proxy; development data and UI authority remain unchanged |
 
 When a prior decision conflicts with `PLAN-2026-09-02`, the current governance and roadmap documents control. Historical audit observations remain unchanged.
 
@@ -45,8 +46,8 @@ When a prior decision conflicts with `PLAN-2026-09-02`, the current governance a
 | `components/live-parity-pages.tsx:593-3434` | Active route screens/context sidebars |
 | `lib/crm-data.ts:1-218` | Types, fixtures, and browser storage key |
 | `app/globals.css` | Shell, preference, and responsive system |
-| `tests/crm.spec.ts:8-587` | 15 Playwright tests |
-| `playwright.config.ts:1-21` | Chromium/viewport/server/artifact settings |
+| `tests/crm.spec.ts` | 16 Playwright tests, including a seeded renewal GET through the web proxy |
+| `playwright.config.ts`; `scripts/api-check.mjs`; `api/test/playwright-server.ts` | Dedicated Chromium base URL plus isolated PostgreSQL/API/web E2E lifecycle, exact test-DSN guard, readiness, and bounded owned-resource cleanup |
 | Repository file inventory (2026-09-02) | No Dockerfile or Compose configuration at decision-recording time |
 | `compose.yaml`; `api/src/{app,config,server}.ts`; `api/test/*`; `scripts/orchestrate.{mjs,test.ts}` | Foundation plus persistence-aware Windows startup, health/read API, canonical launcher/cleanup, and local verification evidence (`LOCAL-VERIFIED`) |
 | `api/prisma/{schema.prisma,seed.ts,migrations/*}`; `api/src/modules/renewals/*`; `api/test/{domain,repository.pg}.test.ts` | Unit 2B synthetic renewal migration, deterministic seed, workspace-scoped repository, invariants, and immutable audit evidence (`LOCAL-VERIFIED`) |

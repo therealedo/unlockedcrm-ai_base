@@ -38,6 +38,7 @@ The approved direction is an online-first, locally reproducible, single-workspac
 - OpenAI Sites/Cloudflare tooling is configured for the web build, but no D1/R2 or other application data bindings exist.
 - `npm run dev` is the locally verified Windows persistence startup: it validates the synthetic DSN, starts Compose PostgreSQL, generates/migrates/seeds, and starts host-run Fastify plus Vinext/Vite; `dev:foundation` remains available.
 - Workspace-scoped renewal GET and atomic task-completion POST routes now use PostgreSQL with exact validation, non-disclosure, conflict, replay, and persistence-error behavior; browser `localStorage` remains UI authority until later Phase 1 work.
+- `npm run test:e2e` owns a dedicated test-only PostgreSQL/API/web lifecycle and verifies the seeded renewal GET through the web proxy without changing UI authority or development data.
 - Phase 1 makes every audited owned/core workflow functional in one seeded workspace. External-provider boundaries may remain explicit deterministic simulators with complete workflows and contract tests.
 - Railway is the preferred but unvalidated Phase 2 hosting candidate for the persistent Fastify API, bounded workers, and PostgreSQL topology; Vercel is optional for frontend previews only.
 - Phase 2 securely hosts that single workspace and enables selected real integrations before limited real-data use.

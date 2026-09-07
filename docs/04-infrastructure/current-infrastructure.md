@@ -2,7 +2,7 @@
 
 > The current build is a fictional-data browser prototype plus local synthetic renewal GET and task-completion POST routes. It is not safe for real PII/PHI, limited production use, or SaaS.
 
-**Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, renewal-foundation checks, `DEP-AUDIT-2026-09-04`, `UNIT2A-2026-09-06`, `UNIT2B-2026-09-07`, and `UNIT2C-2026-09-07`. Browser authority remains unchanged.
+**Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, renewal-foundation checks, `DEP-AUDIT-2026-09-04`, `UNIT2A-2026-09-06`, `UNIT2B-2026-09-07`, `UNIT2C-2026-09-07`, and `UNIT4A-2026-09-07`. Browser authority remains unchanged.
 
 ## Verified current stack
 
@@ -15,7 +15,7 @@
 | Routing | Root and catch-all entries render one client `CrmApp`; navigation uses custom `pushState` handling |
 | Persistence | One browser `localStorage` JSON object |
 | Styling | One large global CSS file plus mostly unused generated UI components |
-| Tests | 15 Playwright tests plus focused Vitest Foundation/API contracts |
+| Tests | 16 Playwright tests plus focused Vitest Foundation/API contracts; E2E owns isolated PostgreSQL/API/web startup and cleanup |
 | Hosting integration | Vinext/Vite with OpenAI Sites and Cloudflare plugins |
 | Local infrastructure orchestration | `compose.yaml` defines PostgreSQL only; `npm run dev` validates the development DSN and runs generate/migrate/seed before host API/web; `dev:foundation` remains available |
 | API foundation | Fastify exposes liveness/readiness plus local renewal GET and atomic task-completion POST routes; Foundation mode remains generation-independent and reports `MIGRATIONS_UNAVAILABLE` readiness |
@@ -23,6 +23,8 @@
 | Dependency audit | Full and `--omit=dev` npm audits returned zero findings on 2026-09-04 |
 
 Package scripts retain Vinext/Vite, Wrangler, and Playwright while pinning Node.js 24.18.0 and npm 12.0.2. `npm run dev` is locally proven to run PostgreSQL readiness, generate/migrate/seed, and the host Fastify/web processes. `GET /health/live`, local `GET /health/ready`, and the workspace-scoped renewal GET return HTTP 200. Prisma generation/connectivity, migration, deterministic seed, and scoped repository are `LOCAL-VERIFIED`; Foundation readiness still returns HTTP 503 `MIGRATIONS_UNAVAILABLE` by design.
+
+`npm run test:e2e` uses only project `unlockedcrm-renewal-test`, database port 54330, test-only API port 4310, and web port 4173. It validates the exact test DSN before effects, generates, migrates, seeds, waits for both servers, runs Playwright without reusing listeners, then terminates owned process trees and removes only the isolated Compose container/network. The development database and volumes are not reset or removed.
 
 ## Dependency-security baseline
 
