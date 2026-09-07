@@ -7,3 +7,95 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+model Workspace {
+  id            String         @id @db.Uuid
+  name          String
+  sourceVersion String         @map("source_version")
+  sourceHash    String         @map("source_hash")
+  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  contacts      Contact[]
+  policies      Policy[]
+  renewals      Renewal[]
+  tasks         FollowUpTask[]
+  auditEvents   AuditEvent[]
+
+  @@map("workspaces")
+}
+
+model Contact {
+  id          String    @id @db.Uuid
+  workspaceId String    @map("workspace_id") @db.Uuid
+  displayName String    @map("display_name")
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  policies    Policy[]
+
+  @@unique([workspaceId, id])
+  @@map("contacts")
+}
+
+model Policy {
+  id           String    @id @db.Uuid
+  workspaceId  String    @map("workspace_id") @db.Uuid
+  contactId    String    @map("contact_id") @db.Uuid
+  displayLabel String    @map("display_label")
+  renewalDate  DateTime  @map("renewal_date") @db.Date
+  createdAt    DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspace    Workspace @relation(fields: [workspaceId], references: [id])
+  contact      Contact   @relation(fields: [workspaceId, contactId], references: [workspaceId, id])
+  renewals     Renewal[]
+
+  @@unique([workspaceId, id])
+  @@map("policies")
+}
+
+model Renewal {
+  id           String         @id @db.Uuid
+  workspaceId  String         @map("workspace_id") @db.Uuid
+  policyId     String         @map("policy_id") @db.Uuid
+  displayLabel String         @map("display_label")
+  status       String
+  createdAt    DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspace    Workspace      @relation(fields: [workspaceId], references: [id])
+  policy       Policy         @relation(fields: [workspaceId, policyId], references: [workspaceId, id])
+  tasks        FollowUpTask[]
+
+  @@unique([workspaceId, id])
+  @@map("renewals")
+}
+
+model FollowUpTask {
+  id          String    @id @db.Uuid
+  workspaceId String    @map("workspace_id") @db.Uuid
+  renewalId   String    @map("renewal_id") @db.Uuid
+  title       String
+  status      String
+  version     Int       @default(1)
+  dueAt       DateTime  @map("due_at") @db.Timestamptz(3)
+  completedAt DateTime? @map("completed_at") @db.Timestamptz(3)
+  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  renewal     Renewal   @relation(fields: [workspaceId, renewalId], references: [workspaceId, id])
+
+  @@unique([workspaceId, id])
+  @@map("follow_up_tasks")
+}
+
+model AuditEvent {
+  id            String    @id @db.Uuid
+  workspaceId   String    @map("workspace_id") @db.Uuid
+  actorId       String    @map("actor_id") @db.Uuid
+  eventType     String    @map("event_type")
+  recordId      String    @map("record_id") @db.Uuid
+  correlationId String    @map("correlation_id") @db.Uuid
+  provenanceId  String    @map("provenance_id") @db.Uuid
+  sourceVersion String    @map("source_version")
+  sourceHash    String    @map("source_hash")
+  occurredAt    DateTime  @map("occurred_at") @db.Timestamptz(3)
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspace     Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@unique([workspaceId, id])
+  @@map("audit_events")
+}

@@ -14,8 +14,8 @@ The approved target is an online-first, locally reproducible, single-workspace C
 | PostgreSQL | `PARTIAL` | PostgreSQL-only Compose service is `LOCAL-VERIFIED`; authoritative CRM persistence remains incomplete |
 | Docker Desktop + Docker Compose | `FUNCTIONAL` | PostgreSQL-only Foundation profile is `LOCAL-VERIFIED`; add services only when a slice requires them |
 | Windows application process topology | `FUNCTIONAL` | `dev:foundation` runs Vinext/Vite and Fastify on the host while Compose runs PostgreSQL (`LOCAL-VERIFIED`) |
-| Root startup command | `PARTIAL` | `npm run dev` starts the `LOCAL-VERIFIED` Foundation; Unit 2 adds persistence preflight, migration, seed, and readiness |
-| Prisma plus reviewed custom SQL | `PARTIAL` | Unit 2A generation and isolated adapter connectivity are `LOCAL-VERIFIED`; migrations, repositories, and critical reviewed SQL remain Units 2B–2C |
+| Root startup command | `PARTIAL` | `npm run dev` starts the `LOCAL-VERIFIED` Foundation; Unit 2C adds persistence preflight, migration/seed execution, and readiness |
+| Prisma plus reviewed custom SQL | `PARTIAL` | Generation, adapter connectivity, initial migration, workspace constraints, deterministic seed, repository, and audit immutability are `LOCAL-VERIFIED`; route wiring remains Unit 2C |
 | Supabase | `CANDIDATE` | Optional PostgreSQL hosting provider only; never a required application dependency |
 | Railway | `PREFERRED-PHASE-2-CANDIDATE` | Candidate host for persistent Fastify API, bounded workers, and PostgreSQL; deployment spike required |
 | Vercel | `CANDIDATE` | Optional protected frontend previews only; not the product API, worker, or database host |
@@ -25,7 +25,7 @@ The approved target is an online-first, locally reproducible, single-workspace C
 
 Implementation rows use the project status vocabulary and `LOCAL-VERIFIED` evidence. Candidate, rejected, research, and optional rows remain architecture decision classifications rather than implementation claims.
 
-Application frameworks, process placement, and cloud infrastructure are different choices. Vinext/Next.js organize the frontend, Fastify provides the HTTP application framework, Docker Desktop/Compose orchestrates local infrastructure, and Railway/Vercel are hosting platforms. The `LOCAL-VERIFIED` Foundation pins Node.js/npm and maps `npm run dev` to `dev:foundation`, starting PostgreSQL plus the host API/web without a cloud account. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE`. Unit 2 introduces Prisma migrations, deterministic seed, workspace-scoped persistence, renewal behavior, and persistence-aware startup.
+Application frameworks, process placement, and cloud infrastructure are different choices. Vinext/Next.js organize the frontend, Fastify provides the HTTP application framework, Docker Desktop/Compose orchestrates local infrastructure, and Railway/Vercel are hosting platforms. The `LOCAL-VERIFIED` Foundation pins Node.js/npm and maps `npm run dev` to `dev:foundation`, starting PostgreSQL plus the host API/web without a cloud account. Units 2A–2B add Prisma generation, migration, deterministic seed, and workspace-scoped renewal persistence; Unit 2C adds the route and persistence-aware startup.
 
 ## Logical topology
 
@@ -43,7 +43,7 @@ Windows host
               |
 Docker Compose
   |-- PostgreSQL (Foundation)
-  |       `-- Prisma/reviewed SQL access from the host API (Unit 2 target)
+  |       `-- Prisma/reviewed SQL renewal persistence (Unit 2B); API wiring remains Unit 2C
   `-- slice-triggered object storage, mail capture, queues, and provider simulators
               |
 bounded async workers use the selected host/infrastructure boundary for their slice
@@ -51,7 +51,7 @@ bounded async workers use the selected host/infrastructure boundary for their sl
 synthetic audit/events, logs, and health checks
 ```
 
-The `LOCAL-VERIFIED` Foundation runs on one Windows PC: Vinext/Vite and Fastify run directly on the pinned host toolchain, while `dev:foundation` starts the PostgreSQL-only Compose service and both host processes. `GET /health/live` returns HTTP 200 with `{"status":"live"}`; `GET /health/ready` returns HTTP 503 with `MIGRATIONS_UNAVAILABLE` by design. Prisma 7.10.0 generation and isolated test connectivity are `PARTIAL` and `LOCAL-VERIFIED`; migrations, deterministic seed, repositories, domain routes, additional services, and complete Phase 1 workflows are `MISSING`. Full application containerization remains deferred unless measured environment-parity problems justify it.
+The `LOCAL-VERIFIED` Foundation runs on one Windows PC: Vinext/Vite and Fastify run directly on the pinned host toolchain, while `dev:foundation` starts the PostgreSQL-only Compose service and both host processes. Unit 2B adds a `LOCAL-VERIFIED` initial migration, deterministic seed, scoped repository, composite ownership constraints, partial uniqueness, and immutable audit trigger. Domain routes, persistence-aware readiness, additional services, and complete Phase 1 workflows remain `MISSING`. Cross-platform host support is owner-deferred.
 
 A hosted Phase 2 profile deploys the same product/data plane with production security and operations.
 

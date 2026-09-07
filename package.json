@@ -16,6 +16,8 @@
     "dev:web": "vinext dev",
     "dev": "npm run dev:foundation",
     "db:generate": "node scripts/api-check.mjs --generate",
+    "db:migrate": "node scripts/api-check.mjs --migrate",
+    "db:seed": "node scripts/api-check.mjs --seed",
     "build": "vinext build",
     "start": "wrangler dev --config dist/server/wrangler.json",
     "lint": "oxlint .",

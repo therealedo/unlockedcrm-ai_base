@@ -11,7 +11,7 @@ import {
 const ROOT = path.resolve(fileURLToPath(new URL('..', import.meta.url)));
 export const TEST_DATABASE_URL =
   'postgresql://unlockedcrm:synthetic-local-only@127.0.0.1:54330/unlockedcrm_test?schema=public';
-const DEVELOPMENT_DATABASE_URL =
+export const DEVELOPMENT_DATABASE_URL =
   'postgresql://unlockedcrm:synthetic-local-only@127.0.0.1:54329/unlockedcrm_dev?schema=public';
 const COMPOSE = [
   'compose',
@@ -46,6 +46,14 @@ export function requireTestDatabaseUrl(value) {
   return value;
 }
 
+export function requireLocalDatabaseUrl(value) {
+  if (![TEST_DATABASE_URL, DEVELOPMENT_DATABASE_URL].includes(value))
+    throw new Error(
+      'DATABASE_URL must be an approved synthetic local database URL',
+    );
+  return value;
+}
+
 export function buildApiCheckPlan({
   operation = '',
   databaseUrl = operation === 'test'
@@ -53,9 +61,11 @@ export function buildApiCheckPlan({
     : (process.env.DATABASE_URL ?? DEVELOPMENT_DATABASE_URL),
   resolveDocker = resolveDockerExecutable,
 } = {}) {
-  if (!['generate', 'test', 'typecheck'].includes(operation))
+  if (!['generate', 'migrate', 'seed', 'test', 'typecheck'].includes(operation))
     throw new Error('Unknown API check operation');
   if (operation === 'test') requireTestDatabaseUrl(databaseUrl);
+  if (['migrate', 'seed'].includes(operation))
+    requireLocalDatabaseUrl(databaseUrl);
   const executable = nodeExecutable();
   const options = {
     cwd: ROOT,
@@ -78,6 +88,13 @@ export function buildApiCheckPlan({
     'node_modules/prisma/build/index.js',
     ['generate'],
   );
+  const migrate = node('prisma-migrate', 'node_modules/prisma/build/index.js', [
+    'migrate',
+    'deploy',
+  ]);
+  const seed = node('prisma-seed', 'node_modules/tsx/dist/cli.mjs', [
+    'api/prisma/seed.ts',
+  ]);
   const cleanup = {
     name: 'test-postgres-down',
     executable: operation === 'test' ? resolveDocker() : '',
@@ -86,6 +103,8 @@ export function buildApiCheckPlan({
     timeoutMs: 60_000,
   };
   if (operation === 'generate') return { steps: [generate], cleanup };
+  if (operation === 'migrate') return { steps: [generate, migrate], cleanup };
+  if (operation === 'seed') return { steps: [generate, seed], cleanup };
   const check =
     operation === 'test'
       ? node('api-tests', 'node_modules/vitest/vitest.mjs', [
@@ -111,6 +130,7 @@ export function buildApiCheckPlan({
         timeoutMs: 120_000,
       },
       generate,
+      migrate,
       check,
     ],
     cleanup,
