@@ -2,7 +2,7 @@
 
 > The current build is a fictional-data browser prototype plus local synthetic renewal GET and task-completion POST routes. It is not safe for real PII/PHI, limited production use, or SaaS.
 
-**Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, renewal-foundation checks, `DEP-AUDIT-2026-09-04`, `UNIT2A-2026-09-06`, `UNIT2B-2026-09-07`, `UNIT2C-2026-09-07`, and `UNIT4A-2026-09-07`. Browser authority remains unchanged.
+**Evidence:** `LOCAL-VERIFIED` from the current repository, Engram audit #647, renewal-foundation checks, `DEP-AUDIT-2026-09-04`, `UNIT2A-2026-09-06`, `UNIT2B-2026-09-07`, `UNIT2C-2026-09-07`, and `UNIT4A-2026-09-07`. Other views and mutations remain browser-authoritative.
 
 ## Verified current stack
 

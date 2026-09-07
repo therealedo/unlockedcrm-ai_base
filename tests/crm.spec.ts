@@ -94,6 +94,7 @@ test('shows loading, empty, authority error, retry, and unknown-contact states w
 test('preserves local records and preferences while fixed server IDs never persist', async ({
   page,
 }) => {
+  await page.reload();
   await page.waitForFunction(() =>
     localStorage.getItem('unlockedcrm-live-parity-state-v1'),
   );

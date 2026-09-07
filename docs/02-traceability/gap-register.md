@@ -20,7 +20,7 @@ This register assigns missing work to a phase without changing current implement
 
 | Gap ID | Priority | Capability | Current status/evidence | Target ownership | Exit proof |
 |---|---|---|---|---|---|
-| `GAP-CRM-001` | `P1` | Contact and household graph | Detail graph `MISSING`, `LIVE-VERIFIED` | Phase 1 | PostgreSQL-backed create/read/edit/archive, relationships, history, validation, and cross-module reload tests |
+| `GAP-CRM-001` | `P1` | Contact and household graph | Renewal-linked contact read `PARTIAL`, `LOCAL-VERIFIED`; complete contact/household lifecycle `MISSING` | Phase 1 | PostgreSQL-backed create/read/edit/archive, relationships, history, validation, and cross-module reload tests |
 | `GAP-CRM-002` | `P1` | Pipeline, tasks, appointments | Create-only `PARTIAL`, `LOCAL-VERIFIED` | Phase 1 | Complete lifecycle, ownership, comments, reschedule/cancel, activity events, and consistent projections |
 | `GAP-CRM-003` | `P1` | Policies, renewals, dashboards, analytics | Independent fixtures, `PARTIAL` | Phase 1 | One normalized PostgreSQL graph drives all synthetic views and derived metrics |
 | `GAP-CRM-004` | `P1` | Inbox and conversations | `MOCK`; live two-pane model verified | Phase 1 workflow plus simulated provider; Phase 2 real delivery | Persistent threads/messages, compose/reply/failure/retry states, provider correlations, events, and explicit simulated status |
