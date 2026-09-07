@@ -3,10 +3,13 @@ import { expect, test, type Route } from '@playwright/test';
 const workspaceId = '10000000-0000-4000-8000-000000000001';
 const contactId = '20000000-0000-4000-8000-000000000001';
 const policyId = '30000000-0000-4000-8000-000000000001';
-const managedIds = Array.from(
-  { length: 9 },
-  (_, index) => `${index + 1}0000000-0000-4000-8000-000000000001`,
-);
+const managedId = (prefix: number, suffix: number) =>
+  `${prefix}0000000-0000-4000-8000-${String(suffix).padStart(12, '0')}`;
+const managedIds = [
+  ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((prefix) => managedId(prefix, 1)),
+  ...[2, 3, 4, 5, 6].map((prefix) => managedId(prefix, 2)),
+  ...[2, 3, 4, 6].map((prefix) => managedId(prefix, 3)),
+];
 
 function renewalBody(items: unknown[]) {
   return {
@@ -219,13 +222,17 @@ test('Unit 4D exposes honest loading, empty, error, and retry states on each new
 }) => {
   const pattern = `**/api/v1/workspaces/${workspaceId}/renewals`;
   let release!: () => void;
+  let signalRequestArrival!: () => void;
   let loading = true;
   let retryAttempt = 0;
   let requests = 0;
   await page.route(pattern, async (route) => {
     requests += 1;
     if (loading) {
-      await new Promise<void>((resolve) => (release = resolve));
+      await new Promise<void>((resolve) => {
+        release = resolve;
+        signalRequestArrival();
+      });
       await route.fulfill({ status: 200, json: renewalBody([]) });
       return;
     }
@@ -243,10 +250,14 @@ test('Unit 4D exposes honest loading, empty, error, and retry states on each new
     ['/analytics/audit', 'renewal.created'],
   ]) {
     loading = true;
+    const requestArrived = new Promise<void>(
+      (resolve) => (signalRequestArrival = resolve),
+    );
     const navigation = page.goto(path);
     await expect(
       page.getByText('Loading server-managed renewals…'),
     ).toBeVisible();
+    await requestArrived;
     release();
     await navigation;
     await expect(page.getByText('No server-managed renewals')).toBeVisible();
