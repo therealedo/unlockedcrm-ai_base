@@ -8,6 +8,7 @@ Use this register to keep direct observation, local verification, approved plann
 |---|---|---|---|
 | `#647` | `audit/local/current-baseline` | `LOCAL-VERIFIED` | Current repository, 32 registered routes/30 effective screens, data/persistence/tests/infrastructure/security gaps |
 | `#641` | `audit/live/core-business` | `LIVE-VERIFIED`, some `GATED`/`PRIOR-VERIFIED` | Shell, CRM, policies, commissions, booking, analytics, documents |
+| `CONTACT-INTAKE-2026-09-08` | [Generic Create Contact audit](../01-audits/live-generic-create-contact.md) | `LIVE-VERIFIED` visible UI; `LOCAL-VERIFIED` code inspection; owner planning decision; selector/mutation limits `GATED` | Engram #1576 live form/menu, #1575 local comparison, #1567 approved generic birth-date/gender/tag field categories with AI/workflow deferred; no exact-schema or implementation approval; gender/tag choices and save/provider/backend validation remain unverified |
 | `#643` | `audit/live/communications-insurance-tools` | `LIVE-VERIFIED`, some `GATED` | Phone, email, quoting, Life, Medicare, ACA, Build, AI, automation, campaigns, forms, Commission+ |
 | `#642` | `audit/live/admin-settings-organizations` | `LIVE-VERIFIED`, some `GATED`/`PRIOR-VERIFIED` | Settings, Agency, IMO/FMO, More, Support, admin phone/email |
 | `#648` | `architecture/documentation-system` | Prior decision | Hub/spoke docs and stable traceability |
@@ -27,6 +28,7 @@ Use this register to keep direct observation, local verification, approved plann
 | `UNIT4C-2026-09-07` | Managed policy detail and Renewal Dashboard reads | `LOCAL-VERIFIED` | Exact stable-ID policy detail and current-graph dashboard rows/counts reuse the validated GET cache with route-aware empty, not-found, error, retry, and no-legacy-fallback behavior; rich detail, urgency, progress, filters, completion UI, and other projections remain missing |
 | `UNIT4D-2026-09-07` | Home, Tasks, and Analytics Audit renewal reads | `LOCAL-VERIFIED` | Seven GET-consuming views reuse one validated cache across six canonical stable-ID-linked surfaces; exact renewal-only counts, loading/empty/error/retry, reload/storage separation, and preserved local prototype records are proven; completion UI/refetch remains pending |
 | `UNIT5-2026-09-07` | Managed renewal completion/refetch | `LOCAL-VERIFIED` | Exact POST validation, disabled in-flight action, ambiguous same-version retry, confirmed-POST GET-only recovery, six-surface completion/open-renewal/one-audit consistency, storage clearing, reload, new-context durability, and isolated PostgreSQL cleanup |
+| `CONTACT-FOUNDATION-2026-09-08` | Generic contact persistence foundation | `LOCAL-VERIFIED` | Strict-TDD isolated PostgreSQL proof for additive nullable contact fields, bounded ORIGINAL tags, idempotency receipt storage, Avery backfill, collision-checked Mara/Eli seeds, ordinary-row/event coexistence, protected-subgraph drift refusal, immutable contact events, and one shared Prisma lifecycle; no generic contact API/UI activation |
 
 When a prior decision conflicts with `PLAN-2026-09-02`, the current governance and roadmap documents control. Historical audit observations remain unchanged.
 
@@ -54,9 +56,9 @@ When a prior decision conflicts with `PLAN-2026-09-02`, the current governance a
 | `playwright.config.ts`; `scripts/api-check.mjs`; `api/test/playwright-server.ts` | Dedicated Chromium base URL plus isolated PostgreSQL/API/web E2E lifecycle, exact test-DSN guard, readiness, and bounded owned-resource cleanup |
 | Repository file inventory (2026-09-02) | No Dockerfile or Compose configuration at decision-recording time |
 | `compose.yaml`; `api/src/{app,config,server}.ts`; `api/test/*`; `scripts/orchestrate.{mjs,test.ts}` | Foundation plus persistence-aware Windows startup, health/read API, canonical launcher/cleanup, and local verification evidence (`LOCAL-VERIFIED`) |
-| `api/prisma/{schema.prisma,seed.ts,migrations/*}`; `api/src/modules/renewals/*`; `api/test/{domain,repository.pg}.test.ts` | Unit 2B synthetic renewal migration, deterministic seed, workspace-scoped repository, invariants, and immutable audit evidence (`LOCAL-VERIFIED`) |
+| `api/prisma/{schema.prisma,seed.ts,migrations/*}`; `api/src/{modules/renewals,plugins}/*`; `api/test/{domain,repository.pg,contact-foundation.pg}.test.ts` | Renewal persistence plus the additive generic-contact schema, safe fixed-subgraph classifier, bounded seeds, shared Prisma lifecycle, and immutable audit evidence (`LOCAL-VERIFIED`) |
 
-These paths prove current implementation only. The bounded renewal graph and completion/refetch are `LOCAL-VERIFIED`; broader mutations, workers, hosted deployment, real adapters, and PWA remain planned or missing.
+These paths prove current implementation only. The bounded renewal graph and completion/refetch are `LOCAL-VERIFIED`; the generic-contact database foundation is also `LOCAL-VERIFIED` but unwired. Generic contact API/UI activation, broader mutations, workers, hosted deployment, real adapters, and PWA remain planned or missing.
 
 ## Official external references
 

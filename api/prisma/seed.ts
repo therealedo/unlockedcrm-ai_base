@@ -3,6 +3,7 @@ import { createPrismaClient } from '../src/database/prisma.js';
 import type {
   AuditEvent,
   Contact,
+  ContactTag,
   FollowUpTask,
   Policy,
   PrismaClient,
@@ -18,6 +19,13 @@ const ALLOWED_DATABASE_URLS = new Set([
 const createdAt = new Date('2026-09-02T12:00:00.000Z');
 const renewalDate = new Date('2027-01-15T00:00:00.000Z');
 const dueAt = new Date('2026-12-15T15:00:00.000Z');
+const contactFields = {
+  email: null,
+  phone: null,
+  birthDate: null,
+  gender: null,
+  notes: null,
+};
 export const SYNTHETIC_RENEWAL_SEED = {
   workspace: {
     id: S.workspaceId,
@@ -29,7 +37,10 @@ export const SYNTHETIC_RENEWAL_SEED = {
   contact: {
     id: S.contactId,
     workspaceId: S.workspaceId,
+    firstName: 'Avery',
+    lastName: 'Harbor',
     displayName: 'Avery Harbor',
+    ...contactFields,
     createdAt,
   },
   policy: {
@@ -73,6 +84,41 @@ export const SYNTHETIC_RENEWAL_SEED = {
     createdAt,
   },
 };
+
+export const SYNTHETIC_CONTACT_SEEDS = [
+  {
+    contact: {
+      id: '20000000-0000-4000-8000-000000000002',
+      workspaceId: S.workspaceId,
+      firstName: 'Mara',
+      lastName: 'Testwell',
+      displayName: 'Mara Testwell',
+      email: 'mara.testwell@example.com',
+      phone: '+12025550114',
+      birthDate: new Date('1956-04-12T00:00:00.000Z'),
+      gender: 'female',
+      notes: null,
+      createdAt,
+    },
+    tags: ['client'],
+  },
+  {
+    contact: {
+      id: '20000000-0000-4000-8000-000000000003',
+      workspaceId: S.workspaceId,
+      firstName: 'Eli',
+      lastName: 'Sample',
+      displayName: 'Eli Sample',
+      email: 'eli.sample@example.com',
+      phone: '+12025550168',
+      birthDate: null,
+      gender: null,
+      notes: null,
+      createdAt,
+    },
+    tags: ['new_lead'],
+  },
+] as const;
 
 export interface SyntheticRenewalSeedInspection {
   fixed: {
@@ -128,19 +174,45 @@ export function classifySyntheticRenewalSeedState(
   const presentGraph = graph ?? drift();
 
   const fixture = SYNTHETIC_RENEWAL_SEED;
+  const legacyContact = {
+    ...fixture.contact,
+    firstName: null,
+    lastName: null,
+  };
+  const contact = inspection.fixed.contact!;
+  const protectedPolicies = presentGraph.policies.filter(
+    ({ contactId }) => contactId === fixture.contact.id,
+  );
+  const protectedRenewals = presentGraph.renewals.filter(
+    ({ policyId }) => policyId === fixture.policy.id,
+  );
+  const protectedTasks = presentGraph.tasks.filter(
+    ({ renewalId }) => renewalId === fixture.renewal.id,
+  );
+  const protectedRecordIds = new Set<string>([
+    fixture.contact.id,
+    fixture.policy.id,
+    fixture.renewal.id,
+    fixture.task.id,
+  ]);
+  const protectedAudits = presentGraph.auditEvents.filter(({ recordId }) =>
+    protectedRecordIds.has(recordId),
+  );
   if (
     !matches(inspection.fixed.workspace!, fixture.workspace) ||
     !matches(presentGraph, fixture.workspace) ||
-    presentGraph.contacts.length !== 1 ||
-    presentGraph.policies.length !== 1 ||
-    presentGraph.renewals.length !== 1 ||
-    presentGraph.tasks.length !== 1 ||
-    !matches(inspection.fixed.contact!, fixture.contact) ||
-    !matches(presentGraph.contacts[0], fixture.contact) ||
+    (!matches(contact, fixture.contact) && !matches(contact, legacyContact)) ||
+    !matches(
+      presentGraph.contacts.find(({ id }) => id === fixture.contact.id) ?? {},
+      contact,
+    ) ||
+    protectedPolicies.length !== 1 ||
+    protectedRenewals.length !== 1 ||
+    protectedTasks.length !== 1 ||
     !matches(inspection.fixed.policy!, fixture.policy) ||
-    !matches(presentGraph.policies[0], fixture.policy) ||
+    !matches(protectedPolicies[0], fixture.policy) ||
     !matches(inspection.fixed.renewal!, fixture.renewal) ||
-    !matches(presentGraph.renewals[0], fixture.renewal) ||
+    !matches(protectedRenewals[0], fixture.renewal) ||
     !matches(inspection.fixed.creationAudit!, fixture.creationAudit) ||
     !matches(
       presentGraph.auditEvents.find(
@@ -152,11 +224,11 @@ export function classifySyntheticRenewalSeedState(
     drift();
 
   const task = inspection.fixed.task!;
-  if (!matches(presentGraph.tasks[0], task)) drift();
-  if (matches(task, fixture.task) && presentGraph.auditEvents.length === 1)
+  if (!matches(protectedTasks[0], task)) drift();
+  if (matches(task, fixture.task) && protectedAudits.length === 1)
     return 'pending';
 
-  const completion = presentGraph.auditEvents.find(
+  const completion = protectedAudits.find(
     ({ eventType }) => eventType === 'task.completed',
   );
   const completedAt = task.completedAt;
@@ -170,7 +242,7 @@ export function classifySyntheticRenewalSeedState(
       version: 2,
       completedAt,
     }) ||
-    presentGraph.auditEvents.length !== 2 ||
+    protectedAudits.length !== 2 ||
     !completion ||
     !isUuid(completion.id) ||
     !isUuid(completion.correlationId) ||
@@ -190,6 +262,22 @@ export function classifySyntheticRenewalSeedState(
   )
     drift();
   return 'completed';
+}
+
+function validateAuxiliaryContacts(
+  contacts: Array<Contact & { tags: ContactTag[] }>,
+) {
+  for (const seed of SYNTHETIC_CONTACT_SEEDS) {
+    const contact = contacts.find(({ id }) => id === seed.contact.id);
+    if (!contact) continue;
+    const tags = contact.tags.map(({ tagCode }) => tagCode).sort();
+    if (
+      !matches(contact, seed.contact) ||
+      tags.length !== seed.tags.length ||
+      tags.some((tag, index) => tag !== [...seed.tags].sort()[index])
+    )
+      drift();
+  }
 }
 
 export function requireSeedDatabaseUrl(value: string | undefined) {
@@ -235,15 +323,47 @@ export async function seedSyntheticRenewalGraph(client: PrismaClient) {
           }),
         }
       : null;
-    if (classifySyntheticRenewalSeedState({ fixed, graph }) !== 'empty') return;
+    const auxiliaryContacts = await tx.contact.findMany({
+      where: {
+        id: { in: SYNTHETIC_CONTACT_SEEDS.map(({ contact }) => contact.id) },
+      },
+      include: { tags: true },
+    });
+    const state = classifySyntheticRenewalSeedState({ fixed, graph });
+    validateAuxiliaryContacts(auxiliaryContacts);
 
     const seed = SYNTHETIC_RENEWAL_SEED;
-    await tx.workspace.create({ data: seed.workspace });
-    await tx.contact.create({ data: seed.contact });
-    await tx.policy.create({ data: seed.policy });
-    await tx.renewal.create({ data: seed.renewal });
-    await tx.followUpTask.create({ data: seed.task });
-    await tx.auditEvent.create({ data: seed.creationAudit });
+    if (state === 'empty') {
+      await tx.workspace.create({ data: seed.workspace });
+      await tx.contact.create({ data: seed.contact });
+      await tx.policy.create({ data: seed.policy });
+      await tx.renewal.create({ data: seed.renewal });
+      await tx.followUpTask.create({ data: seed.task });
+      await tx.auditEvent.create({ data: seed.creationAudit });
+    } else if (fixed.contact?.firstName === null) {
+      await tx.contact.update({
+        where: { id: seed.contact.id },
+        data: {
+          firstName: seed.contact.firstName,
+          lastName: seed.contact.lastName,
+        },
+      });
+    }
+    for (const auxiliary of SYNTHETIC_CONTACT_SEEDS) {
+      if (auxiliaryContacts.some(({ id }) => id === auxiliary.contact.id))
+        continue;
+      await tx.contact.create({
+        data: {
+          ...auxiliary.contact,
+          tags: {
+            create: auxiliary.tags.map((tagCode) => ({
+              tagCode,
+              createdAt,
+            })),
+          },
+        },
+      });
+    }
   });
 }
 

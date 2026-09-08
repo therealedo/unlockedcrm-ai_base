@@ -45,7 +45,9 @@ it('replays the fixed seed as a no-op and refuses drift', async () => {
       sourceVersion: 'renewal-seed.v1',
       sourceHash:
         'sha256:4f6d68165a762447fa005f673b1a64680397c420c31190bfa0d9a716e6288cbc',
-      contacts: [{ id: SYNTHETIC_RENEWAL.contactId }],
+      contacts: expect.arrayContaining([
+        expect.objectContaining({ id: SYNTHETIC_RENEWAL.contactId }),
+      ]),
       policies: [{ id: SYNTHETIC_RENEWAL.policyId }],
       renewals: [{ id: SYNTHETIC_RENEWAL.renewalId, status: 'open' }],
       tasks: [{ id: SYNTHETIC_RENEWAL.taskId, status: 'pending', version: 1 }],
@@ -146,23 +148,21 @@ it('preserves an exact legally completed fixture on seed replay', async () => {
   });
 });
 
-it('refuses extra fixed-workspace rows without writing', async () => {
+it('preserves unrelated fixed-workspace contacts across seed replay', async () => {
   await withDatabase(async (client) => {
     await seedSyntheticRenewalGraph(client);
     await client.contact.create({
       data: {
-        id: '20000000-0000-4000-8000-000000000002',
+        id: '20000000-0000-4000-8000-000000000099',
         workspaceId: SYNTHETIC_RENEWAL.workspaceId,
-        displayName: 'Extra synthetic contact',
+        displayName: 'Ordinary Synthetic',
       },
     });
     const before = await client.contact.findMany({
       where: { workspaceId: SYNTHETIC_RENEWAL.workspaceId },
       orderBy: { id: 'asc' },
     });
-    await expect(seedSyntheticRenewalGraph(client)).rejects.toThrow(
-      'Synthetic renewal seed drift',
-    );
+    await expect(seedSyntheticRenewalGraph(client)).resolves.toBeUndefined();
     expect(
       await client.contact.findMany({
         where: { workspaceId: SYNTHETIC_RENEWAL.workspaceId },

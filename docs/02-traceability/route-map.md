@@ -49,7 +49,7 @@ These routes are resolved from validated API links or a fixed navigation path an
 
 | Capability | Path | Active renderer | Local status | Boundary |
 |---|---|---|---|---|
-| `CAP-CRM-104` | `/contacts/:contactId` | `ManagedContactScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Exact stable-ID renewal-linked read; no full contact lifecycle |
+| `CAP-CRM-106` | `/contacts/:contactId` | `ManagedContactScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Exact stable-ID renewal-linked read; no full contact lifecycle |
 | `CAP-BIZ-102` | `/policies/:policyId` | `ManagedPolicyScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Exact stable-ID GET projection only; rich detail/edit remains missing |
 | `CAP-BIZ-106` | `/policies/renewals` | `RenewalDashboardScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Current graph counts/rows only; urgency, progress, and filters remain missing |
 | `CAP-BIZ-116` | `/analytics/audit` | `RenewalAuditScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Renewal-only audit events; general analytics/audit store remains missing |
