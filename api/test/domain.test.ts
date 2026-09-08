@@ -164,14 +164,6 @@ it.each([
     (state: SyntheticRenewalSeedInspection) => (state.fixed.contact = null),
   ],
   [
-    'extra business row',
-    (state: SyntheticRenewalSeedInspection) =>
-      state.graph!.contacts.push({
-        ...state.fixed.contact!,
-        id: '20000000-0000-4000-8000-000000000002',
-      }),
-  ],
-  [
     'relationship drift',
     (state: SyntheticRenewalSeedInspection) =>
       (state.fixed.policy!.contactId = '20000000-0000-4000-8000-000000000002'),

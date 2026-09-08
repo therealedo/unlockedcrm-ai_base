@@ -7,6 +7,7 @@ Audits preserve what was observed without turning it into a product guarantee. T
 | Audit | Scope | Primary evidence |
 |---|---|---|
 | [Live shell and core CRM](live-shell-and-core-crm.md) | Shell, dashboard, AI workspace, inbox, contacts, pipeline, calendar, tasks | Engram #641 |
+| [Generic Create Contact](live-generic-create-contact.md) | Phase 1 generic intake: current visible form, local differences, and untested mutation boundaries | Engram #1576 and #1575 |
 | [Live business records](live-business-records.md) | Policies, commissions, booking, analytics, documents | Engram #641 |
 | [Live communications](live-communications.md) | Phone, SMS, email, identity, A2P, delivery states | Engram #643 and #642 |
 | [Live insurance and quoting](live-insurance-and-quoting.md) | Quoters, Life, Medicare, ACA, Commission+ | Engram #643 |

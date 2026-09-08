@@ -9,30 +9,62 @@ datasource db {
 }
 
 model Workspace {
-  id            String         @id @db.Uuid
-  name          String
-  sourceVersion String         @map("source_version")
-  sourceHash    String         @map("source_hash")
-  createdAt     DateTime       @default(now()) @map("created_at") @db.Timestamptz(3)
-  contacts      Contact[]
-  policies      Policy[]
-  renewals      Renewal[]
-  tasks         FollowUpTask[]
-  auditEvents   AuditEvent[]
+  id             String                 @id @db.Uuid
+  name           String
+  sourceVersion  String                 @map("source_version")
+  sourceHash     String                 @map("source_hash")
+  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamptz(3)
+  contacts       Contact[]
+  policies       Policy[]
+  renewals       Renewal[]
+  tasks          FollowUpTask[]
+  auditEvents    AuditEvent[]
+  createReceipts ContactCreateReceipt[]
 
   @@map("workspaces")
 }
 
 model Contact {
-  id          String    @id @db.Uuid
-  workspaceId String    @map("workspace_id") @db.Uuid
-  displayName String    @map("display_name")
-  createdAt   DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
-  workspace   Workspace @relation(fields: [workspaceId], references: [id])
+  id          String       @id @db.Uuid
+  workspaceId String       @map("workspace_id") @db.Uuid
+  firstName   String?      @map("first_name")
+  lastName    String?      @map("last_name")
+  displayName String       @map("display_name")
+  email       String?
+  phone       String?
+  birthDate   DateTime?    @map("birth_date") @db.Date
+  gender      String?
+  notes       String?
+  createdAt   DateTime     @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspace   Workspace    @relation(fields: [workspaceId], references: [id])
   policies    Policy[]
+  tags        ContactTag[]
 
   @@unique([workspaceId, id])
   @@map("contacts")
+}
+
+model ContactTag {
+  workspaceId String   @map("workspace_id") @db.Uuid
+  contactId   String   @map("contact_id") @db.Uuid
+  tagCode     String   @map("tag_code")
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(3)
+  contact     Contact  @relation(fields: [workspaceId, contactId], references: [workspaceId, id])
+
+  @@id([workspaceId, contactId, tagCode])
+  @@map("contact_tags")
+}
+
+model ContactCreateReceipt {
+  workspaceId    String    @map("workspace_id") @db.Uuid
+  idempotencyKey String    @map("idempotency_key")
+  payloadHash    String    @map("payload_hash")
+  responseBody   Json      @map("response_body")
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(3)
+  workspace      Workspace @relation(fields: [workspaceId], references: [id])
+
+  @@id([workspaceId, idempotencyKey])
+  @@map("contact_create_receipts")
 }
 
 model Policy {

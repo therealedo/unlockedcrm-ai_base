@@ -1,13 +1,10 @@
-import { createPrismaClient } from '../database/prisma.js';
-import { createSyntheticRequestContext } from '../context/request-context.js';
-import { PrismaRenewalRepository } from '../modules/renewals/prisma-renewal-repository.js';
+import { createLocalPersistence } from './local-persistence.js';
 
 export async function createRenewalPlugin(databaseUrl: string) {
-  const client = createPrismaClient(databaseUrl);
-  await client.$connect();
+  const persistence = await createLocalPersistence(databaseUrl);
   return {
-    repository: new PrismaRenewalRepository(client),
-    contextFactory: createSyntheticRequestContext,
-    close: () => client.$disconnect(),
+    repository: persistence.renewals,
+    contextFactory: persistence.contextFactory,
+    close: () => persistence.close(),
   };
 }
