@@ -1,8 +1,12 @@
-import { expect, test, type Route } from '@playwright/test';
+import { expect, test, type Page, type Route } from '@playwright/test';
 
 const workspaceId = '10000000-0000-4000-8000-000000000001';
 const contactId = '20000000-0000-4000-8000-000000000001';
 const policyId = '30000000-0000-4000-8000-000000000001';
+const renewalId = '40000000-0000-4000-8000-000000000001';
+const taskId = '50000000-0000-4000-8000-000000000001';
+const renewalReadPattern = `**/api/v1/workspaces/${workspaceId}/renewals`;
+const completionPattern = `**/api/v1/workspaces/${workspaceId}/tasks/${taskId}/completion`;
 const managedId = (prefix: number, suffix: number) =>
   `${prefix}0000000-0000-4000-8000-${String(suffix).padStart(12, '0')}`;
 const managedIds = [
@@ -98,9 +102,160 @@ function managedRenewalItem({
   };
 }
 
+function completionBody() {
+  return {
+    task: {
+      id: taskId,
+      renewalId,
+      status: 'completed',
+      version: 2,
+      completedAt: '2026-09-07T08:56:12.175Z',
+    },
+    renewal: { id: renewalId, status: 'open' },
+    completionAuditEvent: {
+      id: 'a0000000-0000-4000-8000-000000000001',
+      type: 'task.completed',
+    },
+  };
+}
+
+const followManagedLink = (page: Page, name: string) =>
+  page
+    .getByLabel('Managed renewal links')
+    .getByRole('button', { name })
+    .click();
+
 test.beforeEach(async ({ page }) => {
   await page.goto('/');
   await page.evaluate(() => localStorage.clear());
+});
+
+test('Unit 5 completes a pending row only after POST and authoritative refetch', async ({
+  page,
+}) => {
+  const pending = managedRenewalItem({ taskStatus: 'pending' });
+  const completed = managedRenewalItem();
+  let reads = 0;
+  let posts = 0;
+  let releasePost!: () => void;
+  const postReleased = new Promise<void>((resolve) => {
+    releasePost = resolve;
+  });
+  await page.route(renewalReadPattern, async (route) => {
+    reads += 1;
+    await route.fulfill({
+      status: 200,
+      json: renewalBody([reads === 1 ? pending : completed]),
+    });
+  });
+  await page.route(completionPattern, async (route) => {
+    posts += 1;
+    expect(route.request().method()).toBe('POST');
+    expect(route.request().postDataJSON()).toEqual({ expectedTaskVersion: 1 });
+    await postReleased;
+    await route.fulfill({ status: 200, json: completionBody() });
+  });
+
+  await page.goto('/tasks');
+  const managed = page.getByRole('region', {
+    name: 'Server-managed renewal follow-ups',
+  });
+  const row = managed.getByRole('row', { name: /Review synthetic renewal/ });
+  const action = row.getByRole('button', { name: 'Mark as Done' });
+  await action.click();
+  await expect(action).toBeDisabled();
+  await expect(row).toContainText('pending');
+  releasePost();
+  await expect(row).toContainText('completed');
+  await expect(row.getByRole('button', { name: 'Mark as Done' })).toHaveCount(
+    0,
+  );
+  expect({ reads, posts }).toEqual({ reads: 2, posts: 1 });
+
+  await followManagedLink(page, 'Analytics Audit');
+  await expect(page.getByText('task.completed', { exact: true })).toHaveCount(
+    1,
+  );
+  expect({ reads, posts }).toEqual({ reads: 2, posts: 1 });
+});
+
+test('Unit 5 retries an ambiguous POST with the same pending version', async ({
+  page,
+}) => {
+  let reads = 0;
+  const bodies: unknown[] = [];
+  await page.route(renewalReadPattern, async (route) => {
+    reads += 1;
+    await route.fulfill({
+      status: 200,
+      json: renewalBody([
+        managedRenewalItem({
+          taskStatus: reads === 1 ? 'pending' : 'completed',
+        }),
+      ]),
+    });
+  });
+  await page.route(completionPattern, async (route) => {
+    bodies.push(route.request().postDataJSON());
+    if (bodies.length === 1) await route.abort('connectionfailed');
+    else await route.fulfill({ status: 200, json: completionBody() });
+  });
+
+  await page.goto('/tasks');
+  await page.getByRole('button', { name: 'Mark as Done' }).click();
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText('Completion could not be confirmed');
+  await expect(alert).toContainText(
+    'The task still shows its last confirmed pending state.',
+  );
+  await alert.getByRole('button', { name: 'Retry Mark as Done' }).click();
+  await expect(
+    page.getByRole('row', { name: /Review synthetic renewal/ }),
+  ).toContainText('completed · task.completed');
+  expect(bodies).toEqual([
+    { expectedTaskVersion: 1 },
+    { expectedTaskVersion: 1 },
+  ]);
+  expect(reads).toBe(2);
+});
+
+test('Unit 5 retries only GET after completion succeeds but refresh fails', async ({
+  page,
+}) => {
+  let reads = 0;
+  let posts = 0;
+  await page.route(renewalReadPattern, async (route) => {
+    reads += 1;
+    if (reads === 2) await route.fulfill({ status: 503, json: {} });
+    else
+      await route.fulfill({
+        status: 200,
+        json: renewalBody([
+          managedRenewalItem({
+            taskStatus: reads === 1 ? 'pending' : 'completed',
+          }),
+        ]),
+      });
+  });
+  await page.route(completionPattern, async (route) => {
+    posts += 1;
+    await route.fulfill({ status: 200, json: completionBody() });
+  });
+
+  await page.goto('/tasks');
+  await page.getByRole('button', { name: 'Mark as Done' }).click();
+  const alert = page.getByRole('alert');
+  await expect(alert).toContainText(
+    'Completion succeeded, but the refreshed state could not be loaded.',
+  );
+  await expect(
+    page.getByRole('row', { name: /Review synthetic renewal/ }),
+  ).toContainText('pending · none');
+  await alert.getByRole('button', { name: 'Retry completion refresh' }).click();
+  await expect(
+    page.getByRole('row', { name: /Review synthetic renewal/ }),
+  ).toContainText('completed · task.completed');
+  expect({ reads, posts }).toEqual({ reads: 3, posts: 1 });
 });
 
 test('Unit 4D keeps six renewal surfaces linked to one cached projection', async ({
@@ -198,10 +353,7 @@ test('Unit 4D keeps six renewal surfaces linked to one cached projection', async
       .getByRole('region', { name: 'Server-managed renewal audit' })
       .locator('.lp-metrics article'),
   ).toHaveText(['Renewal audit events4']);
-  await page
-    .getByLabel('Managed renewal links')
-    .getByRole('button', { name: 'Home' })
-    .click();
+  await followManagedLink(page, 'Home');
   await expect(page).toHaveURL('/');
   expect(requests).toBe(1);
 
@@ -378,7 +530,7 @@ test('Unit 4C keeps dashboard and policy failures route-specific', async ({
   ).toBeVisible();
   await page.evaluate(() => {
     history.pushState({}, '', '/policies/%E0%A4%A');
-    dispatchEvent(new PopStateEvent('popstate'));
+    dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
   });
   await expect(page.locator('h1')).toHaveText('Policy');
   await expect(
@@ -562,7 +714,8 @@ test('projects the seeded policy into its server-authoritative contact detail', 
   await expect(
     page.getByText('Synthetic Term Policy', { exact: true }),
   ).toBeVisible();
-  await expect(page.getByText(/^(pending|completed)$/)).toBeVisible();
+  const followUpEvidence = /^(pending · none|completed · task\.completed)$/;
+  await expect(page.getByText(followUpEvidence)).toBeVisible();
   await expect(page.getByText('QA-MA-ACTIVE-001', { exact: true })).toHaveCount(
     0,
   );
@@ -610,7 +763,7 @@ test('shows loading, empty, authority error, retry, and unknown-contact states w
   await expect(page.getByText('Mara Testwell')).toHaveCount(0);
   await page.evaluate(() => {
     history.pushState({}, '', '/contacts/%E0%A4%A');
-    dispatchEvent(new PopStateEvent('popstate'));
+    dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
   });
   await expect(
     page.getByRole('heading', { level: 1, name: 'Contact' }),
@@ -1283,4 +1436,115 @@ test('supports navigation personalization and global search', async ({
   await expect(
     page.getByText('Policies', { exact: true }).first(),
   ).toBeVisible();
+});
+
+test('Unit 5 persists one completion across storage clear, reload, and a new context', async ({
+  page,
+  browser,
+}) => {
+  await page.goto('/tasks');
+  const managedTasks = page.getByRole('region', {
+    name: 'Server-managed renewal follow-ups',
+  });
+  const pendingRow = managedTasks.getByRole('row', {
+    name: /Review synthetic renewal pending/,
+  });
+  await expect(
+    pendingRow.getByRole('button', { name: 'Mark as Done' }),
+  ).toBeVisible();
+  await page.evaluate(() =>
+    localStorage.setItem('unit5-local-preference', 'preserve-me'),
+  );
+
+  await pendingRow.getByRole('button', { name: 'Mark as Done' }).click();
+  await expect(
+    managedTasks.getByRole('row', {
+      name: /Review synthetic renewal completed/,
+    }),
+  ).toContainText('open');
+  await expect(
+    managedTasks.getByRole('button', { name: 'Mark as Done' }),
+  ).toHaveCount(0);
+  await expect
+    .poll(() =>
+      page.evaluate(() => localStorage.getItem('unit5-local-preference')),
+    )
+    .toBe('preserve-me');
+
+  await page
+    .getByLabel('Managed renewal links')
+    .getByRole('button', { name: 'Home' })
+    .click();
+  await expect(
+    page.locator('article', { hasText: 'Open renewals' }).locator('b'),
+  ).toHaveText('1');
+  await expect(
+    page.locator('article', { hasText: 'Pending follow-ups' }).locator('b'),
+  ).toHaveText('0');
+  await expect(
+    page.locator('article', { hasText: 'Completed follow-ups' }).locator('b'),
+  ).toHaveText('1');
+  await expect(
+    page.locator('article', { hasText: 'Renewal audit events' }).locator('b'),
+  ).toHaveText('2');
+
+  await followManagedLink(page, 'Contact detail');
+  const contact = page.getByRole('region', { name: 'Server-managed contact' });
+  await expect(contact).toContainText('Renewal statusopen');
+  await expect(contact).toContainText(
+    'Follow-up statuscompleted · task.completed',
+  );
+  await followManagedLink(page, 'Policy detail');
+  const policy = page.getByRole('region', { name: 'Server-managed policy' });
+  await expect(policy).toContainText('Renewal statusopen');
+  await expect(policy).toContainText(
+    'Follow-up statuscompleted · task.completed',
+  );
+  await followManagedLink(page, 'Renewal Dashboard');
+  const dashboardRow = page.locator('.lp-side-content tbody tr');
+  await expect(dashboardRow).toContainText('open');
+  await expect(dashboardRow).toContainText('completed · task.completed');
+  await followManagedLink(page, 'Tasks');
+  const completedRow = page
+    .getByRole('region', { name: 'Server-managed renewal follow-ups' })
+    .getByRole('row', { name: /Review synthetic renewal/ });
+  await expect(completedRow).toContainText('completed · task.completed');
+  await expect(completedRow).toContainText('open');
+  await followManagedLink(page, 'Analytics Audit');
+  const managedAudit = page.getByRole('region', {
+    name: 'Server-managed renewal audit',
+  });
+  await expect(
+    managedAudit.getByText('task.completed', { exact: true }),
+  ).toHaveCount(1);
+  await expect(
+    managedAudit.getByRole('row', { name: /task.completed/ }),
+  ).toContainText('open');
+
+  await page.evaluate(() => localStorage.clear());
+  await page.reload();
+  await expect(
+    managedAudit.getByText('task.completed', { exact: true }),
+  ).toHaveCount(1);
+
+  const freshContext = await browser.newContext({
+    baseURL: 'http://127.0.0.1:4173',
+  });
+  try {
+    const freshPage = await freshContext.newPage();
+    await freshPage.goto('/tasks');
+    const freshManaged = freshPage.getByRole('region', {
+      name: 'Server-managed renewal follow-ups',
+    });
+    const freshRow = freshManaged.getByRole('row', {
+      name: /Review synthetic renewal/,
+    });
+    await expect(freshRow).toContainText('completed');
+    await expect(freshRow).toContainText('open');
+    await expect(
+      freshManaged.getByRole('button', { name: 'Mark as Done' }),
+    ).toHaveCount(0);
+  } finally {
+    await freshContext.close();
+  }
 });

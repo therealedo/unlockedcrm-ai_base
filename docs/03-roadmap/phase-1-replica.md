@@ -34,7 +34,7 @@ Phase 1 ends when every audited owned/core CRM workflow works coherently through
 
 Application frameworks and cloud infrastructure are separate decisions. Vinext/Next.js organize the frontend, Fastify is the selected HTTP framework for the API, and Vite builds the web client. Railway, Vercel, Sites, and Cloudflare are hosting/runtime choices. None replaces the API or PostgreSQL, and none is required for Phase 1 local development.
 
-The `LOCAL-VERIFIED` Windows runtime pins Node.js/npm and maps `npm run dev` to persistence-aware `dev:local`; `dev:foundation` remains the generation-independent health shell. Local startup validates the exact synthetic DSN, starts PostgreSQL, generates, migrates, seeds without drift overwrite, and starts the host API/web. Renewal GET, atomic completion POST, completed-state restart, and ready HTTP 200 are locally verified; browser authority remains unchanged. Cross-platform host support is owner-deferred.
+The `LOCAL-VERIFIED` Windows runtime pins Node.js/npm and maps `npm run dev` to persistence-aware `dev:local`; `dev:foundation` remains the generation-independent health shell. Local startup validates the exact synthetic DSN, starts PostgreSQL, generates, migrates, seeds without drift overwrite, and starts the host API/web. The bounded renewal graph is PostgreSQL-authoritative through completion/refetch; unrelated browser records remain local. Cross-platform host support is owner-deferred.
 
 ## External-provider acceptance
 
@@ -55,7 +55,7 @@ A hard-coded success card, inert form, or fake counter is not functional. A simu
 
 | Wave | Outcome | Highest-value capabilities |
 |---|---|---|
-| 1. Windows product foundation | `PARTIAL`: pins, host-run API/UI, PostgreSQL-only Compose, persistence-aware startup, migration, deterministic seed, scoped repository, renewal GET, and atomic completion POST are `LOCAL-VERIFIED`; browser authority and broader mutations remain later units | `CAP-PLAT-*` |
+| 1. Windows product foundation | `PARTIAL`: the synthetic renewal graph is PostgreSQL-authoritative through completion/refetch across six surfaces; broader records and mutations remain browser-owned | `CAP-PLAT-*` |
 | 2. Shared record graph | Contacts, households, opportunities, tasks, appointments, policies, renewals, commissions, activities | `CAP-CRM-*`, `CAP-BIZ-001..003` |
 | 3. Deep core workspaces | Record detail, edit/delete, documents, forms, settings, search, analytics/audit | `CAP-CRM-*`, `CAP-BIZ-*`, `CAP-ADMIN-*` |
 | 4. Durable orchestration | Jobs/outbox, automation runs, campaigns/queues, notifications and failure/retry behavior | `CAP-AUTO-*`, `CAP-PLAT-*` |

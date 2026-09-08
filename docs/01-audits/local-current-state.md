@@ -10,10 +10,10 @@
 - Root uses a separate home screen; active non-root routes use `LiveParityRouter`.
 - Seven create-only flows persist one JSON object in browser `localStorage`.
 - Most external-service and advanced product surfaces are `MOCK`.
-- Fastify exposes health plus workspace-scoped renewal GET and task-completion POST routes. Seven GET-consuming views project one validated graph across six canonical surfaces: Home, linked contact detail, policy detail, Renewal Dashboard, Tasks, and Analytics Audit; policy list is auxiliary. No managed graph falls back to or enters legacy storage.
+- Fastify exposes health plus workspace-scoped renewal GET and task-completion POST routes. Tasks completes pending managed follow-ups and forces an authoritative GET before six canonical surfaces update; policy list is auxiliary. No managed graph falls back to or enters legacy storage.
 - The current lockfile passes full and production-only npm audits, with the Vinext bundled-parser caveat documented in [Current infrastructure](../04-infrastructure/current-infrastructure.md).
 - All 32 routes rendered at 1707×848 without blank/404/crash, document overflow, or console errors after settled waits.
-- The current Playwright suite contains 25 Chromium tests. Its isolated runner owns test PostgreSQL, API, web, migration/seed, readiness, and bounded cleanup; seven views consume the validated renewal GET while all unrelated browser records remain locally authoritative.
+- The current Playwright suite covers the validated renewal GET and durable completion/refetch while all unrelated browser records remain locally authoritative.
 
 ## Runtime architecture
 
@@ -77,11 +77,11 @@ Two application-level CRM routes are active in local mode: `GET /api/v1/workspac
 - `npm run dev` runs the persistence-aware PostgreSQL preflight and starts host-run Fastify plus Vinext/Vite on Windows; `dev:foundation` retains the health-only path.
 - `.openai/hosting.json` declares no D1 or R2 bindings.
 - Generated Wrangler configuration has no database, bucket, queue, service, or secret binding.
-- Missing: broader CRM mutations and browser API authority, CI, production deployment, environment example, backup/restore, rollback, and incident procedures. The renewal routes and local startup do not yet make PostgreSQL the browser product authority.
+- Missing: broader CRM mutations and browser API authority, CI, production deployment, environment example, backup/restore, rollback, and incident procedures. PostgreSQL is authoritative only for the bounded renewal workflow.
 
 ## Tests
 
-`tests/crm.spec.ts` contains 25 Playwright tests. Chromium defaults to 1440×900 on dedicated web port 4173 with screenshot/trace retention on failure. `npm run test:e2e` starts only the isolated PostgreSQL test project on 54330 and a test-only Fastify process on 4310, migrates/seeds before browser execution, rejects the development DSN, and cleans up owned processes and Compose resources. Coverage includes a real seeded GET through the relative web proxy; all six canonical renewal surfaces, exact linked IDs/counts, shared cache, loading/empty/error/retry, reload/storage separation, and no fallback; plus existing shell and responsive behavior.
+Chromium defaults to 1440×900 on dedicated web port 4173 with screenshot/trace retention on failure. `npm run test:e2e` starts only the isolated PostgreSQL test project on 54330 and a test-only Fastify process on 4310, migrates/seeds before browser execution, rejects the development DSN, and cleans up owned processes and Compose resources. Coverage includes exact completion/refetch, ambiguous POST retry, GET-only recovery after confirmed completion, six-surface consistency, storage clearing, reload, and a new browser context.
 
 Gaps: six other create flows, malformed storage, edit/delete, remaining CRM/domain API tests, accessibility, production authorization/tenancy, cross-browser, small mobile, performance, and visual-diff baselines. Foundation and renewal tests cover launcher, health, domain assembly, GET/completion contracts, concurrency/replay, and PostgreSQL persistence.
 
@@ -93,4 +93,4 @@ Do not use real data until the [Phase 2 gate](../03-roadmap/phase-2-local-produc
 
 ## Planning direction after this audit
 
-The evidence above remains current-state evidence. Phase 1 extends the Node.js 24/Fastify and Compose PostgreSQL foundation into a complete REST product/data plane for one synthetic workspace. Units 2A–4D now cover Prisma generation, migration, deterministic seed, scoped GET, atomic idempotent completion, persistence-aware startup, and six canonical managed read surfaces; Unit 5 still owns completion UI and refetch closure. External-provider edges may use explicit deterministic simulators with complete state machines, owned ports, contract tests, and persisted synthetic events. Phase 2 hosts and secures that product for limited real use and introduces selected lawful real providers.
+The evidence above remains current-state evidence. Units 2A–5 cover the bounded PostgreSQL renewal workflow through managed completion/refetch across six canonical surfaces. Broader Phase 1 records and mutations remain incomplete and browser-owned. External-provider edges may later use explicit deterministic simulators; Phase 2 hosts and secures the product only after its separate gate.

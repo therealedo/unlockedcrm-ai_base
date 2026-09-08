@@ -7,7 +7,9 @@ import {
   serializeLegacyCrmData,
 } from './legacy-crm-storage';
 import {
+  RENEWAL_TASK_COMPLETION_URL,
   RENEWAL_WORKFLOW_URL,
+  completeRenewalTask,
   fetchRenewalWorkflow,
   type RenewalWorkflowResponse,
 } from './renewal-workflow-client';
@@ -84,6 +86,34 @@ function graph(): RenewalWorkflowResponse {
         },
       },
     ],
+  };
+}
+
+function pendingGraph() {
+  const pending = graph();
+  pending.items[0].followUpTask = {
+    ...pending.items[0].followUpTask!,
+    status: 'pending',
+    version: 1,
+    completedAt: null,
+  };
+  return pending;
+}
+
+function completionBody() {
+  return {
+    task: {
+      id: ids.task,
+      renewalId: ids.renewal,
+      status: 'completed' as const,
+      version: 2,
+      completedAt: '2026-09-07T08:56:12.175Z',
+    },
+    renewal: { id: ids.renewal, status: 'open' as const },
+    completionAuditEvent: {
+      id: crypto.randomUUID(),
+      type: 'task.completed' as const,
+    },
   };
 }
 
@@ -183,6 +213,98 @@ describe('renewal workflow client', () => {
     });
     await expect(
       fetchRenewalWorkflow(new AbortController().signal, fetcher),
+    ).rejects.toMatchObject({ code: 'network', retryable: true });
+  });
+
+  it('posts the exact task-version command and accepts the bound completion', async () => {
+    const pending = pendingGraph();
+    const completion = completionBody();
+    const signal = new AbortController().signal;
+    const fetcher = vi.fn(
+      async () => new Response(JSON.stringify(completion), { status: 200 }),
+    );
+
+    await expect(
+      completeRenewalTask(pending.items[0], signal, fetcher),
+    ).resolves.toEqual(completion);
+    expect(fetcher).toHaveBeenCalledWith(
+      RENEWAL_TASK_COMPLETION_URL(ids.task),
+      {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ expectedTaskVersion: 1 }),
+        signal,
+      },
+    );
+  });
+
+  it.each([
+    [400, 'invalid-request', false],
+    [404, 'not-found', false],
+    [409, 'conflict', false],
+    [503, 'unavailable', true],
+  ] as const)(
+    'maps completion HTTP %i without changing the pending graph',
+    async (status, code, retryable) => {
+      const pending = pendingGraph();
+      await expect(
+        completeRenewalTask(
+          pending.items[0],
+          new AbortController().signal,
+          vi.fn(async () => new Response('{}', { status })),
+        ),
+      ).rejects.toMatchObject({ code, retryable });
+      expect(pending.items[0].followUpTask).toMatchObject({
+        status: 'pending',
+        version: 1,
+        completedAt: null,
+      });
+    },
+  );
+
+  it.each([
+    ['task identity', { task: { id: crypto.randomUUID() } }],
+    ['renewal relationship', { renewal: { id: crypto.randomUUID() } }],
+    ['task version', { task: { version: 3 } }],
+    ['completion timestamp', { task: { completedAt: 'not-an-iso-time' } }],
+    ['audit type', { completionAuditEvent: { type: 'renewal.created' } }],
+  ])('rejects a malformed completion %s', async (_name, replacement) => {
+    const pending = pendingGraph();
+    const valid = completionBody();
+    const replacementParts = replacement as {
+      task?: object;
+      renewal?: object;
+      completionAuditEvent?: object;
+    };
+    const body = {
+      ...valid,
+      ...replacement,
+      task: { ...valid.task, ...replacementParts.task },
+      renewal: { ...valid.renewal, ...replacementParts.renewal },
+      completionAuditEvent: {
+        ...valid.completionAuditEvent,
+        ...replacementParts.completionAuditEvent,
+      },
+    };
+    await expect(
+      completeRenewalTask(
+        pending.items[0],
+        new AbortController().signal,
+        vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })),
+      ),
+    ).rejects.toMatchObject({ code: 'invalid-response', retryable: true });
+  });
+
+  it('reports an ambiguous completion network failure as retryable', async () => {
+    const pending = pendingGraph();
+    await expect(
+      completeRenewalTask(
+        pending.items[0],
+        new AbortController().signal,
+        vi.fn(async () => {
+          throw new TypeError('connection reset');
+        }),
+      ),
     ).rejects.toMatchObject({ code: 'network', retryable: true });
   });
 });
