@@ -12,7 +12,7 @@ Legend: `LV` = `LIVE-VERIFIED`, `LO` = `LOCAL-VERIFIED`, `PV` = `PRIOR-VERIFIED`
 | `CAP-CRM-002` | `/dashboard` Dashboard | `PARTIAL` | `LO`,`LV` | Phase 1 | Match live widget hierarchy and cross-record metrics |
 | `CAP-AI-001` | `/unlocked-ai` | `MOCK` | `LO`,`LV` | Phase 1 complete simulated workflow; Phase 2 selected real provider/hardening | Nested shell/history/insights/permissions tests |
 | `CAP-CRM-003` | `/inbox` | `MOCK` | `LO`,`LV` | Phase 1 functional threads with simulated channels; Phase 2 selected real providers/hardening | Thread/dialog/channel synthetic interaction suite |
-| `CAP-CRM-004` | `/contacts` | `PARTIAL` | `LO`,`LV` | Phase 1 | PostgreSQL contact fields, tags, receipts, and bounded synthetic seeds exist as an unwired foundation; list/create UI remains browser-owned |
+| `CAP-CRM-004` | `/contacts` | `PARTIAL` | `LO`,`LV` | Phase 1 | Workspace-scoped PostgreSQL list/detail GETs are `LOCAL-VERIFIED`; browser list/create authority is unchanged and the create API remains inactive |
 | `CAP-CRM-005` | `/pipeline` | `PARTIAL` | `LO`,`LV` | Phase 1 | Existing detail, stage transitions, validation and history |
 | `CAP-CRM-006` | `/calendar` | `PARTIAL` | `LO`,`LV`,`G` | Phase 1 functional internal calendar + simulated sync; Phase 2 selected real provider/hardening | Connection/setup/error states and adapter contract |
 | `CAP-AI-002` | `/agent-ai` | `MOCK` | `LO`,`LV`,`G` | Phase 1 complete simulated voice workflow; Phase 2 selected real providers/hardening | Voice/phone/compliance step states without external calls |
@@ -61,8 +61,8 @@ Legend: `LV` = `LIVE-VERIFIED`, `LO` = `LOCAL-VERIFIED`, `PV` = `PRIOR-VERIFIED`
 | `CAP-CRM-102` | Inbox list tabs/search/filter/sort | `MOCK` | `LO`,`LV` | Phase 1 | Deterministic empty/populated list states |
 | `CAP-CRM-103` | Inbox selected thread and new-conversation dialog | `MOCK` | `LO`,`LV` | Phase 1 | Contact search, channel composer and draft states |
 | `CAP-CRM-104` | Contact list/subviews/filter/columns/pagination | `PARTIAL` | `LO`,`LV` | Phase 1 | All controls and responsive table tests |
-| `CAP-CRM-105` | Product-specific contact creation | `PARTIAL` | `LO`,`LV` | Phase 1 | Generic contact schema and safe synthetic seed coexistence are proven locally, but no generic contact API/UI is active; specialized ACA/Medicare/Life intake remains deferred |
-| `CAP-CRM-106` | Contact detail workspace and tabs | `MISSING` | `LV` | Phase 1 | Synthetic detail graph, actions, sections and tabs |
+| `CAP-CRM-105` | Product-specific contact creation | `PARTIAL` | `LO`,`LV` | Phase 1 | Generic contact schema, seeds, and read API are proven locally, but creation remains browser-owned and no create API is registered; specialized intake remains deferred |
+| `CAP-CRM-106` | Contact detail workspace and tabs | `PARTIAL` | `LO`,`LV` | Phase 1 | Exact workspace-scoped PostgreSQL detail GET exists; browser readers are not cut over and rich actions, sections, and tabs remain incomplete |
 | `CAP-CRM-107` | Connection score/DND/lead score | `MISSING` | `LV`,`I` | Phase 1 model; Phase 2 policy | Explainable synthetic score and preference tests |
 | `CAP-CRM-108` | Pipeline board/table/stages | `PARTIAL` | `LO`,`LV` | Phase 1 | Stage/action/history and table consistency |
 | `CAP-CRM-109` | Opportunity create/detail | `PARTIAL` | `LO`,`LV`,`G` | Phase 1 | Existing-detail recheck plus edit/validation tests |

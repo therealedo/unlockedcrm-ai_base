@@ -54,6 +54,14 @@ These routes are resolved from validated API links or a fixed navigation path an
 | `CAP-BIZ-106` | `/policies/renewals` | `RenewalDashboardScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Current graph counts/rows only; urgency, progress, and filters remain missing |
 | `CAP-BIZ-116` | `/analytics/audit` | `RenewalAuditScreen` | `PARTIAL` / `LOCAL-VERIFIED` | Renewal-only audit events; general analytics/audit store remains missing |
 
+## Contact API routes
+
+| Method and path | Local status | Boundary |
+|---|---|---|
+| `GET /api/v1/workspaces/:workspaceId/contacts` | `PARTIAL` / `LOCAL-VERIFIED` | Centralized workspace authorization; stable summary ordering; browser readers unchanged |
+| `GET /api/v1/workspaces/:workspaceId/contacts/:contactId` | `PARTIAL` / `LOCAL-VERIFIED` | Exact workspace-scoped detail; browser readers unchanged |
+| `POST /api/v1/workspaces/:workspaceId/contacts` | `MISSING` | Intentionally unregistered; production returns native 404 with no writes |
+
 ## Smoke evidence
 
 At 1707×848 every path rendered with title `unLocked CRM Local`, no page-not-found/crash, no document-level horizontal overflow, and no console warning/error after settled waits. This proves route availability, not business completeness or production safety.

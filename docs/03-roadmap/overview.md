@@ -12,7 +12,7 @@ The sequence is: **functional single-workspace product locally, secure hosted si
 
 ## Current position
 
-Phase 1 is in progress. The Vinext/Vite UI covers 32 paths/30 screens, and `npm run dev` starts Fastify plus Compose PostgreSQL. One synthetic renewal graph and task completion are durable across six canonical surfaces. An additive generic-contact database foundation now provides fields, tags, receipt storage, bounded synthetic seeds, and safe coexistence replay, but generic contact API/UI authority remains browser-owned. Most workflows are partial or mocked; workers, production identity, real provider integrations, and PWA remain absent.
+Phase 1 is in progress. The Vinext/Vite UI covers 32 paths/30 screens, and `npm run dev` starts Fastify plus Compose PostgreSQL. One synthetic renewal graph and task completion are durable across six canonical surfaces. The generic-contact foundation now exposes workspace-scoped PostgreSQL list/detail GETs locally, but browser readers and creation remain authoritative and POST stays unregistered. Most workflows are partial or mocked; workers, production identity, real provider integrations, and PWA remain absent.
 
 ## Phase 1 exit
 

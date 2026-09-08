@@ -2,6 +2,7 @@ import type { PrismaClient } from '../generated/prisma/client.js';
 import { createSyntheticRequestContext } from '../context/request-context.js';
 import { createPrismaClient } from '../database/prisma.js';
 import { PrismaRenewalRepository } from '../modules/renewals/prisma-renewal-repository.js';
+import { PrismaContactRepository } from '../modules/contacts/prisma-contact-repository.js';
 
 type PrismaClientFactory = (databaseUrl: string) => PrismaClient;
 
@@ -14,6 +15,7 @@ export async function createLocalPersistence(
   await client.$connect();
   return {
     client,
+    contacts: new PrismaContactRepository(client),
     renewals: new PrismaRenewalRepository(client),
     contextFactory: createSyntheticRequestContext,
     close() {
