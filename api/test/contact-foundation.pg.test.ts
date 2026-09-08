@@ -9,6 +9,16 @@ const withDatabase = <T>(
   work: Parameters<typeof withPostgresTestDatabase<T>>[1],
 ) => withPostgresTestDatabase(process.env.DATABASE_URL, work);
 
+function deferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
 async function clearDatabase(client: PrismaClient) {
   await client.$executeRawUnsafe(
     'TRUNCATE contact_create_receipts, contact_tags, audit_events, follow_up_tasks, renewals, policies, contacts, workspaces CASCADE',
@@ -220,7 +230,8 @@ it('rejects protected cross-links and keeps contact events append-only', async (
 
 it('owns one Prisma lifecycle while preserving renewal plugin compatibility', async () => {
   const connect = vi.fn(async () => undefined);
-  const disconnect = vi.fn(async () => undefined);
+  const disconnectGate = deferred<void>();
+  const disconnect = vi.fn(() => disconnectGate.promise);
   const client = {
     $connect: connect,
     $disconnect: disconnect,
@@ -235,7 +246,48 @@ it('owns one Prisma lifecycle while preserving renewal plugin compatibility', as
   expect(persistence.contextFactory().workspaceId).toBe(
     SYNTHETIC_RENEWAL.workspaceId,
   );
-  await persistence.close();
-  await persistence.close();
+
+  const firstClose = persistence.close();
+  const secondClose = persistence.close();
+  let secondSettled = false;
+  void secondClose.then(() => {
+    secondSettled = true;
+  });
+  await Promise.resolve();
+
+  expect(secondSettled).toBe(false);
+  expect(disconnect).toHaveBeenCalledTimes(1);
+
+  disconnectGate.resolve();
+  await expect(Promise.all([firstClose, secondClose])).resolves.toEqual([
+    undefined,
+    undefined,
+  ]);
+  await expect(persistence.close()).resolves.toBeUndefined();
+  expect(disconnect).toHaveBeenCalledTimes(1);
+});
+
+it('shares a rejected disconnect across concurrent and later close callers', async () => {
+  const disconnectGate = deferred<void>();
+  const disconnect = vi.fn(() => disconnectGate.promise);
+  const client = {
+    $connect: vi.fn(async () => undefined),
+    $disconnect: disconnect,
+  } as unknown as PrismaClient;
+  const persistence = await createLocalPersistence(
+    'synthetic-test',
+    () => client,
+  );
+  const disconnectError = new Error('synthetic disconnect failed');
+
+  const firstClose = persistence.close();
+  const secondClose = persistence.close();
+  disconnectGate.reject(disconnectError);
+
+  expect(await Promise.allSettled([firstClose, secondClose])).toEqual([
+    { status: 'rejected', reason: disconnectError },
+    { status: 'rejected', reason: disconnectError },
+  ]);
+  await expect(persistence.close()).rejects.toBe(disconnectError);
   expect(disconnect).toHaveBeenCalledTimes(1);
 });

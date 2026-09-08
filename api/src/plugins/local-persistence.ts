@@ -10,16 +10,15 @@ export async function createLocalPersistence(
   createClient: PrismaClientFactory = createPrismaClient,
 ) {
   const client = createClient(databaseUrl);
-  let closed = false;
+  let closePromise: Promise<void> | undefined;
   await client.$connect();
   return {
     client,
     renewals: new PrismaRenewalRepository(client),
     contextFactory: createSyntheticRequestContext,
-    async close() {
-      if (closed) return;
-      closed = true;
-      await client.$disconnect();
+    close() {
+      closePromise ??= client.$disconnect();
+      return closePromise;
     },
   };
 }
