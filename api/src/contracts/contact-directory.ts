@@ -26,3 +26,15 @@ export interface ContactSummary {
 export interface ContactDetail extends ContactSummary {
   notes: string | null;
 }
+
+export interface ContactCreateResponse {
+  schemaVersion: typeof CONTACT_SCHEMA_VERSION;
+  workspaceId: string;
+  correlationId: string;
+  contact: ContactDetail;
+  contactCreatedEvent: {
+    id: string;
+    type: 'contact.created';
+    occurredAt: string;
+  };
+}
