@@ -25,6 +25,24 @@ async function clearDatabase(client: PrismaClient) {
   );
 }
 
+async function snapshotContactPersistence(client: PrismaClient) {
+  const [contacts, tags, auditEvents, createReceipts] = await Promise.all([
+    client.contact.findMany({ orderBy: { id: 'asc' } }),
+    client.contactTag.findMany({
+      orderBy: [
+        { workspaceId: 'asc' },
+        { contactId: 'asc' },
+        { tagCode: 'asc' },
+      ],
+    }),
+    client.auditEvent.findMany({ orderBy: { id: 'asc' } }),
+    client.contactCreateReceipt.findMany({
+      orderBy: [{ workspaceId: 'asc' }, { idempotencyKey: 'asc' }],
+    }),
+  ]);
+  return { contacts, tags, auditEvents, createReceipts };
+}
+
 it('backfills Avery and seeds collision-checked ORIGINAL contacts without receipts', async () => {
   await withDatabase(async (client) => {
     await clearDatabase(client);
@@ -130,6 +148,14 @@ it('preserves ordinary contacts and events while rejecting auxiliary collisions 
         occurredAt: new Date('2026-09-08T12:00:00.000Z'),
       },
     });
+    await client.contactCreateReceipt.create({
+      data: {
+        workspaceId: SYNTHETIC_RENEWAL.workspaceId,
+        idempotencyKey: 'collision-proof-001',
+        payloadHash: 'sha256:synthetic-collision-proof',
+        responseBody: { fixture: 'collision-preservation' },
+      },
+    });
     await expect(seedSyntheticRenewalGraph(client)).resolves.toBeUndefined();
     expect(
       await client.contact.findUnique({ where: { id: ordinaryId } }),
@@ -139,12 +165,13 @@ it('preserves ordinary contacts and events while rejecting auxiliary collisions 
       where: { id: '20000000-0000-4000-8000-000000000002' },
       data: { email: 'collision@example.com' },
     });
-    const before = await Promise.all([
+    const beforeCounts = await Promise.all([
       client.contact.count(),
       client.contactTag.count(),
       client.auditEvent.count(),
       client.contactCreateReceipt.count(),
     ]);
+    const beforeContents = await snapshotContactPersistence(client);
     await expect(seedSyntheticRenewalGraph(client)).rejects.toThrow(
       'Synthetic renewal seed drift',
     );
@@ -155,7 +182,8 @@ it('preserves ordinary contacts and events while rejecting auxiliary collisions 
         client.auditEvent.count(),
         client.contactCreateReceipt.count(),
       ]),
-    ).toEqual(before);
+    ).toEqual(beforeCounts);
+    expect(await snapshotContactPersistence(client)).toEqual(beforeContents);
     expect(
       await client.contact.findUnique({
         where: { id: '20000000-0000-4000-8000-000000000002' },
