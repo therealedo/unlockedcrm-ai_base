@@ -4,7 +4,7 @@ import type { ContactRepository } from './repository.js';
 import { findContact, listContacts } from './service.js';
 
 const UUID =
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 const errors = {
   workspace: [400, 'INVALID_WORKSPACE_ID', 'Workspace ID must be a UUID.'],
   contactId: [400, 'INVALID_CONTACT_ID', 'Contact ID must be a UUID.'],

@@ -64,17 +64,21 @@ export class PrismaContactRepository implements ContactRepository {
       include: { tags: true },
     });
     return contacts.map(detail).sort((left, right) => {
-      const a = [
+      const leftKeys = [
         left.lastName.toLowerCase(),
         left.firstName.toLowerCase(),
         left.id,
       ];
-      const b = [
+      const rightKeys = [
         right.lastName.toLowerCase(),
         right.firstName.toLowerCase(),
         right.id,
       ];
-      return a < b ? -1 : a > b ? 1 : 0;
+      for (let index = 0; index < leftKeys.length; index += 1) {
+        if (leftKeys[index]! < rightKeys[index]!) return -1;
+        if (leftKeys[index]! > rightKeys[index]!) return 1;
+      }
+      return 0;
     });
   }
   async find(workspaceId: string, contactId: string) {

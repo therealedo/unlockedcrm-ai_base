@@ -5,6 +5,11 @@ import type { ContactRepository } from '../src/modules/contacts/repository.js';
 const workspaceId = '10000000-0000-4000-8000-000000000001';
 const otherWorkspaceId = '10000000-0000-4000-8000-000000000099';
 const contactId = '20000000-0000-4000-8000-000000000001';
+const validModernContactIds = [
+  '20000000-0000-6000-8000-000000000001',
+  '20000000-0000-7000-8000-000000000001',
+  '20000000-0000-8000-8000-000000000001',
+];
 const context = {
   workspaceId,
   actorId: '70000000-0000-4000-8000-000000000001',
@@ -36,6 +41,9 @@ it('rejects invalid, unauthorized, and stale read paths without repository discl
     for (const path of [
       `/api/v1/workspaces/${workspaceId}/contacts/not-a-uuid`,
       `/api/v1/workspaces/${workspaceId}/contacts/%00`,
+      `/api/v1/workspaces/${workspaceId}/contacts/20000000-0000-0000-8000-000000000001`,
+      `/api/v1/workspaces/${workspaceId}/contacts/20000000-0000-9000-8000-000000000001`,
+      `/api/v1/workspaces/${workspaceId}/contacts/20000000-0000-7000-7000-000000000001`,
     ]) {
       const invalidContact = await app.inject(path);
       expect(invalidContact.statusCode).toBe(400);
@@ -60,6 +68,41 @@ it('rejects invalid, unauthorized, and stale read paths without repository discl
       },
     });
     expect(calls).toBe(0);
+  } finally {
+    await app.close();
+  }
+});
+
+it('accepts RFC 9562 UUID versions before authorized repository lookup', async () => {
+  const lookedUp: string[] = [];
+  const modernWorkspaceId = '10000000-0000-7000-8000-000000000001';
+  const repository: ContactRepository = {
+    workspaceExists: async () => true,
+    list: async () => [],
+    find: async (_workspaceId, id) => {
+      lookedUp.push(id);
+      return null;
+    },
+  };
+  const app = await buildApp({
+    contacts: {
+      repository,
+      contextFactory: () => ({ ...context, workspaceId: modernWorkspaceId }),
+    },
+  });
+  try {
+    const list = await app.inject(
+      `/api/v1/workspaces/${modernWorkspaceId}/contacts`,
+    );
+    expect(list.statusCode).toBe(200);
+    for (const id of validModernContactIds) {
+      const response = await app.inject(
+        `/api/v1/workspaces/${modernWorkspaceId}/contacts/${id}`,
+      );
+      expect(response.statusCode).toBe(404);
+      expect(response.json().error.code).toBe('CONTACT_NOT_FOUND');
+    }
+    expect(lookedUp).toEqual(validModernContactIds);
   } finally {
     await app.close();
   }

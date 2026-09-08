@@ -31,14 +31,18 @@ it('serves ordered summaries and details while production POST remains dormant',
     });
     await client.contact.createMany({
       data: [
-        '20000000-0000-4000-8000-000000000004',
-        '20000000-0000-4000-8000-000000000005',
-      ].map((id, index) => ({
-        id,
+        ['20000000-0000-4000-8000-000000000004', 'case', 'alpha'],
+        ['20000000-0000-4000-8000-000000000005', 'Case', 'ALPHA'],
+        ['20000000-0000-4000-8000-000000000006', 'Zed', 'A'],
+        ['20000000-0000-4000-8000-000000000007', 'Alpha', 'A!'],
+        ['20000000-0000-4000-8000-000000000009', 'Same', 'Tie'],
+        ['20000000-0000-4000-8000-000000000008', 'Same', 'Tie'],
+      ].map(([id, firstName, lastName]) => ({
+        id: id!,
         workspaceId: SYNTHETIC_RENEWAL.workspaceId,
-        firstName: index ? 'Case' : 'case',
-        lastName: index ? 'ALPHA' : 'alpha',
-        displayName: 'Synthetic Case',
+        firstName: firstName!,
+        lastName: lastName!,
+        displayName: `Synthetic ${firstName}`,
       })),
     });
     const dependencies = {
@@ -55,13 +59,17 @@ it('serves ordered summaries and details while production POST remains dormant',
         correlationId: expect.any(String),
       });
       expect(list.json().items.map((item: { id: string }) => item.id)).toEqual([
+        '20000000-0000-4000-8000-000000000006',
+        '20000000-0000-4000-8000-000000000007',
         '20000000-0000-4000-8000-000000000004',
         '20000000-0000-4000-8000-000000000005',
         SYNTHETIC_RENEWAL.contactId,
         '20000000-0000-4000-8000-000000000003',
         '20000000-0000-4000-8000-000000000002',
+        '20000000-0000-4000-8000-000000000008',
+        '20000000-0000-4000-8000-000000000009',
       ]);
-      expect(list.json().items[4]).toMatchObject({
+      expect(list.json().items[6]).toMatchObject({
         firstName: 'Mara',
         birthDate: '1956-04-12',
         gender: 'female',
