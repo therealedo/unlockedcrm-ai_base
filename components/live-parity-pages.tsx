@@ -31,7 +31,10 @@ import {
 import { type CSSProperties, type ReactNode, useState } from 'react';
 
 import { type CrmData, PIPELINE_STAGES, currency } from '@/lib/crm-data';
-import type { RenewalWorkflowState } from '@/hooks/use-renewal-workflow';
+import type {
+  RenewalCompletionState,
+  RenewalWorkflowState,
+} from '@/hooks/use-renewal-workflow';
 import { matchRenewalRoute } from '@/lib/crm-route';
 import type { RenewalWorkflowItem } from '@/lib/renewal-workflow-client';
 import {
@@ -48,6 +51,10 @@ type ParityRouterProps = {
   data: CrmData;
   renewalWorkflow: {
     state: RenewalWorkflowState;
+    completion: RenewalCompletionState;
+    completeTask: (item: RenewalWorkflowItem) => void;
+    retryCompletion: () => void;
+    retryCompletionRefresh: () => void;
     retry: () => void;
   };
   navigate: (path: string) => void;
@@ -1088,20 +1095,41 @@ function TasksScreen({
                   <th>Follow-up</th>
                   <th>Status</th>
                   <th>Renewal</th>
+                  <th>Renewal status</th>
                   <th>Due</th>
+                  <th>Action</th>
                 </tr>
               </thead>
               <tbody>
                 {managedFollowUps.map((item) => (
                   <tr key={item.followUpTask.id}>
                     <td>{item.followUpTask.title}</td>
-                    <td>{item.followUpTask.status}</td>
+                    <td>{followUpEvidence(item)}</td>
                     <td>{item.renewal.displayLabel}</td>
+                    <td>{item.renewal.status}</td>
                     <td>{item.followUpTask.dueAt}</td>
+                    <td>
+                      {item.followUpTask.status === 'pending' && (
+                        <ActionButton
+                          disabled={
+                            'taskId' in workflow.completion &&
+                            workflow.completion.taskId ===
+                              item.followUpTask.id &&
+                            ['submitting', 'refreshing'].includes(
+                              workflow.completion.status,
+                            )
+                          }
+                          onClick={() => workflow.completeTask(item)}
+                        >
+                          Mark as Done
+                        </ActionButton>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+            <CompletionState workflow={workflow} />
             <ManagedRenewalLinks
               links={workflow.state.graph.items[0].links}
               navigate={navigate}
@@ -1198,6 +1226,56 @@ function TasksScreen({
       )}
     </div>
   );
+}
+
+function CompletionState({
+  workflow,
+}: {
+  workflow: ParityRouterProps['renewalWorkflow'];
+}) {
+  if (workflow.completion.status === 'submitting')
+    return <p>Submitting task completion…</p>;
+  if (workflow.completion.status === 'refreshing')
+    return <p>Refreshing authoritative task state…</p>;
+  if (workflow.completion.status === 'ambiguous')
+    return (
+      <div role="alert">
+        <p>Completion could not be confirmed.</p>
+        <p>The task still shows its last confirmed pending state.</p>
+        <ActionButton onClick={workflow.retryCompletion}>
+          Retry Mark as Done
+        </ActionButton>
+      </div>
+    );
+  if (workflow.completion.status === 'failed')
+    return (
+      <div role="alert">
+        <p>Task completion was rejected. Refresh the server-managed state.</p>
+        <ActionButton onClick={workflow.retry}>
+          Retry server-managed renewals
+        </ActionButton>
+      </div>
+    );
+  if (workflow.completion.status === 'refresh-error')
+    return (
+      <div role="alert">
+        <p>
+          Completion succeeded, but the refreshed state could not be loaded.
+        </p>
+        <ActionButton onClick={workflow.retryCompletionRefresh}>
+          Retry completion refresh
+        </ActionButton>
+      </div>
+    );
+  return null;
+}
+
+function followUpEvidence(item: RenewalWorkflowItem) {
+  const status = item.followUpTask?.status ?? 'none';
+  const audit = item.auditEvents.find(
+    (event) => event.type === 'task.completed',
+  );
+  return `${status} · ${audit?.type ?? 'none'}`;
 }
 
 function CalendarScreen({
@@ -1447,7 +1525,7 @@ function ManagedContactScreen({
     ['Renewal', contact.renewal.displayLabel],
     ['Renewal date', contact.policy.renewalDate],
     ['Renewal status', contact.renewal.status],
-    ['Follow-up status', contact.followUpTask?.status ?? 'none'],
+    ['Follow-up status', followUpEvidence(contact)],
   ];
   return (
     <div className="lp-page lp-business-page">
@@ -1499,7 +1577,7 @@ function ManagedPolicyScreen({
     ['Renewal date', item.policy.renewalDate],
     ['Renewal status', item.renewal.status],
     ['Follow-up task', item.followUpTask?.title ?? 'none'],
-    ['Follow-up status', item.followUpTask?.status ?? 'none'],
+    ['Follow-up status', followUpEvidence(item)],
   ];
   return (
     <div className="lp-page lp-business-page">
@@ -1639,7 +1717,7 @@ function RenewalDashboardScreen({
                         </td>
                         <td>{item.renewal.displayLabel}</td>
                         <td>{item.renewal.status}</td>
-                        <td>{item.followUpTask?.status ?? 'none'}</td>
+                        <td>{followUpEvidence(item)}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -2208,6 +2286,7 @@ function RenewalAuditScreen({
                   <tr>
                     <th>Event</th>
                     <th>Renewal</th>
+                    <th>Renewal status</th>
                     <th>Occurred</th>
                     <th>Record ID</th>
                   </tr>
@@ -2217,6 +2296,7 @@ function RenewalAuditScreen({
                     <tr key={auditEvent.id}>
                       <td>{auditEvent.type}</td>
                       <td>{renewal.displayLabel}</td>
+                      <td>{renewal.status}</td>
                       <td>{auditEvent.occurredAt}</td>
                       <td>{auditEvent.recordId}</td>
                     </tr>

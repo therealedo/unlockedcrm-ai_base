@@ -26,7 +26,7 @@ The top-level local registry remains **32 paths and 30 effective screens**. `/un
 | 14 | `CAP-AUTO-003` | `/forms` | `FormsScreen` | `MOCK` | No hosted forms or response store |
 | 15 | `CAP-BIZ-001` | `/policies` | `PoliciesScreen` | `PARTIAL` | Table/create/local persistence; no detail/carrier integration |
 | 16 | `CAP-BIZ-002` | `/commissions` | `CommissionsScreen` | `PARTIAL` | Table/create/local persistence; no ingestion/reconciliation |
-| 17 | `CAP-CRM-007` | `/tasks` | `TasksScreen` | `PARTIAL` | Managed renewal follow-ups plus separate local board/list/create; no managed completion UI |
+| 17 | `CAP-CRM-007` | `/tasks` | `TasksScreen` | `PARTIAL` | Managed renewal completion/refetch plus separate local board/list/create |
 | 18 | `CAP-BIZ-003` | `/booking-links` | `BookingLinksScreen` | `PARTIAL` | Local create/list; no public endpoint/calendar sync |
 | 19 | `CAP-BIZ-004` | `/analytics` | `AnalyticsScreen` | `PARTIAL` | Local/hard-coded metrics; no event/query layer |
 | 20 | `CAP-BIZ-005` | `/documents` | `DocumentsScreen` | `MOCK` | No file storage/lifecycle |
