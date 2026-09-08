@@ -725,13 +725,14 @@ test('shows loading, empty, authority error, retry, and unknown-contact states w
   page,
 }) => {
   let attempt = 0;
+  const failure = Promise.withResolvers<void>();
   const pattern = `**/api/v1/workspaces/${workspaceId}/renewals`;
   const failTwice = async (route: Route) => {
     attempt += 1;
     if (attempt === 1)
       return route.fulfill({ status: 404, json: { error: {} } });
     if (attempt > 2) return route.fallback();
-    await new Promise((resolve) => setTimeout(resolve, 350));
+    await failure.promise;
     await route.fulfill({ status: 503, json: { error: {} } });
   };
   await page.route(pattern, failTwice);
@@ -743,6 +744,7 @@ test('shows loading, empty, authority error, retry, and unknown-contact states w
   await expect(
     page.getByText('Loading server-managed renewals…'),
   ).toBeVisible();
+  failure.resolve();
   await expect(page.getByRole('alert')).toContainText('could not be loaded');
   await expect(page.getByText('Synthetic Term Policy')).toHaveCount(0);
   await page
@@ -1436,6 +1438,52 @@ test('supports navigation personalization and global search', async ({
   await expect(
     page.getByText('Policies', { exact: true }).first(),
   ).toBeVisible();
+});
+
+test('Unit 5 rejects a discarded route target', async ({ page }) => {
+  const response = Promise.withResolvers<void>();
+  const graph = renewalBody([managedRenewalItem({ taskStatus: 'pending' })]);
+  await page.goto('/settings');
+  await page.route(renewalReadPattern, async (route) => {
+    await response.promise;
+    await route.fulfill({ status: 200, json: graph });
+  });
+
+  await page.evaluate(async () => {
+    const load = (path: string) => import(path);
+    const deps = '/node_modules/.vite/deps/';
+    const { default: React } = await load(`${deps}react.js`);
+    const { createRoot } = (await load(`${deps}react-dom_client.js`)).default;
+    const { useRenewalWorkflow } = await load('/hooks/use-renewal-workflow.ts');
+    const suspended = {
+      // oxlint-disable-next-line unicorn/no-thenable -- React suspension requires a thenable.
+      then() {
+        document.documentElement.dataset.suspended = 'true';
+      },
+    };
+    function Probe() {
+      const [route, setRoute] = React.useState('/tasks');
+      const workflow = useRenewalWorkflow(route);
+      if (route === '/contacts/x') throw suspended;
+      return React.createElement(
+        'button',
+        {
+          id: 'renewal-route-probe',
+          onClick: () => React.startTransition(() => setRoute('/contacts/x')),
+        },
+        `${route}:${workflow.state.status}`,
+      );
+    }
+    const host = document.body.appendChild(document.createElement('div'));
+    const probe = React.createElement(Probe);
+    createRoot(host).render(React.createElement(React.Suspense, null, probe));
+  });
+  const probe = page.locator('#renewal-route-probe');
+  await expect(probe).toHaveText('/tasks:loading');
+  await probe.click();
+  await expect(page.locator('html')).toHaveAttribute('data-suspended', 'true');
+  response.resolve();
+  await expect(probe).toHaveText('/tasks:ready');
 });
 
 test('Unit 5 persists one completion across storage clear, reload, and a new context', async ({

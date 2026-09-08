@@ -1,7 +1,7 @@
 'use client';
 /* oxlint-disable react/react-compiler, react-hooks/exhaustive-deps -- route changes intentionally drive this external fetch state machine */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import { matchRenewalRoute } from '@/lib/crm-route';
 import {
@@ -37,7 +37,9 @@ export function useRenewalWorkflow(route: string, enabled = true) {
   const completionAttempt = useRef(0);
   const target = matchRenewalRoute(route);
   const targetRef = useRef(target);
-  targetRef.current = target;
+  useLayoutEffect(() => {
+    targetRef.current = target;
+  }, [route]);
 
   const project = (graph: RenewalWorkflowResponse) => {
     const currentTarget = targetRef.current;
