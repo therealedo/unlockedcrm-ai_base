@@ -60,7 +60,7 @@ When a prior decision conflicts with `PLAN-2026-09-02`, the current governance a
 | `compose.yaml`; `api/src/{app,config,server}.ts`; `api/test/*`; `scripts/orchestrate.{mjs,test.ts}` | Foundation plus persistence-aware Windows startup, health/read API, canonical launcher/cleanup, and local verification evidence (`LOCAL-VERIFIED`) |
 | `api/prisma/{schema.prisma,seed.ts,migrations/*}`; `api/src/{modules/renewals,plugins}/*`; `api/test/{domain,repository.pg,contact-foundation.pg}.test.ts` | Renewal persistence plus the additive generic-contact schema, safe fixed-subgraph classifier, bounded seeds, shared Prisma lifecycle, and immutable audit evidence (`LOCAL-VERIFIED`) |
 
-These paths prove current implementation only. The renewal graph, generic-contact foundation/read API, and pure create normalization/hash contract are `LOCAL-VERIFIED`; durable create persistence and POST/UI activation remain inactive. Broader mutations, workers, hosted deployment, real adapters, and PWA remain planned or missing.
+These paths prove current implementation only. The renewal graph, generic-contact foundation/read API, and dormant atomic create/receipt persistence boundary are `LOCAL-VERIFIED`; production POST registration and UI activation remain inactive. Broader mutations, workers, hosted deployment, real adapters, and PWA remain planned or missing.
 
 ## Official external references
 
