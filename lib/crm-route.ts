@@ -7,6 +7,13 @@ export type RenewalRoute =
   | { kind: 'contact'; contactId: string | null }
   | { kind: 'policy'; policyId: string | null };
 
+export type ContactDirectoryRoute =
+  | { kind: 'collection' }
+  | { kind: 'detail'; contactId: string };
+
+const uuid =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
 function decodedSegment(value: string) {
   try {
     return decodeURIComponent(value);
@@ -27,4 +34,16 @@ export function matchRenewalRoute(path: string): RenewalRoute | null {
   const policy = /^\/policies\/([^/]+)$/.exec(path);
   if (policy) return { kind: 'policy', policyId: decodedSegment(policy[1]) };
   return null;
+}
+
+export function matchContactDirectoryRoute(
+  path: string,
+): ContactDirectoryRoute | null {
+  if (path === '/contacts') return { kind: 'collection' };
+  const match = /^\/contacts\/([^/]+)$/.exec(path);
+  if (!match) return null;
+  const contactId = decodedSegment(match[1]);
+  return contactId && uuid.test(contactId)
+    ? { kind: 'detail', contactId }
+    : null;
 }

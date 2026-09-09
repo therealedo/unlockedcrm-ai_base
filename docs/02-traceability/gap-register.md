@@ -20,7 +20,7 @@ This register assigns missing work to a phase without changing current implement
 
 | Gap ID | Priority | Capability | Current status/evidence | Target ownership | Exit proof |
 |---|---|---|---|---|---|
-| `GAP-CRM-001` | `P1` | Contact and household graph | Generic creation remains browser-owned `PARTIAL`; additive schema/seeds and exact PostgreSQL list/detail GET routes are `LOCAL-VERIFIED`, but browser readers are not cut over and POST stays unregistered | Phase 1 | Cut readers over before activating create, then add edit/archive, relationships, history, and cross-module reload proof |
+| `GAP-CRM-001` | `P1` | Contact and household graph | Generic creation remains browser-owned `PARTIAL`; PostgreSQL GETs and dormant validated browser read helpers are `LOCAL-VERIFIED`, but browser readers are not cut over and POST stays unregistered | Phase 1 | Cut readers over before activating create, then add edit/archive, relationships, history, and cross-module reload proof |
 | `GAP-CRM-002` | `P1` | Pipeline, tasks, appointments | Local create and renewal-only managed completion are `PARTIAL`, `LOCAL-VERIFIED` | Phase 1 | Complete lifecycle, ownership, comments, reschedule/cancel, and activity events |
 | `GAP-CRM-003` | `P1` | Policies, renewals, dashboards, analytics | Six canonical surfaces and managed completion/refetch are `PARTIAL`, `LOCAL-VERIFIED`; full policy/renewal workflows remain missing | Phase 1 | Broaden workflows without inventing provider facts |
 | `GAP-CRM-004` | `P1` | Inbox and conversations | `MOCK`; live two-pane model verified | Phase 1 workflow plus simulated provider; Phase 2 real delivery | Persistent threads/messages, compose/reply/failure/retry states, provider correlations, events, and explicit simulated status |
