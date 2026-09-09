@@ -6,7 +6,27 @@ import {
   type ContactGender,
   type ContactTagCode,
 } from '../../contracts/contact-directory.js';
-import type { ContactRepository } from './repository.js';
+import type {
+  ContactCreateRepository,
+  ContactRepository,
+  CreateContactCommand,
+} from './repository.js';
+
+const PROVENANCE_ID = '91000000-0000-4000-8000-000000000001';
+const SOURCE_VERSION = 'contact-intake.v1';
+const SOURCE_HASH =
+  'sha256:127f6e0f17ecb9bb46e0dc927b9f984985d8547461610d0670ef654653bca103';
+const isReceiptCollision = (error: unknown) => {
+  if (!error || typeof error !== 'object' || !('code' in error)) return false;
+  const meta = 'meta' in error ? error.meta : null;
+  return (
+    error.code === 'P2002' &&
+    !!meta &&
+    typeof meta === 'object' &&
+    'modelName' in meta &&
+    meta.modelName === 'ContactCreateReceipt'
+  );
+};
 
 const detail = (contact: {
   id: string;
@@ -48,7 +68,9 @@ const detail = (contact: {
   };
 };
 
-export class PrismaContactRepository implements ContactRepository {
+export class PrismaContactRepository
+  implements ContactRepository, ContactCreateRepository
+{
   constructor(private readonly client: PrismaClient) {}
   async workspaceExists(workspaceId: string) {
     return Boolean(
@@ -87,5 +109,75 @@ export class PrismaContactRepository implements ContactRepository {
       include: { tags: true },
     });
     return contact ? detail(contact) : null;
+  }
+  async findReceipt(workspaceId: string, idempotencyKey: string) {
+    return this.client.contactCreateReceipt.findUnique({
+      where: { workspaceId_idempotencyKey: { workspaceId, idempotencyKey } },
+      select: { payloadHash: true, responseBody: true },
+    });
+  }
+  async create(command: CreateContactCommand) {
+    try {
+      await this.client.$transaction(async (tx) => {
+        const { input } = command;
+        await tx.contact.create({
+          data: {
+            id: command.contactId,
+            workspaceId: command.workspaceId,
+            firstName: input.firstName,
+            lastName: input.lastName,
+            displayName: `${input.firstName} ${input.lastName}`,
+            email: input.email,
+            phone: input.phone,
+            birthDate: input.birthDate
+              ? new Date(`${input.birthDate}T00:00:00.000Z`)
+              : null,
+            gender: input.gender,
+            notes: input.notes,
+            createdAt: command.occurredAt,
+            tags: {
+              create: input.tags.map((tagCode) => ({
+                tagCode,
+                createdAt: command.occurredAt,
+              })),
+            },
+          },
+        });
+        await tx.auditEvent.create({
+          data: {
+            id: command.eventId,
+            workspaceId: command.workspaceId,
+            actorId: command.actorId,
+            eventType: 'contact.created',
+            recordId: command.contactId,
+            correlationId: command.responseBody.correlationId,
+            provenanceId: PROVENANCE_ID,
+            sourceVersion: SOURCE_VERSION,
+            sourceHash: SOURCE_HASH,
+            occurredAt: command.occurredAt,
+            createdAt: command.occurredAt,
+          },
+        });
+        await tx.contactCreateReceipt.create({
+          data: {
+            workspaceId: command.workspaceId,
+            idempotencyKey: command.idempotencyKey,
+            payloadHash: command.payloadHash,
+            responseBody: JSON.parse(JSON.stringify(command.responseBody)),
+            createdAt: command.occurredAt,
+          },
+        });
+      });
+      return { kind: 'created' as const };
+    } catch (error) {
+      if (!isReceiptCollision(error)) throw error;
+      return {
+        kind: 'collision' as const,
+        receipt: await this.findReceipt(
+          command.workspaceId,
+          command.idempotencyKey,
+        ),
+      };
+    }
   }
 }
