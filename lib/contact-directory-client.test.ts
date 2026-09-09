@@ -4,6 +4,7 @@ import {
   CONTACT_DIRECTORY_URL,
   contactDirectoryDetailUrl,
   createHttpContactDirectoryClient,
+  type ContactDirectoryCreateInput,
   type ContactDirectorySummary,
 } from './contact-directory-client';
 import {
@@ -13,11 +14,16 @@ import {
   selectContactOptions,
 } from './contact-directory-selectors';
 import { matchContactDirectoryRoute, matchRenewalRoute } from './crm-route';
+import {
+  captureLegacyCrmArchive,
+  serializeCrmDataWithLegacyArchive,
+} from './legacy-crm-storage';
 
 const ids = {
   workspace: '10000000-0000-4000-8000-000000000001',
   avery: '20000000-0000-4000-8000-000000000001',
   mara: '20000000-0000-4000-8000-000000000002',
+  event: '60000000-0000-4000-8000-000000000002',
   correlation: '80000000-0000-4000-8000-000000000002',
 } as const;
 const contact = (
@@ -60,8 +66,19 @@ const detail = () => ({
   correlationId: ids.correlation,
   contact: { ...contact(), notes: 'Synthetic note.' },
 });
-const json = (value: unknown, status = 200) =>
-  new Response(JSON.stringify(value), { status });
+const created = () => ({
+  ...detail(),
+  contactCreatedEvent: {
+    id: ids.event,
+    type: 'contact.created' as const,
+    occurredAt: '2026-09-08T12:00:00.000Z',
+  },
+});
+const json = (value: unknown, status = 200, replayed?: string) =>
+  new Response(JSON.stringify(value), {
+    status,
+    headers: replayed ? { 'Idempotency-Replayed': replayed } : undefined,
+  });
 const jsonFailure = (error: unknown) => {
   const response = new Response(null, { status: 200 });
   response.json = vi.fn(async () => {
@@ -80,6 +97,13 @@ type MutableContact = Record<string, unknown> & {
   tags: unknown;
 };
 type Mutable = Record<string, unknown> & { items: MutableContact[] };
+type MutableCreate = Record<string, unknown> & {
+  contactCreatedEvent: Record<string, unknown> & {
+    id: unknown;
+    type: unknown;
+    occurredAt: unknown;
+  };
+};
 type Operation = 'list' | 'find';
 
 const request = (
@@ -91,6 +115,16 @@ const request = (
     : client.find(ids.avery, signal());
 const errorBody = (code: string, message: string) => ({
   error: { code, message, correlationId: ids.correlation },
+});
+const createInput = (): ContactDirectoryCreateInput => ({
+  firstName: 'Avery',
+  lastName: 'Harbor',
+  email: 'avery.harbor@example.com',
+  phone: null,
+  birthDate: '1980-02-29',
+  gender: 'prefer_not_to_say',
+  notes: 'Synthetic note.',
+  tags: ['follow_up', 'client'],
 });
 
 describe('contact directory client', () => {
@@ -117,6 +151,54 @@ describe('contact directory client', () => {
     expect(contactDirectoryDetailUrl('a/b')).toBe(
       `${CONTACT_DIRECTORY_URL}/a%2Fb`,
     );
+  });
+
+  it('sends only the contact create contract and accepts original and replay responses', async () => {
+    const abortSignal = signal();
+    const fetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(json(created(), 201, 'false'))
+      .mockResolvedValueOnce(json(created(), 200, 'true'))
+      .mockResolvedValueOnce(json(created(), 201, 'false'));
+    const client = createHttpContactDirectoryClient(fetcher);
+    const input = createInput();
+
+    await expect(
+      client.create(
+        { ...input, ignored: true } as ContactDirectoryCreateInput,
+        'key-1234',
+        abortSignal,
+      ),
+    ).resolves.toEqual(created());
+    await expect(
+      client.create(input, 'key-1234', abortSignal),
+    ).resolves.toEqual(created());
+    const minimal = {
+      firstName: 'Eli',
+      lastName: 'Stone',
+      phone: '2025550115',
+    };
+    await expect(
+      client.create(minimal, 'key-5678', abortSignal),
+    ).resolves.toEqual(created());
+    expect(fetcher).toHaveBeenNthCalledWith(1, CONTACT_DIRECTORY_URL, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'Idempotency-Key': 'key-1234',
+      },
+      body: JSON.stringify(input),
+      signal: abortSignal,
+    });
+    expect(fetcher).toHaveBeenNthCalledWith(3, CONTACT_DIRECTORY_URL, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'Idempotency-Key': 'key-5678',
+      },
+      body: JSON.stringify(minimal),
+      signal: abortSignal,
+    });
   });
 
   it.each([
@@ -180,6 +262,65 @@ describe('contact directory client', () => {
       retryable: true,
     });
   });
+
+  it.each([
+    [
+      'event ID',
+      (value: MutableCreate): void => {
+        value.contactCreatedEvent.id = 'event';
+      },
+      201,
+      'false',
+    ],
+    [
+      'event type',
+      (value: MutableCreate): void => {
+        value.contactCreatedEvent.type = 'other';
+      },
+      201,
+      'false',
+    ],
+    [
+      'event timestamp',
+      (value: MutableCreate): void => {
+        value.contactCreatedEvent.occurredAt = 'now';
+      },
+      201,
+      'false',
+    ],
+    [
+      'event/contact time',
+      (value: MutableCreate): void => {
+        value.contactCreatedEvent.occurredAt = '2026-09-08T12:00:01.000Z';
+      },
+      201,
+      'false',
+    ],
+    [
+      'extra envelope key',
+      (value: MutableCreate): void => {
+        value.extra = true;
+      },
+      201,
+      'false',
+    ],
+    ['initial replay header', () => undefined, 201, 'true'],
+    ['replay initial header', () => undefined, 200, 'false'],
+    ['missing replay header', () => undefined, 201, undefined],
+  ] as const)(
+    'rejects invalid create response: %s',
+    async (_name, mutate, status, replayed) => {
+      const value = structuredClone(created()) as MutableCreate;
+      mutate(value);
+      const client = createHttpContactDirectoryClient(
+        vi.fn(async () => json(value, status, replayed)),
+      );
+
+      await expect(
+        client.create(createInput(), 'key-1234', signal()),
+      ).rejects.toMatchObject({ code: 'invalid-response', retryable: true });
+    },
+  );
 
   it.each([
     [
@@ -279,6 +420,74 @@ describe('contact directory client', () => {
     },
   );
 
+  it.each([
+    [
+      400,
+      'INVALID_WORKSPACE_ID',
+      'Workspace ID must be a UUID.',
+      'invalid-request',
+      false,
+    ],
+    [
+      400,
+      'INVALID_IDEMPOTENCY_KEY',
+      'Idempotency key is invalid.',
+      'invalid-request',
+      false,
+    ],
+    [
+      400,
+      'INVALID_CONTACT_REQUEST',
+      'Contact request is invalid.',
+      'invalid-request',
+      false,
+    ],
+    [404, 'CONTACT_NOT_FOUND', 'Contact not found.', 'not-found', false],
+    [
+      409,
+      'IDEMPOTENCY_KEY_CONFLICT',
+      'Idempotency key conflicts with the original request.',
+      'conflict',
+      false,
+    ],
+    [
+      503,
+      'CONTACT_PERSISTENCE_UNAVAILABLE',
+      'Contact persistence is unavailable.',
+      'unavailable',
+      true,
+    ],
+  ] as const)(
+    'maps exact create HTTP %i error',
+    async (status, apiCode, message, code, retryable) => {
+      const client = createHttpContactDirectoryClient(
+        vi.fn(async () => json(errorBody(apiCode, message), status)),
+      );
+
+      await expect(
+        client.create(createInput(), 'key-1234', signal()),
+      ).rejects.toMatchObject({ code, retryable });
+    },
+  );
+
+  it('rejects a list-only error code from create', async () => {
+    const client = createHttpContactDirectoryClient(
+      vi.fn(async () =>
+        json(
+          errorBody(
+            'CONTACT_DIRECTORY_NOT_FOUND',
+            'Contact directory not found.',
+          ),
+          404,
+        ),
+      ),
+    );
+
+    await expect(
+      client.create(createInput(), 'key-1234', signal()),
+    ).rejects.toMatchObject({ code: 'invalid-response', retryable: true });
+  });
+
   it('makes malformed errors and network failures retryable but propagates aborts', async () => {
     const invalid = createHttpContactDirectoryClient(
       vi.fn(async () => json({ error: { code: 'OTHER' } }, 503)),
@@ -329,6 +538,17 @@ describe('contact directory client', () => {
     );
   });
 
+  it('propagates an AbortError raised while parsing a create response', async () => {
+    const aborted = new DOMException('Aborted', 'AbortError');
+    const client = createHttpContactDirectoryClient(
+      vi.fn(async () => jsonFailure(aborted)),
+    );
+
+    await expect(
+      client.create(createInput(), 'key-1234', signal()),
+    ).rejects.toBe(aborted);
+  });
+
   it('maps non-abort JSON parsing failures to an invalid response', async () => {
     const client = createHttpContactDirectoryClient(
       vi.fn(async () => jsonFailure(new SyntaxError('Malformed JSON'))),
@@ -374,4 +594,52 @@ describe('contact selectors and safe routes', () => {
       expect(matchContactDirectoryRoute(path)).toBeNull();
     expect(matchRenewalRoute('/tasks')).toEqual({ kind: 'tasks' });
   });
+});
+
+describe('legacy contact archive', () => {
+  const fallback = {
+    contacts: [{ id: 'fallback' }],
+    tasks: [{ id: 'task-fallback' }],
+  };
+
+  it('retains arbitrary contacts and unknown fields while applying current noncontact edits', () => {
+    const rawContacts = [
+      { id: 7, nested: { values: [null, true, { untouched: 'yes' }] } },
+      'opaque',
+      null,
+    ];
+    const stored = {
+      contacts: rawContacts,
+      tasks: [{ id: 'task-old', contact: 'Kept Contact' }],
+      opportunities: [{ id: 'opp-old', contact: 'Kept Contact' }],
+      policies: [{ id: 'policy-old', client: 'Kept Contact' }],
+      appointments: [{ id: 'appointment-old', contact: 'Kept Contact' }],
+      commissions: [{ id: 'commission-old', client: 'Kept Contact' }],
+      bookingLinks: [{ id: 'booking-old' }],
+      workflows: [{ id: 'workflow-old' }],
+      unknownTopLevel: { preserved: ['exactly'] },
+    };
+    const archive = captureLegacyCrmArchive(JSON.stringify(stored), fallback);
+    const current = {
+      ...stored,
+      contacts: [{ replacement: true }],
+      tasks: [{ id: 'task-new', contact: 'Edited Contact' }],
+    };
+
+    expect(archive.contacts).toEqual(rawContacts);
+    expect(
+      JSON.parse(serializeCrmDataWithLegacyArchive(current, archive)),
+    ).toEqual({ ...stored, ...current, contacts: rawContacts });
+    expect(stored.contacts).toEqual(rawContacts);
+  });
+
+  it.each([null, '{', '[]'])(
+    'uses fallback for invalid storage %s',
+    (stored) => {
+      expect(captureLegacyCrmArchive(stored, fallback)).toEqual({
+        contacts: fallback.contacts,
+        passthrough: { tasks: fallback.tasks },
+      });
+    },
+  );
 });

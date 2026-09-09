@@ -42,3 +42,36 @@ export function hydrateLegacyCrmData<T extends Record<string, unknown>>(
 export const serializeLegacyCrmData = <T extends Record<string, unknown>>(
   data: T,
 ) => JSON.stringify(fenceLegacyCrmData(data));
+
+export type LegacyCrmArchive = {
+  contacts: unknown[];
+  passthrough: Record<string, unknown>;
+};
+
+export function captureLegacyCrmArchive<T extends Record<string, unknown>>(
+  stored: string | null,
+  fallback: T,
+): LegacyCrmArchive {
+  let parsed: unknown = fallback;
+  try {
+    if (stored) parsed = JSON.parse(stored);
+  } catch {}
+  const source = record(parsed) ? parsed : fallback;
+  const contacts = Array.isArray(source.contacts)
+    ? source.contacts
+    : Array.isArray(fallback.contacts)
+      ? fallback.contacts
+      : [];
+  const { contacts: _contacts, ...passthrough } = source;
+  return { contacts, passthrough };
+}
+
+export function serializeCrmDataWithLegacyArchive<
+  T extends Record<string, unknown>,
+>(current: T, archive: LegacyCrmArchive) {
+  return JSON.stringify({
+    ...archive.passthrough,
+    ...current,
+    contacts: archive.contacts,
+  });
+}
