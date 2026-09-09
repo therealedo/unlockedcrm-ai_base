@@ -12,7 +12,7 @@ Legend: `LV` = `LIVE-VERIFIED`, `LO` = `LOCAL-VERIFIED`, `PV` = `PRIOR-VERIFIED`
 | `CAP-CRM-002` | `/dashboard` Dashboard | `PARTIAL` | `LO`,`LV` | Phase 1 | Match live widget hierarchy and cross-record metrics |
 | `CAP-AI-001` | `/unlocked-ai` | `MOCK` | `LO`,`LV` | Phase 1 complete simulated workflow; Phase 2 selected real provider/hardening | Nested shell/history/insights/permissions tests |
 | `CAP-CRM-003` | `/inbox` | `MOCK` | `LO`,`LV` | Phase 1 functional threads with simulated channels; Phase 2 selected real providers/hardening | Thread/dialog/channel synthetic interaction suite |
-| `CAP-CRM-004` | `/contacts` | `PARTIAL` | `LO`,`LV` | Phase 1 | PostgreSQL GETs plus dormant validated read transport, selectors, and safe route matching are `LOCAL-VERIFIED`; browser authority is unchanged and production POST remains inactive |
+| `CAP-CRM-004` | `/contacts` | `PARTIAL` | `LO`,`LV` | Phase 1 | PostgreSQL GETs plus dormant validated read/create/replay transport, selectors, safe route matching, and legacy-contact archive helpers are `LOCAL-VERIFIED`; browser authority is unchanged and production POST remains inactive |
 | `CAP-CRM-005` | `/pipeline` | `PARTIAL` | `LO`,`LV` | Phase 1 | Existing detail, stage transitions, validation and history |
 | `CAP-CRM-006` | `/calendar` | `PARTIAL` | `LO`,`LV`,`G` | Phase 1 functional internal calendar + simulated sync; Phase 2 selected real provider/hardening | Connection/setup/error states and adapter contract |
 | `CAP-AI-002` | `/agent-ai` | `MOCK` | `LO`,`LV`,`G` | Phase 1 complete simulated voice workflow; Phase 2 selected real providers/hardening | Voice/phone/compliance step states without external calls |

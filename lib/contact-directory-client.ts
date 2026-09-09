@@ -44,17 +44,40 @@ export type ContactDirectoryListResponse = Envelope<{
 export type ContactDirectoryDetailResponse = Envelope<{
   contact: ContactDirectoryContact;
 }>;
+export type ContactDirectoryCreateResponse = ContactDirectoryDetailResponse & {
+  contactCreatedEvent: {
+    id: string;
+    type: 'contact.created';
+    occurredAt: string;
+  };
+};
+export type ContactDirectoryCreateInput = {
+  firstName: string;
+  lastName: string;
+  email?: string | null;
+  phone?: string | null;
+  birthDate?: string | null;
+  gender?: ContactDirectoryGender | null;
+  notes?: string | null;
+  tags?: readonly ContactDirectoryTag[] | null;
+};
 export type ContactDirectoryClient = {
   list(signal: AbortSignal): Promise<ContactDirectoryListResponse>;
   find(
     contactId: string,
     signal: AbortSignal,
   ): Promise<ContactDirectoryDetailResponse>;
+  create(
+    input: ContactDirectoryCreateInput,
+    key: string,
+    signal: AbortSignal,
+  ): Promise<ContactDirectoryCreateResponse>;
 };
 
 type ClientErrorCode =
   | 'invalid-request'
   | 'not-found'
+  | 'conflict'
   | 'unavailable'
   | 'invalid-response'
   | 'network';
@@ -188,16 +211,39 @@ function validDetail(value: unknown): value is ContactDirectoryDetailResponse {
     validContact(value.contact)
   );
 }
+function validCreate(value: unknown): value is ContactDirectoryCreateResponse {
+  if (
+    !record(value) ||
+    !exact(value, [...envelopeKeys, 'contact', 'contactCreatedEvent']) ||
+    !validEnvelope(value) ||
+    !validContact(value.contact) ||
+    !record(value.contactCreatedEvent)
+  )
+    return false;
+  const event = value.contactCreatedEvent;
+  return (
+    exact(event, ['id', 'type', 'occurredAt']) &&
+    typeof event.id === 'string' &&
+    uuid.test(event.id) &&
+    event.type === 'contact.created' &&
+    isIso(event.occurredAt) &&
+    event.occurredAt === value.contact.createdAt
+  );
+}
 const errorMessages: Record<string, string> = {
   INVALID_WORKSPACE_ID: 'Workspace ID must be a UUID.',
   INVALID_CONTACT_ID: 'Contact ID must be a UUID.',
+  INVALID_IDEMPOTENCY_KEY: 'Idempotency key is invalid.',
+  INVALID_CONTACT_REQUEST: 'Contact request is invalid.',
   CONTACT_DIRECTORY_NOT_FOUND: 'Contact directory not found.',
   CONTACT_NOT_FOUND: 'Contact not found.',
+  IDEMPOTENCY_KEY_CONFLICT:
+    'Idempotency key conflicts with the original request.',
   CONTACT_PERSISTENCE_UNAVAILABLE: 'Contact persistence is unavailable.',
 };
-type ReadOperation = 'list' | 'find';
+type Operation = 'list' | 'find' | 'create';
 const operationCodes: Record<
-  ReadOperation,
+  Operation,
   Partial<Record<number, readonly string[]>>
 > = {
   list: {
@@ -210,10 +256,21 @@ const operationCodes: Record<
     404: ['CONTACT_NOT_FOUND'],
     503: ['CONTACT_PERSISTENCE_UNAVAILABLE'],
   },
+  create: {
+    400: [
+      'INVALID_WORKSPACE_ID',
+      'INVALID_IDEMPOTENCY_KEY',
+      'INVALID_CONTACT_REQUEST',
+    ],
+    404: ['CONTACT_NOT_FOUND'],
+    409: ['IDEMPOTENCY_KEY_CONFLICT'],
+    503: ['CONTACT_PERSISTENCE_UNAVAILABLE'],
+  },
 };
 const statusErrors: Record<number, readonly [ClientErrorCode, boolean]> = {
   400: ['invalid-request', false],
   404: ['not-found', false],
+  409: ['conflict', false],
   503: ['unavailable', true],
 };
 const invalidResponse = (): never => {
@@ -221,7 +278,7 @@ const invalidResponse = (): never => {
 };
 async function body(
   response: Response,
-  operation: ReadOperation,
+  operation: Operation,
   signal: AbortSignal,
 ) {
   let value: unknown;
@@ -270,6 +327,23 @@ async function send(fetcher: typeof fetch, url: string, init: RequestInit) {
     throw new ContactDirectoryClientError('network', true);
   }
 }
+const wireInput = (input: ContactDirectoryCreateInput) => {
+  const result: Record<string, unknown> = {
+    firstName: input.firstName,
+    lastName: input.lastName,
+  };
+  for (const key of [
+    'email',
+    'phone',
+    'birthDate',
+    'gender',
+    'notes',
+    'tags',
+  ] as const) {
+    if (input[key] !== undefined) result[key] = input[key];
+  }
+  return result;
+};
 export function createHttpContactDirectoryClient(
   fetcher: typeof fetch = fetch,
 ): ContactDirectoryClient {
@@ -292,6 +366,25 @@ export function createHttpContactDirectoryClient(
         response.status !== 200 ||
         !validDetail(value) ||
         value.contact.id !== contactId
+      )
+        return invalidResponse();
+      return value;
+    },
+    async create(input, key, signal) {
+      const response = await send(fetcher, CONTACT_DIRECTORY_URL, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'Idempotency-Key': key },
+        body: JSON.stringify(wireInput(input)),
+        signal,
+      });
+      const value = await body(response, 'create', signal);
+      const replayed = response.headers.get('Idempotency-Replayed');
+      if (
+        !validCreate(value) ||
+        !(
+          (response.status === 201 && replayed === 'false') ||
+          (response.status === 200 && replayed === 'true')
+        )
       )
         return invalidResponse();
       return value;
