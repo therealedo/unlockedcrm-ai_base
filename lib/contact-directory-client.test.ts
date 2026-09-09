@@ -62,6 +62,13 @@ const detail = () => ({
 });
 const json = (value: unknown, status = 200) =>
   new Response(JSON.stringify(value), { status });
+const jsonFailure = (error: unknown) => {
+  const response = new Response(null, { status: 200 });
+  response.json = vi.fn(async () => {
+    throw error;
+  });
+  return response;
+};
 const signal = () => new AbortController().signal;
 type MutableContact = Record<string, unknown> & {
   id: unknown;
@@ -298,6 +305,39 @@ describe('contact directory client', () => {
       }),
     );
     await expect(aborting.list(controller.signal)).rejects.toBe(aborted);
+  });
+
+  it('propagates an AbortError raised while parsing a list response', async () => {
+    const aborted = new DOMException('Aborted', 'AbortError');
+    const client = createHttpContactDirectoryClient(
+      vi.fn(async () => jsonFailure(aborted)),
+    );
+
+    await expect(client.list(signal())).rejects.toBe(aborted);
+  });
+
+  it('propagates an aborted signal reason while parsing a detail response', async () => {
+    const controller = new AbortController();
+    const reason = new Error('Cancelled after headers');
+    controller.abort(reason);
+    const client = createHttpContactDirectoryClient(
+      vi.fn(async () => jsonFailure(reason)),
+    );
+
+    await expect(client.find(ids.avery, controller.signal)).rejects.toBe(
+      reason,
+    );
+  });
+
+  it('maps non-abort JSON parsing failures to an invalid response', async () => {
+    const client = createHttpContactDirectoryClient(
+      vi.fn(async () => jsonFailure(new SyntaxError('Malformed JSON'))),
+    );
+
+    await expect(client.list(signal())).rejects.toMatchObject({
+      code: 'invalid-response',
+      retryable: true,
+    });
   });
 });
 

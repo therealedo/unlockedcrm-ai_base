@@ -219,11 +219,20 @@ const statusErrors: Record<number, readonly [ClientErrorCode, boolean]> = {
 const invalidResponse = (): never => {
   throw new ContactDirectoryClientError('invalid-response', true);
 };
-async function body(response: Response, operation: ReadOperation) {
+async function body(
+  response: Response,
+  operation: ReadOperation,
+  signal: AbortSignal,
+) {
   let value: unknown;
   try {
     value = await response.json();
-  } catch {
+  } catch (error) {
+    if (
+      signal.aborted ||
+      (error instanceof DOMException && error.name === 'AbortError')
+    )
+      throw error;
     return invalidResponse();
   }
   if (response.ok) return value;
@@ -267,7 +276,7 @@ export function createHttpContactDirectoryClient(
   return {
     async list(signal) {
       const response = await send(fetcher, CONTACT_DIRECTORY_URL, { signal });
-      const value = await body(response, 'list');
+      const value = await body(response, 'list', signal);
       if (response.status !== 200 || !validList(value))
         return invalidResponse();
       return value;
@@ -278,7 +287,7 @@ export function createHttpContactDirectoryClient(
         contactDirectoryDetailUrl(contactId),
         { signal },
       );
-      const value = await body(response, 'find');
+      const value = await body(response, 'find', signal);
       if (
         response.status !== 200 ||
         !validDetail(value) ||
